@@ -14,51 +14,81 @@ Docentes: Ing. Henry Cumbal, Dr. Victor Penafiel.
 | R5 | Se puede pedir el calculo hasta **cualquier iteracion n**, desde el valor inicial. |
 | R6 | **Tabla con todas las iteraciones**, no solo el resultado final. |
 | R7 | **Graficacion** de los ejercicios. |
+| R8 | Interpolacion de Newton debe **mostrar el polinomio expandido**. |
+| R9 | Runge-Kutta debe resolver **sistemas de ecuaciones**, y aceptar tanto el paso `h` como el numero de pasos. |
+| R10 | Newton-Raphson: **la app deriva sola**, pero el usuario tambien puede escribir la derivada. |
+| R11 | Los **tres criterios de error** implementados y **configurables**. |
 
-## Como se cumple cada uno
+## Von Mises: no es el metodo de las potencias
 
-- **R3** — `core/types.py` define `MethodSpec` y `core/registry.py` el registro.
-  Agregar un metodo es crear un archivo en `core/methods/` que construya un
-  `MethodSpec` y lo registre. No se toca ningun archivo existente. El formulario
-  de la interfaz se dibuja solo, a partir de los `InputField` que el metodo declara.
-- **R4** — `core/precision.py`. Rango 2..12 decimales, 6 por defecto. El minimo de 2
-  sale de lo que dijo el docente; el maximo de 12 es para no perder informacion al
-  validar contra ejercicios de referencia.
-- **R5** — `SolveConfig.max_iterations` es la n. Con `stop_on_tolerance=False` el
-  metodo corre exactamente n iteraciones aunque ya haya convergido, que es lo que
-  hace falta cuando el ejercicio pide "la iteracion 7".
-- **R6** — `MethodResult.iterations` mas `MethodResult.columns`: cada metodo declara
-  las columnas de su propia tabla, porque las de Runge-Kutta no son las de Von Mises.
-- **R7** — `MethodResult.plot`. El nucleo entrega puntos ya calculados; dibujar es
-  responsabilidad de la interfaz.
+Confirmado con el material del docente (`VON MISES.pdf`). Es una variante de
+Newton-Raphson que **congela la derivada en el punto inicial**:
 
-## Las cuatro familias de entrada
+    x_{i+1} = x_i - f(x_i) / f'(x_0)
 
-Los cuatro metodos del primer parcial no comparten forma de entrada, y eso define
-la arquitectura. Los seis que faltan caen casi con seguridad en estas mismas familias.
+Newton-Raphson se vuelve problematico en puntos alejados de la raiz y cercanos
+a donde `f'(x_i)` tiende a cero. Von Mises sustituye el denominador `f'(x_i)`
+por `f'(x_0)`, que geometricamente equivale a trazar paralelas a la primera
+tangente en vez de tangentes nuevas.
+
+**Consecuencia para la arquitectura:** ningun metodo del primer parcial usa
+matrices. Las familias de entrada son tres, no cuatro. `FieldKind.MATRIX` y
+`FieldKind.VECTOR` quedan declarados para los metodos que vengan despues, pero
+hoy no los consume nadie.
 
 | Metodo | Unidad | Entrada | Salida |
 |--------|--------|---------|--------|
 | Newton-Raphson | U1 | `f(x)`, x0 | raiz |
-| Interpolacion de Newton | U2 | tabla de puntos, x a evaluar | polinomio y valor |
-| Von Mises | — | matriz A, vector inicial | autovalor dominante |
-| Runge-Kutta | U3 | `f(x,y)`, (x0,y0), h | tabla solucion |
+| Von Mises | U1 | `f(x)`, x0 | raiz |
+| Interpolacion de Newton | U2 | tabla de puntos, x a evaluar | polinomio expandido y valor |
+| Runge-Kutta | U3 | `f(x,y)` o sistema, condiciones iniciales, h o n | tabla solucion |
 
-## Preguntas abiertas
+## Como se cumple cada requisito
 
-Ninguna bloquea el nucleo, pero todas cambian detalles de implementacion.
-Actualizar este archivo apenas haya respuesta.
+- **R3** — `core/types.py` define `MethodSpec` y `core/registry.py` el registro.
+  Agregar un metodo es crear un archivo en `core/methods/`. No se toca ningun
+  archivo existente. El formulario se dibuja solo desde los `InputField`.
+- **R4** — `core/precision.py`, rango 2..12, por defecto 6.
+- **R5** — `SolveConfig.max_iterations`. Con `stop_on_tolerance=False` corre
+  exactamente n iteraciones aunque ya haya convergido.
+- **R6** — `MethodResult.iterations` mas `MethodResult.columns`: cada metodo
+  declara las columnas de su propia tabla.
+- **R7** — `MethodResult.plot`, construido por `core/plots.py`.
+- **R11** — `core/errors.py`. Por defecto **relativo porcentual**, que es el
+  que usa el docente en la tabla de `VON MISES.pdf`. Verificado contra sus
+  numeros en `tests/test_contract.py`.
 
-1. **Von Mises** — confirmar que es el metodo de las potencias para el autovalor
-   dominante. Si lo es: solo el dominante, o tambien potencia inversa y deflacion?
-   Normalizacion con norma infinito o euclidiana?
-2. **Interpolacion de Newton** — diferencias divididas o diferencias finitas?
-   Hay que mostrar el polinomio expandido o basta evaluar en un x?
-3. **Runge-Kutta** — que orden? Solo PVI de primer orden, o tambien sistemas?
-   Se ingresa el paso h o el numero de pasos?
-4. **Newton-Raphson** — la app deriva `f'(x)` sola o la ingresa el usuario?
-5. **Criterio de error** — absoluto, relativo o relativo porcentual? Los tres estan
-   implementados y el criterio es configurable, asi que esto solo fija el valor por
-   defecto. Hoy: relativo porcentual.
-6. **Los otros seis metodos** — saber la lista evita equivocarse en el punto de extension.
-7. **Administrativo** — rubrica, peso en la nota, fecha del parcial, formato de entrega.
+## Casos de referencia
+
+En `tests/casos_referencia.py`, sacados del material del docente. Son la vara
+para medir si un metodo esta bien: reproducir estos numeros o esta mal.
+
+`f(x) = e^-x - ln(x)`, `x0 = 1`, derivada congelada `f'(1) = -1.36787944`:
+
+| i | xi | f(xi) | x(i+1) | \|er\| % |
+|---|-----|-------|--------|---------|
+| 0 | 1 | 0.36787944 | 1.26894142 | - |
+| 1 | 1.26894142 | 0.042946035 | 1.30033749 | 2.4144554 |
+| 2 | 1.30033749 | 0.00981599 | 1.307513555 | 0.54883309 |
+
+Ejercicio propuesto en clase, sin resolver:
+`4x^3 - 18x^2 + 12x - 6 = 0` con `x0 = 1.165`.
+
+## Preguntas que siguen abiertas
+
+Ninguna bloquea. Cada respuesta ahorra implementar dos variantes.
+
+1. **Interpolacion de Newton** — diferencias divididas o diferencias finitas?
+   Se implementa **divididas**, que es el caso general y cubre tambien puntos
+   equiespaciados.
+2. **Runge-Kutta** — que orden? Se implementan **2 (Heun) y 4 (clasico)**, con
+   4 por defecto.
+3. **Fecha de entrega del primer parcial** y formato (repositorio, informe,
+   sustentacion). No hay rubrica: el docente confirmo que no existe.
+
+## Sin rubrica
+
+El docente confirmo que **no hay rubrica**, aunque el silabo la declara como
+instrumento de evaluacion formativa en las cuatro unidades. Conviene guardar
+constancia escrita de los requisitos acordados: esta especificacion cumple esa
+funcion, y por eso se versiona junto al codigo.

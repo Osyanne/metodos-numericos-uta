@@ -248,3 +248,30 @@ def test_grafica_de_edo_con_solucion_exacta():
     spec = plots.ode_solution([0, 0.1], [1, 1.1], [0, 0.1], [1, 1.105])
 
     assert spec.series["exact"] == {"x": [0, 0.1], "y": [1, 1.105]}
+
+
+# ---------- el criterio de error coincide con el del docente ----------
+
+def test_error_relativo_porcentual_reproduce_la_tabla_del_docente():
+    """La tabla de VON MISES.pdf calcula |e_r| con x_{i+1} en el denominador.
+
+    Si esta prueba se pone roja, todos los resultados del aplicativo van a
+    diferir de los del docente aunque los metodos esten bien programados.
+    """
+    from tests.casos_referencia import VON_MISES_EXP_LOG
+
+    for fila in VON_MISES_EXP_LOG["filas"]:
+        calculado = approx_error(
+            fila.xi_siguiente, fila.xi, ErrorCriterion.RELATIVE_PERCENT
+        )
+        if fila.error_relativo_porcentual is None:
+            continue
+        assert calculado == pytest.approx(
+            fila.error_relativo_porcentual, abs=1e-6
+        ), f"fila i={fila.i}"
+
+
+def test_la_primera_fila_de_la_tabla_del_docente_no_lleva_error():
+    from tests.casos_referencia import VON_MISES_EXP_LOG
+
+    assert VON_MISES_EXP_LOG["filas"][0].error_relativo_porcentual is None

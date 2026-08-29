@@ -26,8 +26,7 @@ que hace falta cuando el ejercicio pide "la iteracion 7".
 
 ## params de cada metodo
 
-Provisional donde lo diga: depende de respuestas del docente que estan en
-[ESPECIFICACION.md](ESPECIFICACION.md).
+Ya confirmados con el docente. Lo que sigue abierto esta marcado.
 
 ### newton-raphson
 
@@ -35,8 +34,32 @@ Provisional donde lo diga: depende de respuestas del docente que estan en
 { "fx": "x**3 - 2*x - 5", "x0": 2.0, "dfx": null }
 ```
 
-`dfx` en `null` significa que la derivada la calcula el aplicativo. Si el
-docente pide que la ingrese el usuario, llega como string. **Provisional.**
+`x_{i+1} = x_i - f(x_i) / f'(x_i)`
+
+`dfx` en `null` es el caso normal: **la derivada la calcula el aplicativo**.
+El campo existe para que el usuario tambien pueda escribirla a mano, que es
+la segunda forma que pidio el docente.
+
+### von-mises
+
+```json
+{ "fx": "exp(-x) - log(x)", "x0": 1.0, "dfx": null }
+```
+
+`x_{i+1} = x_i - f(x_i) / f'(x_0)`
+
+Misma entrada que Newton-Raphson: **no es el metodo de las potencias para
+autovalores**, es la variante de Newton-Raphson que congela la derivada en el
+punto inicial. Sirve cuando `f'(x_i)` se acerca a cero y Newton-Raphson se
+vuelve inestable; geometricamente traza paralelas a la primera tangente.
+
+**El error tipico de implementacion:** el algoritmo del docente reasigna
+`x_0 = x` en cada paso pero la derivada la deja en `f'(x_00)`, el x_0 original.
+Si se recalcula la derivada con el x_0 actualizado, esto se convierte en
+Newton-Raphson y los numeros dejan de coincidir con los de clase. La derivada
+se evalua **una sola vez, antes del bucle**.
+
+Caso de referencia con la tabla del docente en `tests/casos_referencia.py`.
 
 ### interpolacion-newton
 
@@ -44,26 +67,54 @@ docente pide que la ingrese el usuario, llega como string. **Provisional.**
 { "points": [[1.0, 0.0], [4.0, 1.386294], [6.0, 1.791759]], "x": 2.0 }
 ```
 
-Los puntos van en el orden en que el usuario los cargo, sin ordenar. La
-variante (diferencias divididas o finitas) esta sin confirmar. **Provisional.**
+Los puntos van en el orden en que el usuario los cargo, sin ordenar.
 
-### von-mises
+**El docente pide el polinomio expandido**, asi que `result` lleva:
 
 ```json
-{ "matrix": [[4, 1, 0], [1, 3, 1], [0, 1, 2]], "vector": [1.0, 1.0, 1.0] }
+{
+  "polinomio": "0.462098*x - 0.0518731*x**2 - 0.410225",
+  "valor": 0.565446,
+  "grado": 2
+}
 ```
 
-Matriz cuadrada en row-major. `vector` es el vector inicial; si viene vacio se
-usa el de unos. **Provisional.**
+Variante (diferencias divididas o finitas) sin confirmar. Se implementa
+**diferencias divididas**, que es el caso general y funciona igual con puntos
+equiespaciados. **Abierto.**
 
 ### runge-kutta
 
+Una sola ecuacion:
+
 ```json
-{ "fxy": "x + y", "x0": 0.0, "y0": 1.0, "h": 0.1, "xf": 0.5 }
+{ "fxy": "x + y", "x0": 0.0, "y0": 1.0, "h": 0.1, "n": 5, "orden": 4 }
 ```
 
-Con `xf` presente el numero de pasos sale de `(xf - x0) / h`, recortado por
-`max_iterations`. Sin `xf`, se corren `max_iterations` pasos. **Provisional.**
+Sistema de ecuaciones (lo pidio el docente):
+
+```json
+{ "fxy": ["y2", "-y1"], "x0": 0.0, "y0": [1.0, 0.0], "h": 0.1, "n": 10, "orden": 4 }
+```
+
+En un sistema, `fxy` es una lista de expresiones y `y0` una lista de la misma
+longitud. Las variables disponibles son `x` mas `y1`, `y2`, ... segun cuantas
+ecuaciones haya. En una sola ecuacion la variable es `y`.
+
+**Paso o numero de pasos, cualquiera de los dos** (lo pidio el docente).
+Se aceptan `h`, `n` y `xf` en estas combinaciones:
+
+| Viene | Se calcula |
+|-------|-----------|
+| `h` y `n` | `xf = x0 + n*h` |
+| `h` y `xf` | `n = round((xf - x0) / h)` |
+| `n` y `xf` | `h = (xf - x0) / n` |
+| solo `h` | `n = max_iterations` |
+
+Si vienen los tres y no son consistentes: `MethodError`, sin adivinar.
+
+`orden` acepta 2 (Heun) o 4 (Runge-Kutta clasico). Por defecto 4. El docente
+no confirmo cual quiere, asi que estan los dos. **Abierto.**
 
 ## Respuesta
 

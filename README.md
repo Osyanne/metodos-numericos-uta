@@ -8,12 +8,12 @@ metodos del primer parcial son los primeros de una decena.
 
 ## Metodos
 
-| Metodo | Unidad | Estado |
-|--------|--------|--------|
-| Newton-Raphson | U1 — Teoria de errores y metodos iterativos | en desarrollo |
-| Interpolacion de Newton | U2 — Interpolacion e integracion | en desarrollo |
-| Von Mises | Autovalores | en desarrollo |
-| Runge-Kutta | U3 — Ecuaciones diferenciales | en desarrollo |
+| Metodo | Que resuelve | Estado |
+|--------|--------------|--------|
+| Newton-Raphson | raices de `f(x) = 0` | en desarrollo |
+| Von Mises | raices, con la derivada congelada en `x0` | en desarrollo |
+| Interpolacion de Newton | polinomio expandido por diferencias divididas | en desarrollo |
+| Runge-Kutta | EDO y sistemas de EDO, orden 2 y 4 | en desarrollo |
 
 ## Correr el proyecto
 
