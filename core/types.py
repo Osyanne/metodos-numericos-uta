@@ -18,8 +18,21 @@ from typing import Any, Callable
 
 
 class FieldKind(str, Enum):
-    """Tipo de dato de un campo de entrada. La interfaz dibuja el formulario
-    a partir de esto, sin saber nada del metodo."""
+    """Tipo de dato de un campo de entrada.
+
+    La interfaz dibuja el formulario a partir de esto, sin saber nada del
+    metodo. La codificacion JSON de cada tipo esta CONGELADA: es lo que el
+    navegador manda y lo que el metodo recibe en params.
+
+        EXPRESSION  "x**3 - 2*x - 5"      (str; se acepta ^ como potencia)
+        NUMBER      2.5                    (float)
+        INTEGER     4                      (int)
+        POINTS      [[1.0, 0.0], [4.0, 1.386294]]   (pares [x, y], en orden)
+        MATRIX      [[4, 1, 0], [1, 3, 1]]          (filas, row-major)
+        VECTOR      [1.0, 1.0, 1.0]
+
+    Ver docs/CONTRATO.md para el params completo de cada metodo.
+    """
 
     EXPRESSION = "expression"
     NUMBER = "number"

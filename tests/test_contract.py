@@ -19,7 +19,14 @@ from core.precision import (
     round_value,
 )
 from core.registry import all_methods, clear, get, register
-from core.types import Column, FieldKind, InputField, MethodSpec, StopReason
+from core.types import (
+    Column,
+    FieldKind,
+    InputField,
+    MethodSpec,
+    PlotKind,
+    StopReason,
+)
 
 
 # ---------- precision ----------
@@ -135,3 +142,109 @@ def test_los_metodos_salen_ordenados_por_unidad(registro_limpio):
 def test_columna_y_motivo_de_parada_son_serializables():
     assert Column("xi", "xi").numeric is True
     assert StopReason.TOLERANCE.value == "tolerancia_alcanzada"
+
+
+# ---------- el registro se puede recargar (bug de cache) ----------
+
+def test_load_methods_normal_no_revienta_con_el_paquete_vacio(registro_limpio):
+    from core.registry import load_methods
+
+    load_methods()
+    assert all_methods() == []
+
+
+def test_load_methods_force_descarta_los_modulos_cacheados(registro_limpio):
+    import sys
+    import types as tipos_py
+
+    from core.registry import load_methods
+
+    load_methods()
+    sys.modules["core.methods.zzz_centinela"] = tipos_py.ModuleType(
+        "core.methods.zzz_centinela"
+    )
+
+    load_methods(force=True)
+
+    assert "core.methods.zzz_centinela" not in sys.modules, (
+        "sin purgar el cache, un clear() seguido de load_methods() deja el "
+        "registro vacio para siempre"
+    )
+
+
+# ---------- JSON valido ----------
+
+def test_infinito_y_nan_se_vuelven_null():
+    from core.serialization import finite_or_none
+
+    assert finite_or_none(float("inf")) is None
+    assert finite_or_none(float("-inf")) is None
+    assert finite_or_none(float("nan")) is None
+    assert finite_or_none(None) is None
+    assert finite_or_none("no es numero") is None
+    assert finite_or_none(2.5) == 2.5
+
+
+def test_una_fila_con_error_infinito_sale_serializable():
+    import json
+
+    from core.serialization import jsonable_iteration
+    from core.types import Iteration
+
+    fila = jsonable_iteration(
+        Iteration(n=3, values={"xi": 1.0, "fxi": float("nan")}, error=float("inf"))
+    )
+
+    assert fila == {"n": 3, "values": {"xi": 1.0, "fxi": None}, "error": None}
+    # allow_nan=False es lo que hace el navegador al parsear
+    assert json.dumps(fila, allow_nan=False)
+
+
+# ---------- forma de las series de graficas ----------
+
+def test_grafica_de_raiz_tiene_las_claves_del_contrato():
+    from core import plots
+
+    spec = plots.function_root([0, 1], [-1, 1], root=0.5, iterates=[(1, 0.4, -0.2)])
+
+    assert spec.kind is PlotKind.FUNCTION_ROOT
+    assert set(spec.series) == {"curve", "root", "iterates"}
+    assert spec.series["curve"] == {"x": [0, 1], "y": [-1, 1]}
+    assert spec.series["root"] == {"x": 0.5, "y": 0.0}
+    assert spec.series["iterates"] == [{"n": 1, "x": 0.4, "y": -0.2}]
+
+
+def test_grafica_de_interpolacion_tiene_las_claves_del_contrato():
+    from core import plots
+
+    spec = plots.interpolation([(1, 2), (3, 4)], [1, 2, 3], [2, 3, 4], evaluated=(2, 3))
+
+    assert set(spec.series) == {"points", "curve", "evaluated"}
+    assert spec.series["points"] == [[1.0, 2.0], [3.0, 4.0]]
+    assert spec.series["evaluated"] == {"x": 2, "y": 3}
+
+
+def test_grafica_de_convergencia_tiene_las_claves_del_contrato():
+    from core import plots
+
+    spec = plots.convergence([0, 1], [None, 4.5])
+
+    assert set(spec.series) == {"n", "error"}
+    assert len(spec.series["n"]) == len(spec.series["error"])
+
+
+def test_grafica_de_edo_admite_solucion_exacta_ausente():
+    from core import plots
+
+    spec = plots.ode_solution([0, 0.1], [1, 1.1])
+
+    assert set(spec.series) == {"solution", "exact"}
+    assert spec.series["exact"] is None
+
+
+def test_grafica_de_edo_con_solucion_exacta():
+    from core import plots
+
+    spec = plots.ode_solution([0, 0.1], [1, 1.1], [0, 0.1], [1, 1.105])
+
+    assert spec.series["exact"] == {"x": [0, 0.1], "y": [1, 1.105]}

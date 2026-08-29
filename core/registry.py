@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import sys
 
 from core.types import MethodSpec
 
@@ -30,12 +31,26 @@ def all_methods() -> list[MethodSpec]:
 
 
 def clear() -> None:
-    """Solo para tests."""
+    """Vacia el registro. Solo para pruebas."""
     _REGISTRY.clear()
 
 
-def load_methods() -> None:
-    """Importa core.methods, que auto-registra todo lo que encuentre."""
+def load_methods(*, force: bool = False) -> None:
+    """Importa core.methods, que auto-registra todo lo que encuentre.
+
+    Con force=True descarta los modulos ya importados antes de volver a
+    cargarlos. Hace falta despues de clear(): Python cachea los imports, asi
+    que un load_methods() normal despues de un clear() no vuelve a registrar
+    nada y el registro queda vacio para siempre.
+    """
+    if force:
+        cacheados = [
+            nombre
+            for nombre in list(sys.modules)
+            if nombre == "core.methods" or nombre.startswith("core.methods.")
+        ]
+        for nombre in cacheados:
+            del sys.modules[nombre]
     importlib.import_module("core.methods")
 
 
