@@ -64,24 +64,44 @@ Caso de referencia con la tabla del docente en `tests/casos_referencia.py`.
 ### interpolacion-newton
 
 ```json
-{ "points": [[1.0, 0.0], [4.0, 1.386294], [6.0, 1.791759]], "x": 2.0 }
+{
+  "points": [[1.0, 0.0], [4.0, 1.386294], [6.0, 1.791759]],
+  "x": 2.0,
+  "variante": "auto"
+}
 ```
 
-Los puntos van en el orden en que el usuario los cargo, sin ordenar.
+Los puntos van en el orden en que el usuario los cargo, sin reordenar.
 
 **El docente pide el polinomio expandido**, asi que `result` lleva:
 
 ```json
 {
-  "polinomio": "0.462098*x - 0.0518731*x**2 - 0.410225",
+  "polinomio": "-0.0518731*x**2 + 0.462098*x - 0.410225",
   "valor": 0.565446,
-  "grado": 2
+  "grado": 2,
+  "variante_usada": "divididas"
 }
 ```
 
-Variante (diferencias divididas o finitas) sin confirmar. Se implementa
-**diferencias divididas**, que es el caso general y funciona igual con puntos
-equiespaciados. **Abierto.**
+**`variante` acepta cuatro valores.** No sabemos cual espera ver el docente, y
+la tabla de iteraciones se ve distinta segun cual sea, asi que estan las dos
+familias y el aplicativo elige sola por defecto:
+
+| valor | que hace |
+|-------|----------|
+| `auto` | por defecto. Si los x estan igualmente espaciados usa `adelante`; si no, `divididas`. |
+| `divididas` | diferencias divididas. Caso general, funciona siempre. |
+| `adelante` | diferencias finitas hacia adelante (Newton-Gregory). Exige x equiespaciados. |
+| `atras` | diferencias finitas hacia atras. Exige x equiespaciados. |
+
+Pedir `adelante` o `atras` con puntos no equiespaciados es `MethodError`
+explicando que esa variante necesita paso constante.
+
+El polinomio resultante es **el mismo** en las cuatro: por n+1 puntos pasa un
+unico polinomio de grado n. Lo que cambia es la tabla que se muestra. Por eso
+`variante_usada` viaja en el resultado, para que la interfaz pueda decir cual
+salio.
 
 ### runge-kutta
 
