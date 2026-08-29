@@ -86,6 +86,28 @@ class PlotKind(str, Enum):
 
 
 @dataclass(frozen=True)
+class Resample:
+    """Deja que la interfaz pida mas puntos cuando el usuario hace zoom.
+
+    La grafica es un plano tipo GeoGebra, no una imagen: al acercarse, la curva
+    tiene que recalcularse en el rango nuevo o se ve como una linea quebrada.
+
+    Solo lo llevan las graficas cuya curva sale de una expresion. La solucion de
+    una EDO son puntos discretos que salieron de correr el metodo con un paso h
+    dado: ahi el zoom reescala la vista, no genera puntos nuevos, porque no hay
+    mas resolucion que obtener sin volver a resolver con otro h.
+
+    Quien evalua sigue siendo el nucleo. Si la interfaz evaluara por su cuenta
+    harian falta dos parsers, y dos parsers pueden discrepar justo en lo que el
+    docente califica.
+    """
+
+    expression: str
+    variables: tuple[str, ...] = ("x",)
+    domain: tuple[float, float] | None = None
+
+
+@dataclass(frozen=True)
 class PlotSpec:
     """Datos ya calculados para graficar. El nucleo no dibuja: entrega puntos."""
 
@@ -94,6 +116,7 @@ class PlotSpec:
     x_label: str = "x"
     y_label: str = "y"
     title: str = ""
+    resample: Resample | None = None
 
 
 @dataclass(frozen=True)

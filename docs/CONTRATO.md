@@ -170,16 +170,87 @@ Reglas duras:
 - `stop_reason` es uno de: `tolerancia_alcanzada`, `n_iteraciones_completadas`,
   `solucion_exacta`, `divergio`, `fallo`.
 
-## plot.series segun plot.kind
+## Graficas: un plano interactivo, no una imagen
+
+El docente lo pidio **tipo GeoGebra**: plano cartesiano con ejes, cuadricula,
+zoom con la rueda y paneo arrastrando. Eso tiene una consecuencia tecnica que no
+es obvia.
+
+Al hacer zoom, la curva **se tiene que recalcular en el rango visible**. Si se
+dibujan siempre los mismos puntos que vinieron en la respuesta, al acercarse se
+ve una linea quebrada en vez de una curva.
+
+Quien evalua es siempre el nucleo. Si la interfaz evaluara por su cuenta harian
+falta dos parsers, y dos parsers pueden discrepar justo en lo que el docente
+califica.
+
+### plot.series segun plot.kind
 
 Lo construye `core/plots.py`. La interfaz no lee otras claves que estas.
 
-| kind | series |
-|------|--------|
-| `funcion_raiz` | `{"curve": {"x": [], "y": []}, "root": {"x", "y"} \| null, "iterates": [{"n", "x", "y"}]}` |
-| `interpolacion` | `{"points": [[x, y]], "curve": {"x": [], "y": []}, "evaluated": {"x", "y"} \| null}` |
-| `convergencia` | `{"n": [], "error": []}` (misma longitud; error admite null) |
-| `solucion_edo` | `{"solution": {"x": [], "y": []}, "exact": {"x": [], "y": []} \| null}` |
+| kind | series | remuestrea? |
+|------|--------|-------------|
+| `funcion_raiz` | `{"curve": {"x": [], "y": []}, "root": {"x", "y"} \| null, "iterates": [{"n", "x", "y"}]}` | si |
+| `interpolacion` | `{"points": [[x, y]], "curve": {"x": [], "y": []}, "evaluated": {"x", "y"} \| null}` | si |
+| `convergencia` | `{"n": [], "error": []}` (misma longitud; error admite null) | no |
+| `solucion_edo` | `{"solution": {"x": [], "y": []}, "exact": {"x": [], "y": []} \| null}` | no |
+
+`convergencia` y `solucion_edo` no remuestrean porque son **puntos discretos**:
+salieron de correr el metodo con un paso y un numero de iteraciones dados. No hay
+mas resolucion que obtener sin volver a resolver. Ahi el zoom reescala la vista.
+
+### El bloque `resample`
+
+Las graficas que si remuestrean llevan:
+
+```json
+"resample": {
+  "expression": "exp(-x) - log(x)",
+  "variables": ["x"],
+  "domain": [0.1, 5.0]
+}
+```
+
+Si `resample` es `null`, la interfaz solo reescala lo que ya tiene.
+
+### POST /api/plot/sample
+
+```json
+{ "expression": "exp(-x) - log(x)", "variables": ["x"],
+  "x_min": 0.5, "x_max": 2.0, "points": 400 }
+```
+
+Respuesta:
+
+```json
+{ "x": [0.5, 0.503, ...], "y": [1.299, 1.294, ..., null, ...] }
+```
+
+Lo resuelve `core.sampling.sample`, que ya esta hecho y probado. La ruta solo
+traduce JSON.
+
+**`y` lleva `null` donde la funcion no esta definida, y ahi la linea se corta.**
+No se unen los dos lados: si se unen, `1/x` se dibuja con una raya vertical falsa
+cruzando la asintota y `tan(x)` queda irreconocible.
+
+Rango invertido, expresion invalida o pedir mas de 5000 puntos: `MethodError`,
+que sale como 422.
+
+### Como construirlo sin morir en el intento
+
+Conviene hacerlo en dos etapas, porque la primera ya es entregable:
+
+1. **Plano estatico.** Ejes, cuadricula, la curva con los puntos que vinieron en
+   la respuesta, la raiz y los iterados marcados. Sin zoom.
+2. **Interactivo.** Zoom con la rueda, paneo arrastrando, y al soltar se pide un
+   muestreo nuevo del rango visible. Conviene pedir un rango mas ancho que el
+   visible para que un paneo chico no dispare otra peticion, y esperar unos
+   150 ms antes de pedir.
+
+Canvas plano alcanza y sobra; no hace falta una libreria de graficas para esto,
+y una libreria de charts no sirve porque estan pensadas para series de datos, no
+para funciones. Sea cual sea la decision, tiene que funcionar **sin internet**:
+nada traido de un CDN.
 
 ## Errores
 

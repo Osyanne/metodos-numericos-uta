@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from core.types import PlotKind, PlotSpec
+from core.types import PlotKind, PlotSpec, Resample
 
 
 def function_root(
@@ -19,6 +19,7 @@ def function_root(
     root_y: float = 0.0,
     iterates: Sequence[tuple[int, float, float]] = (),
     title: str = "",
+    resample: Resample | None = None,
 ) -> PlotSpec:
     """series = {curve: {x, y}, root: {x, y} | None, iterates: [{n, x, y}]}"""
     return PlotSpec(
@@ -31,6 +32,7 @@ def function_root(
         x_label="x",
         y_label="f(x)",
         title=title,
+        resample=resample,
     )
 
 
@@ -40,6 +42,7 @@ def interpolation(
     ys: Sequence[float],
     evaluated: tuple[float, float] | None = None,
     title: str = "",
+    resample: Resample | None = None,
 ) -> PlotSpec:
     """series = {points: [[x, y]], curve: {x, y}, evaluated: {x, y} | None}"""
     return PlotSpec(
@@ -53,6 +56,7 @@ def interpolation(
             ),
         },
         title=title,
+        resample=resample,
     )
 
 

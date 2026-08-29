@@ -275,3 +275,73 @@ def test_la_primera_fila_de_la_tabla_del_docente_no_lleva_error():
     from tests.casos_referencia import VON_MISES_EXP_LOG
 
     assert VON_MISES_EXP_LOG["filas"][0].error_relativo_porcentual is None
+
+
+# ---------- muestreo para el plano interactivo ----------
+
+def test_muestreo_devuelve_dos_listas_de_la_misma_longitud():
+    from core.sampling import sample
+
+    xs, ys = sample("x**2", x_min=-2.0, x_max=2.0, puntos=5)
+
+    assert len(xs) == len(ys) == 5
+    assert xs[0] == pytest.approx(-2.0)
+    assert xs[-1] == pytest.approx(2.0)
+    assert ys[2] == pytest.approx(0.0)
+
+
+def test_muestreo_marca_con_none_donde_la_funcion_no_esta_definida():
+    """1/x en x = 0. La interfaz corta la linea ahi en vez de unir los lados:
+    si no, aparece una raya vertical falsa en la asintota."""
+    from core.sampling import sample
+
+    xs, ys = sample("1/x", x_min=-1.0, x_max=1.0, puntos=3)
+
+    assert ys[1] is None
+    assert ys[0] is not None and ys[2] is not None
+
+
+def test_muestreo_rechaza_un_rango_invertido():
+    from core.sampling import sample
+    from core.types import MethodError
+
+    with pytest.raises(MethodError, match="invertido|vacio"):
+        sample("x", x_min=5.0, x_max=1.0)
+
+
+def test_muestreo_rechaza_pedir_demasiados_puntos():
+    from core.sampling import sample
+    from core.types import MethodError
+
+    with pytest.raises(MethodError, match="limite"):
+        sample("x", x_min=0.0, x_max=1.0, puntos=999_999)
+
+
+def test_muestreo_de_una_expresion_invalida_falla_como_metodo():
+    from core.sampling import sample
+    from core.types import MethodError
+
+    with pytest.raises(MethodError):
+        sample("gamma(x)", x_min=0.0, x_max=1.0)
+
+
+def test_la_grafica_de_raiz_puede_llevar_datos_de_remuestreo():
+    from core import plots
+    from core.types import Resample
+
+    spec = plots.function_root(
+        [0, 1], [-1, 1], root=0.5,
+        resample=Resample(expression="x**2 - 0.25", domain=(-5.0, 5.0)),
+    )
+
+    assert spec.resample is not None
+    assert spec.resample.expression == "x**2 - 0.25"
+    assert spec.resample.variables == ("x",)
+
+
+def test_la_grafica_de_edo_no_lleva_remuestreo():
+    """La solucion de una EDO son puntos discretos que salieron de un h dado.
+    Ahi el zoom reescala; no hay mas resolucion sin volver a resolver."""
+    from core import plots
+
+    assert plots.ode_solution([0, 0.1], [1, 1.1]).resample is None

@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 
 from core.errors import ErrorCriterion
 from core.precision import DEFAULT_DECIMALS, MAX_DECIMALS, MIN_DECIMALS
+from core.sampling import MAX_PUNTOS as MAX_PUNTOS_MUESTREO
+from core.sampling import MIN_PUNTOS as MIN_PUNTOS_MUESTREO
 
 
 class FieldSchema(BaseModel):
@@ -48,12 +50,46 @@ class ColumnSchema(BaseModel):
     numeric: bool = True
 
 
+class ResampleSchema(BaseModel):
+    """Presente solo en las graficas cuya curva sale de una expresion.
+
+    Si viene, la interfaz puede pedir mas puntos al endpoint de muestreo cuando
+    el usuario hace zoom. Si no viene, el zoom solo reescala lo que ya hay.
+    """
+
+    expression: str
+    variables: list[str] = ["x"]
+    domain: list[float] | None = None
+
+
 class PlotSchema(BaseModel):
     kind: str
     series: dict[str, Any]
     x_label: str = "x"
     y_label: str = "y"
     title: str = ""
+    resample: ResampleSchema | None = None
+
+
+class SampleRequest(BaseModel):
+    """POST /api/plot/sample — recalcula una curva en el rango visible."""
+
+    expression: str
+    variables: list[str] = ["x"]
+    x_min: float
+    x_max: float
+    points: int = Field(400, ge=MIN_PUNTOS_MUESTREO, le=MAX_PUNTOS_MUESTREO)
+
+
+class SampleResponse(BaseModel):
+    """`y` lleva null donde la funcion no esta definida.
+
+    La interfaz corta la linea en cada null en vez de unir los dos lados: si no,
+    aparece una raya vertical falsa en cada asintota.
+    """
+
+    x: list[float]
+    y: list[float | None]
 
 
 class SolveResponse(BaseModel):
