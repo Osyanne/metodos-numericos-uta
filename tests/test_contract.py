@@ -279,7 +279,32 @@ def test_grafica_de_edo_con_solucion_exacta():
 
     spec = plots.ode_solution([0, 0.1], [1, 1.1], [0, 0.1], [1, 1.105])
 
-    assert spec.series["exact"] == {"x": [0, 0.1], "y": [1, 1.105]}
+    assert spec.series["exact"] == {
+        "x": [0, 0.1],
+        "components": [{"name": "y", "y": [1, 1.105]}],
+    }
+
+
+def test_grafica_de_edo_de_una_sola_ecuacion_tiene_una_componente():
+    from core import plots
+
+    spec = plots.ode_solution([0, 0.1], [1, 1.1])
+
+    assert spec.series["solution"]["components"] == [{"name": "y", "y": [1, 1.1]}]
+
+
+def test_grafica_de_edo_de_un_sistema_tiene_una_componente_por_incognita():
+    """R9: Runge-Kutta resuelve sistemas, asi que la grafica lleva varias curvas.
+
+    La forma es la misma que en el caso escalar, para que la interfaz dibuje
+    una linea por componente sin saber si atras hay un sistema.
+    """
+    from core import plots
+
+    spec = plots.ode_solution([0, 0.1], {"y1": [1, 1.1], "y2": [0, -0.1]})
+
+    assert [c["name"] for c in spec.series["solution"]["components"]] == ["y1", "y2"]
+    assert spec.series["solution"]["components"][1]["y"] == [0, -0.1]
 
 
 # ---------- el criterio de error coincide con el del docente ----------

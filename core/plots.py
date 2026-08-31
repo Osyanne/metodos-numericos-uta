@@ -7,7 +7,8 @@ la interfaz solo lee las claves que estan documentadas aca.
 """
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from core.types import PlotKind, PlotSpec, Resample
 
@@ -77,18 +78,38 @@ def convergence(
 
 def ode_solution(
     xs: Sequence[float],
-    ys: Sequence[float],
+    componentes: Mapping[str, Sequence[float]] | Sequence[float],
     exact_xs: Sequence[float] | None = None,
-    exact_ys: Sequence[float] | None = None,
+    exact_componentes: Mapping[str, Sequence[float]] | Sequence[float] | None = None,
     title: str = "",
 ) -> PlotSpec:
-    """series = {solution: {x, y}, exact: {x, y} | None}"""
+    """series = {solution: {x, components: [{name, y}]}, exact: igual | None}
+
+    `componentes` admite las dos formas:
+
+        [1.0, 1.1, 1.2]                una sola ecuacion; la curva se llama "y"
+        {"y1": [...], "y2": [...]}     un sistema; una curva por incognita
+
+    Es la misma forma en los dos casos a proposito: la interfaz dibuja una linea
+    por componente sin tener que preguntarse si atras hay un sistema o no.
+    """
     exacta = None
-    if exact_xs is not None and exact_ys is not None:
-        exacta = {"x": list(exact_xs), "y": list(exact_ys)}
+    if exact_xs is not None and exact_componentes is not None:
+        exacta = {"x": list(exact_xs), "components": _componentes(exact_componentes)}
     return PlotSpec(
         kind=PlotKind.ODE_SOLUTION,
-        series={"solution": {"x": list(xs), "y": list(ys)}, "exact": exacta},
+        series={
+            "solution": {"x": list(xs), "components": _componentes(componentes)},
+            "exact": exacta,
+        },
         y_label="y",
         title=title,
     )
+
+
+def _componentes(
+    valores: Mapping[str, Sequence[float]] | Sequence[float],
+) -> list[dict[str, Any]]:
+    if isinstance(valores, Mapping):
+        return [{"name": nombre, "y": list(ys)} for nombre, ys in valores.items()]
+    return [{"name": "y", "y": list(valores)}]

@@ -193,11 +193,16 @@ Lo construye `core/plots.py`. La interfaz no lee otras claves que estas.
 | `funcion_raiz` | `{"curve": {"x": [], "y": []}, "root": {"x", "y"} \| null, "iterates": [{"n", "x", "y"}]}` | si |
 | `interpolacion` | `{"points": [[x, y]], "curve": {"x": [], "y": []}, "evaluated": {"x", "y"} \| null}` | si |
 | `convergencia` | `{"n": [], "error": []}` (misma longitud; error admite null) | no |
-| `solucion_edo` | `{"solution": {"x": [], "y": []}, "exact": {"x": [], "y": []} \| null}` | no |
+| `solucion_edo` | `{"solution": {"x": [], "components": [{"name", "y": []}]}, "exact": igual \| null}` | no |
 
 `convergencia` y `solucion_edo` no remuestrean porque son **puntos discretos**:
 salieron de correr el metodo con un paso y un numero de iteraciones dados. No hay
 mas resolucion que obtener sin volver a resolver. Ahi el zoom reescala la vista.
+
+`solucion_edo` lleva **una componente por incognita**, con la misma forma tanto
+para una sola ecuacion (una componente llamada `y`) como para un sistema (`y1`,
+`y2`, ...). La interfaz dibuja una linea por componente sin tener que saber si
+atras hay un sistema. Lo pide R9: Runge-Kutta resuelve sistemas.
 
 ### El bloque `resample`
 
