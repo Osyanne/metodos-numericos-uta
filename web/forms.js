@@ -120,7 +120,7 @@ function controlLista(campo) {
 
   const agregar = document.createElement("button");
   agregar.type = "button";
-  agregar.className = "boton-tenue";
+  agregar.className = "boton-tenue boton-agregar";
   agregar.textContent = "+ agregar";
 
   const nuevaFila = (valor = "") => {
@@ -158,8 +158,10 @@ function controlLista(campo) {
     todas.forEach((fila, i) => {
       const indice = fila.querySelector(".lista-indice");
       indice.textContent = todas.length > 1 ? `${i + 1}` : "";
-      fila.querySelector(".boton-quitar").style.visibility =
-        todas.length > 1 ? "visible" : "hidden";
+      const quitar = fila.querySelector(".boton-quitar");
+      const sobra = todas.length > 1;
+      quitar.style.visibility = sobra ? "visible" : "hidden";
+      quitar.disabled = !sobra;
     });
   };
 
@@ -247,7 +249,7 @@ function controlPuntos(campo) {
 
   const agregar = document.createElement("button");
   agregar.type = "button";
-  agregar.className = "boton-tenue";
+  agregar.className = "boton-tenue boton-agregar";
   agregar.textContent = "+ punto";
   agregar.addEventListener("click", () => nuevaFila());
 

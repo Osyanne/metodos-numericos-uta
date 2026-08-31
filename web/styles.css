@@ -42,6 +42,11 @@
 
 * { box-sizing: border-box; }
 
+/* Una clase con `display` le gana al [hidden] del navegador, que es solo una
+   regla del user agent. Sin esto, .panel { display: flex } deja visible un
+   panel marcado como oculto. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--paper);

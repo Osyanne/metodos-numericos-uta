@@ -61,6 +61,11 @@ export function dibujarTabla(contenedor, resultado, decimales) {
   contenedor.append(tabla);
 }
 
+// Claves que son conteos o etiquetas, no mediciones: mostrarlas con seis
+// decimales ("iteraciones 4.000000") es ruido y sugiere una precision que no
+// tienen.
+const CONTEOS = new Set(["iteraciones", "grado", "n", "orden", "pasos", "puntos"]);
+
 const MOTIVO = {
   tolerancia_alcanzada: ["ok", "Alcanzó la tolerancia"],
   n_iteraciones_completadas: ["aviso", "Completó las n iteraciones sin alcanzar la tolerancia"],
@@ -86,7 +91,7 @@ export function dibujarResumen(contenedor, resultado, decimales) {
     dt.textContent = clave;
     const dd = document.createElement("dd");
     dd.textContent = typeof valor === "number"
-      ? formatear(valor, decimales)
+      ? (CONTEOS.has(clave) ? String(valor) : formatear(valor, decimales))
       : Array.isArray(valor)
         ? valor.map((v) => formatear(v, decimales)).join(", ")
         : String(valor ?? "—");
