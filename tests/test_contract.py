@@ -146,11 +146,26 @@ def test_columna_y_motivo_de_parada_son_serializables():
 
 # ---------- el registro se puede recargar (bug de cache) ----------
 
-def test_load_methods_normal_no_revienta_con_el_paquete_vacio(registro_limpio):
+def test_load_methods_registra_todo_lo_que_encuentra(registro_limpio):
+    """El auto-descubrimiento es el requisito de expansion (R3): agregar un
+    metodo es dejar un archivo en core/methods/ y nada mas.
+
+    Se cuenta contra los modulos que hay en el paquete, no contra un numero
+    escrito a mano, para que siga valiendo a medida que crezca a diez metodos.
+    """
+    import pkgutil
+
+    import core.methods
     from core.registry import load_methods
 
-    load_methods()
-    assert all_methods() == []
+    load_methods(force=True)
+
+    modulos = {
+        m.name
+        for m in pkgutil.iter_modules(core.methods.__path__)
+        if not m.name.startswith("_")
+    }
+    assert len(all_methods()) == len(modulos)
 
 
 def test_load_methods_force_descarta_los_modulos_cacheados(registro_limpio):
