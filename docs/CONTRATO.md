@@ -77,8 +77,8 @@ Los puntos van en el orden en que el usuario los cargo, sin reordenar.
 
 ```json
 {
-  "polinomio": "-0.0518731*x**2 + 0.462098*x - 0.410225",
-  "valor": 0.565446,
+  "polinomio": "-0.0518731*x**2 + 0.7214635*x - 0.6695904",
+  "valor": 0.5658442,
   "grado": 2,
   "variante_usada": "divididas"
 }
@@ -184,7 +184,22 @@ Quien evalua es siempre el nucleo. Si la interfaz evaluara por su cuenta harian
 falta dos parsers, y dos parsers pueden discrepar justo en lo que el docente
 califica.
 
-### plot.series segun plot.kind
+#### decimals es formato, no calculo
+
+`decimals` viaja en la respuesta para que **la interfaz** formatee, con
+`core.precision.format_value`. Los numeros de `iterations`, de `result` y de las
+graficas van **sin redondear**, con toda la precision que salio del calculo.
+
+No es un detalle estetico. Si se guardaran redondeados:
+
+- pedir 2 decimales degradaria la curva de la grafica, que se veria escalonada;
+- exportar a CSV perderia precision de forma permanente;
+- el remuestreo al hacer zoom devolveria valores mas finos que los de la tabla,
+  y las dos cosas no coincidirian entre si.
+
+Redondear al mostrar es reversible; redondear al guardar no lo es.
+
+## plot.series segun plot.kind
 
 Lo construye `core/plots.py`. La interfaz no lee otras claves que estas.
 

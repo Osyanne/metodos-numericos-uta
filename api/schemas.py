@@ -18,6 +18,7 @@ class FieldSchema(BaseModel):
     default: Any = None
     help: str = ""
     required: bool = True
+    multiple: bool = False
 
 
 class MethodSummary(BaseModel):

@@ -2,13 +2,16 @@
 
 CONGELADO. Cambiar algo de aca rompe el otro carril: hay que acordarlo antes.
 
-Las cuatro familias de entrada que cubren los metodos del primer parcial
-tambien cubren, casi con seguridad, los seis metodos que faltan:
+Familias de entrada de los metodos del primer parcial:
 
     Newton-Raphson            EXPRESSION + NUMBER
+    Von Mises                 EXPRESSION + NUMBER
     Interpolacion de Newton   POINTS + NUMBER
-    Von Mises                 MATRIX + VECTOR
-    Runge-Kutta               EXPRESSION + NUMBER
+    Runge-Kutta               EXPRESSION + NUMBER, admitiendo listas (sistemas)
+
+MATRIX y VECTOR quedan declarados para los metodos que vengan, pero hoy no los
+consume ninguno: Von Mises resulto ser una variante de Newton-Raphson y no el
+metodo de las potencias para autovalores.
 """
 from __future__ import annotations
 
@@ -44,12 +47,22 @@ class FieldKind(str, Enum):
 
 @dataclass(frozen=True)
 class InputField:
+    """Un campo del formulario. La interfaz lo dibuja sin saber que metodo es.
+
+    `multiple` significa que el campo acepta ademas una lista de valores de ese
+    mismo `kind`. Lo necesita Runge-Kutta con sistemas (R9): `fxy` puede ser una
+    expresion o varias, y `y0` un numero o varios. Sin esto la interfaz dibuja
+    una sola casilla y el soporte de sistemas queda inalcanzable desde la
+    pantalla, aunque el nucleo lo tenga.
+    """
+
     name: str
     label: str
     kind: FieldKind
     default: Any = None
     help: str = ""
     required: bool = True
+    multiple: bool = False
 
 
 @dataclass(frozen=True)

@@ -402,3 +402,42 @@ def test_la_grafica_de_edo_no_lleva_remuestreo():
     from core import plots
 
     assert plots.ode_solution([0, 0.1], [1, 1.1]).resample is None
+
+
+# ---------- decimals es formato, no calculo ----------
+
+CASOS_POR_METODO = {
+    "newton-raphson": {"fx": "x^3 - 2x - 5", "x0": 2.0},
+    "von-mises": {"fx": "exp(-x) - log(x)", "x0": 1.0},
+    "interpolacion-newton": {
+        "points": [[1.0, 0.0], [4.0, 1.386294], [6.0, 1.791759]],
+        "x": 2.0,
+    },
+    "runge-kutta": {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.1, "n": 5},
+}
+
+
+@pytest.mark.parametrize("slug, params", sorted(CASOS_POR_METODO.items()))
+def test_los_decimales_no_cambian_los_valores_calculados(slug, params, registro_limpio):
+    """Pedir menos decimales no puede degradar lo que se guarda.
+
+    Es la clase de discrepancia que no se ve mirando un carril solo: dos
+    implementaciones pueden pasar sus propias pruebas y aun asi entender
+    'decimals' de forma distinta. Redondear al mostrar es reversible;
+    redondear al guardar no.
+    """
+    from core.config import SolveConfig
+    from core.registry import load_methods
+
+    load_methods(force=True)
+    if slug not in {spec.slug for spec in all_methods()}:
+        pytest.skip(f"{slug} todavia no esta implementado en esta rama")
+
+    comun = {"max_iterations": 5, "stop_on_tolerance": False}
+    pocos = get(slug).solve(params, SolveConfig(decimals=2, **comun))
+    muchos = get(slug).solve(params, SolveConfig(decimals=10, **comun))
+
+    assert [it.values for it in pocos.iterations] == [
+        it.values for it in muchos.iterations
+    ]
+    assert pocos.result == muchos.result
