@@ -272,6 +272,39 @@ y una libreria de charts no sirve porque estan pensadas para series de datos, no
 para funciones. Sea cual sea la decision, tiene que funcionar **sin internet**:
 nada traido de un CDN.
 
+## Superficie HTTP completa
+
+Congelada. La interfaz programa contra esta lista sin esperar a que la API
+exista, y la API la implementa sin esperar a la interfaz.
+
+| Metodo y ruta | Devuelve |
+|---|---|
+| `GET /api/methods` | lista de `MethodSummary`, con sus `inputs` |
+| `GET /api/methods/{slug}` | un `MethodSummary` |
+| `POST /api/methods/{slug}/solve` | `SolveResponse` |
+| `POST /api/plot/sample` | `SampleResponse` |
+| `POST /api/methods/{slug}/export/{formato}` | archivo, `formato` es `csv` o `pdf` |
+| `GET /` y estaticos | lo que hay en `web/` |
+
+### Exportar
+
+Mismo cuerpo que `solve`. La API resuelve y devuelve el archivo, para que la
+tabla exportada sea exactamente la que se calculo y no una copia que la interfaz
+haya rearmado por su cuenta.
+
+- `csv`: `text/csv`. Cabecera con `i`, las `columns` del metodo y `error`. Los
+  numeros van **sin redondear**; redondear es cosa de la pantalla.
+- `pdf`: `application/pdf`. Metodo, funcion, parametros, la tabla de iteraciones
+  y el resultado. Se genera con `fpdf2`, que ya esta en `pyproject.toml`.
+
+Los dos responden con `Content-Disposition: attachment` y un nombre de archivo
+que incluya el slug del metodo.
+
+### Servir la interfaz
+
+`api/main.py` monta `web/` como estatico y sirve `web/index.html` en la raiz.
+Todo tiene que andar **sin internet**: nada de librerias traidas de un CDN.
+
 ## Errores
 
 Un fallo con causa matematica es `MethodError` y sale como **HTTP 422** con el

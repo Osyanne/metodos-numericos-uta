@@ -9,6 +9,7 @@ dependencies = [
   "pydantic>=2.9",
   "sympy>=1.13",
   "numpy>=2.0",
+  "fpdf2>=2.8",
 ]
 
 [project.optional-dependencies]
