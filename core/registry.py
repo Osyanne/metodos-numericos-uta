@@ -38,12 +38,16 @@ def clear() -> None:
 def load_methods(*, force: bool = False) -> None:
     """Importa core.methods, que auto-registra todo lo que encuentre.
 
-    Con force=True descarta los modulos ya importados antes de volver a
-    cargarlos. Hace falta despues de clear(): Python cachea los imports, asi
-    que un load_methods() normal despues de un clear() no vuelve a registrar
-    nada y el registro queda vacio para siempre.
+    Con force=True es una recarga completa: vacia el registro y vuelve a
+    importar todo desde los archivos.
+
+    Las dos mitades son necesarias. Sin descartar los modulos, Python devuelve
+    los del cache y no se vuelve a registrar nada, asi que despues de un
+    clear() el registro queda vacio para siempre. Y sin vaciar el registro, la
+    segunda recarga choca contra lo que ya estaba y revienta por slug duplicado.
     """
     if force:
+        _REGISTRY.clear()
         cacheados = [
             nombre
             for nombre in list(sys.modules)

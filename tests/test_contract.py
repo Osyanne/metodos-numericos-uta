@@ -168,6 +168,23 @@ def test_load_methods_registra_todo_lo_que_encuentra(registro_limpio):
     assert len(all_methods()) == len(modulos)
 
 
+def test_load_methods_force_es_una_recarga_completa(registro_limpio):
+    """force=True vacia el registro antes de releer los archivos.
+
+    Sin eso, dos recargas seguidas revientan por slug duplicado: la purga del
+    cache hace que los modulos se vuelvan a ejecutar y que sus register()
+    corran otra vez sobre un registro que todavia los tenia.
+    """
+    from core.registry import load_methods
+
+    register(_spec("fantasma"))
+    load_methods(force=True)
+
+    assert "fantasma" not in {s.slug for s in all_methods()}
+
+    load_methods(force=True)  # dos veces seguidas no puede fallar
+
+
 def test_load_methods_force_descarta_los_modulos_cacheados(registro_limpio):
     import sys
     import types as tipos_py
