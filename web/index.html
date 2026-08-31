@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Métodos Numéricos — UTA FISEI</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="cabecera">
+  <div>
+    <p class="eyebrow">UTA · FISEI · Software · Nivel 3</p>
+    <h1>Métodos Numéricos</h1>
+  </div>
+  <p class="subtitulo">Tabla completa de iteraciones, precisión ajustable y plano interactivo.</p>
+</header>
+
+<main class="disposicion">
+
+  <aside class="panel-lateral">
+    <section class="bloque">
+      <h2>Método</h2>
+      <select id="metodo" class="control"></select>
+      <p id="descripcion" class="campo-ayuda"></p>
+    </section>
+
+    <section class="bloque">
+      <h2>Datos</h2>
+      <div id="formulario"></div>
+    </section>
+
+    <section class="bloque">
+      <h2>Cálculo</h2>
+
+      <div class="campo">
+        <label class="campo-etiqueta" for="decimales">
+          Decimales <output id="decimales-valor">6</output>
+        </label>
+        <input id="decimales" class="control" type="range" min="2" max="12" value="6" step="1">
+        <p class="campo-ayuda">Sólo cambia cómo se muestra. No se recalcula nada.</p>
+      </div>
+
+      <div class="campo">
+        <label class="campo-etiqueta" for="iteraciones">Iteraciones máximas (n)</label>
+        <input id="iteraciones" class="control" type="number" min="1" max="10000" value="50">
+      </div>
+
+      <div class="campo">
+        <label class="campo-etiqueta" for="tolerancia">Tolerancia</label>
+        <input id="tolerancia" class="control" type="number" step="any" value="0.000001">
+      </div>
+
+      <div class="campo">
+        <label class="campo-etiqueta" for="criterio">Criterio de error</label>
+        <select id="criterio" class="control">
+          <option value="relativo_porcentual">Relativo porcentual</option>
+          <option value="relativo">Relativo</option>
+          <option value="absoluto">Absoluto</option>
+        </select>
+      </div>
+
+      <label class="casilla">
+        <input id="parar" type="checkbox" checked>
+        <span>Parar al alcanzar la tolerancia</span>
+      </label>
+      <p class="campo-ayuda">
+        Destildado, corre exactamente n iteraciones aunque ya haya convergido.
+      </p>
+    </section>
+
+    <div class="acciones">
+      <button id="resolver" class="boton boton-primario">Resolver</button>
+      <button id="comparar" class="boton">Comparar métodos</button>
+    </div>
+
+    <div class="acciones acciones-tenues">
+      <button id="exportar-csv" class="boton-tenue">Exportar CSV</button>
+      <button id="exportar-pdf" class="boton-tenue">Exportar PDF</button>
+    </div>
+  </aside>
+
+  <section class="panel-principal">
+    <p id="aviso" class="aviso" hidden></p>
+    <div id="resumen" class="resumen-caja"></div>
+
+    <nav class="pestanas">
+      <button id="ver-plano" class="pestana activa">Plano</button>
+      <button id="ver-tabla" class="pestana">Iteraciones</button>
+    </nav>
+
+    <div id="panel-plano" class="panel">
+      <div class="plano-barra">
+        <div id="leyenda" class="leyenda"></div>
+        <div class="plano-botones">
+          <button id="encuadrar" class="boton-tenue">Ajustar</button>
+          <button id="reiniciar-vista" class="boton-tenue">Vista inicial</button>
+        </div>
+      </div>
+      <div class="plano-caja">
+        <canvas id="plano"></canvas>
+      </div>
+      <p class="campo-ayuda">
+        Rueda para acercar, arrastrar para mover, doble clic para volver al inicio.
+        Al acercarte la curva se recalcula.
+      </p>
+      <div id="comparacion"></div>
+    </div>
+
+    <div id="panel-tabla" class="panel" hidden>
+      <div id="tabla" class="tabla-caja"></div>
+    </div>
+  </section>
+
+</main>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
