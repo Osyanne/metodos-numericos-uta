@@ -13,6 +13,15 @@ const COLORES = [
 const MARGEN = { izq: 56, der: 16, arriba: 16, abajo: 34 };
 const ESPERA_REMUESTREO = 150;
 
+// Zoom proporcional a cuanto giro la rueda, no un salto fijo por evento.
+// Un mouse manda un evento por muesca, con deltaY cerca de 100; un trackpad
+// manda decenas de eventos por gesto, con deltaY de 3 o 4. Con un factor fijo
+// el trackpad multiplicaba el zoom una vez por evento y se volvia inmanejable.
+const SENSIBILIDAD = 0.0012;   // exp(100 * 0.0012) = 1.13 por muesca de mouse
+const FACTOR_MAX = 1.15;       // tope por evento, para que nada pegue un salto
+const ANCHO_MINIMO = 1e-9;     // mas cerca, los flotantes dejan de distinguir
+const ANCHO_MAXIMO = 1e12;
+
 export class Plano {
   constructor(canvas, { alMuestrear } = {}) {
     this.canvas = canvas;
@@ -117,8 +126,14 @@ export class Plano {
       e.preventDefault();
       const [mx, my] = this._posicion(e);
       const [wx, wy] = this._aMundo(mx, my);
-      const factor = e.deltaY < 0 ? 0.85 : 1 / 0.85;
+      const factor = this._factorZoom(e);
       const v = this.vista;
+
+      const anchoNuevo = (v.x1 - v.x0) * factor;
+      const altoNuevo = (v.y1 - v.y0) * factor;
+      const fueraDeRango = (n) => n < ANCHO_MINIMO || n > ANCHO_MAXIMO;
+      if (fueraDeRango(anchoNuevo) || fueraDeRango(altoNuevo)) return;
+
       // El zoom se centra en el cursor, no en el origen.
       this.vista = {
         x0: wx + (v.x0 - wx) * factor,
@@ -164,6 +179,15 @@ export class Plano {
     c.addEventListener("pointerleave", () => { this.cursor = null; this._pintar(); });
 
     c.addEventListener("dblclick", () => this.reiniciarVista());
+  }
+
+  // deltaMode dice en que unidad viene deltaY: 0 pixeles, 1 lineas, 2 paginas.
+  // Firefox suele mandar lineas donde Chrome manda pixeles, y sin normalizar
+  // el mismo gesto zoomea muy distinto en cada navegador.
+  _factorZoom(e) {
+    const escala = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+    const factor = Math.exp(e.deltaY * escala * SENSIBILIDAD);
+    return Math.min(FACTOR_MAX, Math.max(1 / FACTOR_MAX, factor));
   }
 
   _posicion(e) {

@@ -38,6 +38,21 @@ def create_app(cargar_metodos: bool = True) -> FastAPI:
             content={"detail": "Error interno del servidor."},
         )
 
+    @application.middleware("http")
+    async def sin_cache_para_estaticos(request: Request, call_next):
+        """Obliga al navegador a revalidar los archivos de web/.
+
+        Sin esto, el navegador se queda con la version que tenga en cache y
+        editar un .js no cambia nada en pantalla, que es de las cosas mas
+        confusas que hay al desarrollar. `no-cache` no impide cachear: obliga a
+        preguntar antes de usar, asi que las respuestas siguen siendo 304 y no
+        se transfiere nada de mas.
+        """
+        respuesta = await call_next(request)
+        if not request.url.path.startswith("/api"):
+            respuesta.headers["Cache-Control"] = "no-cache"
+        return respuesta
+
     # Se monta al final para que /api conserve prioridad. check_dir=False hace
     # que la app pueda construirse aunque el otro carril aun no haya creado web/.
     application.mount(
