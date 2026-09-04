@@ -1,6 +1,6 @@
 # HANDOFF — Aplicativo de Métodos Numéricos (UTA-FISEI, Software N3)
 
-_Actualizado: 2026-08-29 · rama `main` · último commit `3acb1ee` · árbol limpio, todo pusheado_
+_Actualizado: 2026-09-03 · rama `main` · último commit `9bf9834`_
 
 ## Objetivo
 
@@ -150,3 +150,6 @@ Después de eso: el informe y el manual (issue #10).
 - Los worktrees `../metodos-numericos-uta-claude` y `../metodos-numericos-uta-codex`
   están **ya integrados en `main`** y no contienen nada que no esté acá. Se pueden
   retirar con `git worktree remove`.
+
+<!-- handoff:auto -->
+<!-- /handoff:auto -->
