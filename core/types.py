@@ -75,9 +75,18 @@ class Column:
 
 
 class StopReason(str, Enum):
+    """Por que se detuvo el metodo.
+
+    COMPLETED es para los metodos que recorren una malla fija y no persiguen
+    ninguna tolerancia, como Runge-Kutta: terminar los n pasos es el final
+    normal, no un fracaso. Reportarlo como MAX_ITERATIONS hace que la interfaz
+    diga "sin alcanzar la tolerancia" sobre un metodo que nunca la busco.
+    """
+
     TOLERANCE = "tolerancia_alcanzada"
     MAX_ITERATIONS = "n_iteraciones_completadas"
     EXACT = "solucion_exacta"
+    COMPLETED = "integracion_completada"
     DIVERGED = "divergio"
     FAILED = "fallo"
 

@@ -168,7 +168,19 @@ Reglas duras:
   que los convierte en `null`. La interfaz muestra `null` como `—` y busca la
   explicacion en `stop_reason` y `notes`.
 - `stop_reason` es uno de: `tolerancia_alcanzada`, `n_iteraciones_completadas`,
-  `solucion_exacta`, `divergio`, `fallo`.
+  `solucion_exacta`, `integracion_completada`, `divergio`, `fallo`.
+- **`integracion_completada`** es el final normal de un metodo de malla fija
+  (Runge-Kutta): recorrio sus n pasos y ninguno perdio la finitud. No es un
+  aviso: la interfaz lo muestra en verde, igual que `tolerancia_alcanzada`.
+  `n_iteraciones_completadas` queda para los metodos iterativos que si
+  persiguen una tolerancia y se quedaron sin iteraciones antes de alcanzarla.
+- **Un metodo de paso unico no reporta error por iteracion.** Runge-Kutta manda
+  `error: null` en todas las filas y explica por que en `notes`. La diferencia
+  entre `y(i+1)` e `y(i)` mide cuanto cambio la solucion, no cuanto se equivoca,
+  y con una solucion que cruza el cero llega a valores absurdos.
+- **Si el metodo diverge no hay raiz, tampoco en la grafica.** `result.raiz` y
+  `plot.series.root` valen los dos `null`. Marcar el ultimo iterado sobre el eje
+  x lo presenta como una raiz que el metodo nunca encontro.
 
 ## Graficas: un plano interactivo, no una imagen
 
