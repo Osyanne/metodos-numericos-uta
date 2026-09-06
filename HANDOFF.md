@@ -1,6 +1,6 @@
 # HANDOFF — Aplicativo de Métodos Numéricos (UTA-FISEI, Software N3)
 
-_Actualizado: 2026-09-05 · rama `claude/correctitud-informe-y-release` · **sin mergear a `main`**_
+_Actualizado: 2026-09-06 · rama `main` · árbol limpio_
 
 ## Objetivo
 
@@ -13,14 +13,13 @@ un extra: es requisito explícito del docente.
 
 ## Estado
 
-**Todo el trabajo está hecho y verificado, en una rama sin mergear.**
+**Todo el trabajo está hecho, verificado y mergeado a `main`** (merge `4aa4c30`).
 
 | | |
 |---|---|
-| Pruebas de Python | **197 en verde** |
-| Pruebas de navegador (Playwright) | **35 en verde** |
+| Pruebas de Python | **197 en verde**, corridas sobre `main` |
+| Pruebas de navegador (Playwright) | **35 en verde**, corridas sobre `main` |
 | Instalación en limpio | probada: clon nuevo, entorno virgen, todo funcionando |
-| `main` | intacto en `e52db76` |
 
 Documentación completa en `docs/`: [ESPECIFICACION](docs/ESPECIFICACION.md),
 [CONTRATO](docs/CONTRATO.md), [VALIDACION](docs/VALIDACION.md),
@@ -47,8 +46,9 @@ limpiaba, y la exportación que perdía la causa del servidor.
 
 ### Lo que falta
 
-1. **Mergear a `main`.** La rama tiene 11 commits y nadie los revisó.
-2. Confirmar las dos preguntas abiertas con el docente (abajo).
+1. Confirmar las dos preguntas abiertas con el docente (abajo).
+2. Cerrar los issues #10 y #12, que quedaron abiertos porque su trabajo todavía
+   no estaba en `main` cuando se cerraron los demás. Ahora sí lo está.
 3. Los métodos 5 a 10, para el resto del semestre.
 
 ## Decisiones tomadas
@@ -113,7 +113,7 @@ limpiaba, y la exportación que perdía la causa del servidor.
 ## Cómo verificar
 
 ```bash
-cd "C:/Users/osyanne/Documents/GitHub/metodos-numericos-uta-claude"
+cd "C:/Users/osyanne/Documents/GitHub/metodos-numericos-uta"
 python -m pytest tests/ --ignore=tests/e2e     # 197 en verde
 npx playwright test                            # 35 en verde
 ```
@@ -124,9 +124,11 @@ Para regenerar las capturas del manual, con la interfaz cambiada:
 CAPTURAS=1 npx playwright test capturas
 ```
 
-**Ojo con un flake.** En una de cuatro corridas de Playwright falló una prueba y
-en las otras tres pasó todo. No se identificó cuál. Si vuelve a aparecer, correr
-con `--repeat-each=3` para aislarla antes de darla por buena.
+**Ojo con un flake.** Aparece en unas 2 de cada 8 corridas de Playwright: falla
+una prueba y en el resto pasa todo. **Todavía sin identificar** — las dos veces
+que apareció, las corridas siguientes salieron limpias y no se alcanzó a
+capturar el nombre. Para aislarlo, correr `npx playwright test --repeat-each=5`
+y guardar la salida a un archivo, en vez de filtrarla por tubería.
 
 Las pruebas de navegador necesitan `npm install` y `npx playwright install
 chromium`. Los navegadores ya descargados están en el worktree de Codex; se
@@ -134,11 +136,14 @@ pueden reutilizar con `PLAYWRIGHT_BROWSERS_PATH`.
 
 ## Próximo paso
 
-**Revisar y mergear la rama `claude/correctitud-informe-y-release` a `main`.**
-Son 11 commits que nadie miró. `main` sigue en `e52db76`.
+**Preguntarle al docente las dos cosas de abajo**, y aislar el flake de
+Playwright. Después, los métodos 5 a 10 para el resto del semestre: la
+arquitectura para agregarlos está ejercitada con una prueba que la usa de
+verdad.
 
-Está también la rama `codex/interfaz-y-pruebas-navegador`, ya fusionada dentro
-de la anterior: no hace falta mergearla aparte.
+Las ramas `claude/correctitud-informe-y-release` y
+`codex/interfaz-y-pruebas-navegador` ya están mergeadas y se pueden borrar,
+junto con sus worktrees (`git worktree remove`).
 
 ## Preguntas abiertas al docente
 
