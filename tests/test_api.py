@@ -386,18 +386,26 @@ def test_create_app_carga_los_metodos_reales_cuando_se_solicita():
     } <= {method.slug for method in all_methods()}
 
 
-def test_app_se_construye_aunque_web_aun_no_exista(
+def test_sin_la_carpeta_web_la_app_falla_fuerte_en_vez_de_servir_una_api_muda(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Antes se construia igual y arrancaba sin interfaz.
+
+    `check_dir=False` existia porque la interfaz la escribia otro carril y la
+    app tenia que poder construirse antes de que `web/` existiera. Ese andamio
+    ya no hace falta, y lo que dejaba era peor: una instalacion a la que le
+    falta `web/` levanta, responde la API y no muestra nada, y el que la corre
+    tiene que adivinar por que la pantalla esta en blanco. Que reviente al
+    arrancar, diciendo que falta.
+    """
     from api import main
 
     web_ausente = Path(__file__).resolve().parent / "directorio-web-inexistente"
     assert not web_ausente.exists()
     monkeypatch.setattr(main, "WEB_DIR", web_ausente)
 
-    application = main.create_app(cargar_metodos=False)
-
-    assert application is not None
+    with pytest.raises(RuntimeError, match="web"):
+        main.create_app(cargar_metodos=False)
 
 
 def test_raiz_y_archivos_estaticos_salen_de_web(

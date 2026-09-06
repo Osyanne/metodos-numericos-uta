@@ -53,11 +53,22 @@ def create_app(cargar_metodos: bool = True) -> FastAPI:
             respuesta.headers["Cache-Control"] = "no-cache"
         return respuesta
 
-    # Se monta al final para que /api conserve prioridad. check_dir=False hace
-    # que la app pueda construirse aunque el otro carril aun no haya creado web/.
+    # La interfaz no es opcional: sin ella el aplicativo es una API que nadie
+    # va a usar a mano en una demostracion. Si falta, hay que decirlo al
+    # arrancar. Antes se montaba con check_dir=False, que dejaba levantar el
+    # servidor igual y servir una pantalla en blanco sin explicar nada; ese
+    # permiso existia solo mientras la interfaz la escribia otro carril.
+    if not WEB_DIR.is_dir():
+        raise RuntimeError(
+            f"No se encuentra la carpeta web/ en {WEB_DIR}. El aplicativo se "
+            "ejecuta desde una copia del repositorio: revisa la guia de "
+            "instalacion del README."
+        )
+
+    # Se monta al final para que /api conserve prioridad.
     application.mount(
         "/",
-        StaticFiles(directory=str(WEB_DIR), html=True, check_dir=False),
+        StaticFiles(directory=str(WEB_DIR), html=True),
         name="web",
     )
     return application
