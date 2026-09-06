@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
+import { existsSync } from "node:fs";
 
 process.env.PLAYWRIGHT_BROWSERS_PATH ??= fileURLToPath(
   new URL("./tests/e2e/artifacts/browsers", import.meta.url),
@@ -10,10 +11,16 @@ process.env.PLAYWRIGHT_BROWSERS_PATH ??= fileURLToPath(
 // traves de cmd.exe en Windows, y ahi ".venv/Scripts/python.exe" con barras
 // normales no se reconoce como comando.
 const raiz = fileURLToPath(new URL(".", import.meta.url));
-const python = resolve(
+const enVenv = resolve(
   raiz,
   process.platform === "win32" ? ".venv/Scripts/python.exe" : ".venv/bin/python",
 );
+// En CI las dependencias se instalan en el Python del runner y no hay .venv en
+// el arbol. Ahi se usa el del PATH; en local se prefiere el del entorno virtual
+// para no depender de que este activado.
+const python = existsSync(enVenv)
+  ? enVenv
+  : (process.platform === "win32" ? "python" : "python3");
 
 export default defineConfig({
   testDir: "./tests/e2e",

@@ -6,16 +6,80 @@ on:
   pull_request:
 
 jobs:
-  test:
+  # El aplicativo se demuestra en el laboratorio, sobre Windows, y se desarrolla
+  # ahi. Correr solo en Linux dejaba sin cubrir justo la maquina donde tiene que
+  # funcionar el dia de la entrega.
+  pruebas:
+    name: Pruebas (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Pruebas
+        run: pytest --ignore=tests/e2e
+
+  # No alcanza con que las pruebas pasen en un arbol que ya tiene todo: hay que
+  # verificar que un clon limpio arranque. Un import sin declarar o un archivo
+  # de web/ sin commitear no se notan en la maquina donde se escribio el codigo.
+  instalacion-limpia:
+    name: Clon limpio arranca y sirve la interfaz
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Instalar solo lo declarado
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Arrancar el servidor y pedirle la interfaz
+        run: |
+          python -m uvicorn api.main:app --port 8000 &
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/api/methods >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000/ | grep -q '<title>' \
+            || { echo "La raiz no devolvio la interfaz"; exit 1; }
+          curl -sf http://127.0.0.1:8000/app.js >/dev/null \
+            || { echo "Falta un modulo de web/"; exit 1; }
+          test "$(curl -s http://127.0.0.1:8000/api/methods | grep -o 'slug' | wc -l)" -ge 4
+
+  navegador:
+    name: Pruebas de interfaz (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Pruebas
-        run: pytest
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Pruebas de navegador
+        run: npx playwright test
+      - name: Guardar el reporte si algo fallo
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-playwright
+          path: tests/e2e/artifacts/report
+          retention-days: 7
