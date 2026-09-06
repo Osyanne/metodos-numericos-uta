@@ -7,7 +7,6 @@ from typing import Any
 
 from core import plots
 from core.config import SolveConfig
-from core.errors import approx_error
 from core.expression import Expression, parse
 from core.registry import register
 from core.types import (
@@ -66,7 +65,6 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
             )
 
         x_nuevo = x0 + paso * h
-        error = _error_estado(siguiente, estado, config)
         iterations.append(
             Iteration(
                 n=paso,
@@ -76,7 +74,7 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
                     escalar,
                     config.decimals,
                 ),
-                error=error,
+                error=None,
             )
         )
         x_actual = x_nuevo
@@ -109,13 +107,23 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
             "orden": orden,
         },
         converged=True,
-        stop_reason=StopReason.MAX_ITERATIONS,
+        stop_reason=StopReason.COMPLETED,
         decimals=config.decimals,
         plot=plots.ode_solution(
             xs,
             componentes,
             title=f"Runge-Kutta de orden {orden}",
         ),
+        notes=[
+            "Runge-Kutta avanza sobre una malla de paso fijo, asi que no produce "
+            "una estimacion de error por iteracion: la columna va vacia. La "
+            "diferencia entre y(i+1) e y(i) mide cuanto cambio la solucion entre "
+            "pasos, no cuanto se equivoca, y en una solucion que cruza el cero "
+            "llega a valores absurdos. Para estimar la exactitud hay que resolver "
+            "otra vez con la mitad del paso y comparar.",
+            f"Malla de {n} pasos de h = {h:g}, desde x = {x0:g} hasta x = "
+            f"{x_actual:g}.",
+        ],
     )
 
 
@@ -338,18 +346,6 @@ def _paso_rk4(
         valor + h * (p1 + 2.0 * p2 + 2.0 * p3 + p4) / 6.0
         for valor, p1, p2, p3, p4 in zip(estado, k1, k2, k3, k4, strict=True)
     ]
-
-
-def _error_estado(
-    actual: Sequence[float],
-    anterior: Sequence[float],
-    config: SolveConfig,
-) -> float:
-    errores = [
-        approx_error(valor, previo, config.error_criterion)
-        for valor, previo in zip(actual, anterior, strict=True)
-    ]
-    return max(error for error in errores if error is not None)
 
 
 def _valores_fila(

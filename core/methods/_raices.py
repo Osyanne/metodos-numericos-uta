@@ -197,7 +197,7 @@ def _armar(
         converged=convergio,
         stop_reason=razon,
         decimals=cfg.decimals,
-        plot=_grafica(f, x0, raiz, iteraciones, titulo),
+        plot=_grafica(f, x0, raiz, iteraciones, titulo, marcar_raiz=not diverge),
         notes=notas,
     )
 
@@ -211,6 +211,8 @@ def _grafica(
     raiz: float,
     iteraciones: list[Iteration],
     titulo: str,
+    *,
+    marcar_raiz: bool = True,
 ) -> PlotSpec:
     """Muestrea f alrededor de donde ocurrio todo, para el plano interactivo."""
     visitados = [
@@ -234,7 +236,7 @@ def _grafica(
     return plots.function_root(
         xs,
         ys,
-        root=raiz if math.isfinite(raiz) else None,
+        root=raiz if (marcar_raiz and math.isfinite(raiz)) else None,
         iterates=[(it.n, it.values["xi"], it.values["fxi"]) for it in iteraciones],
         title=titulo,
         resample=Resample(expression=str(f), domain=(x_min, x_max)),

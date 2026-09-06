@@ -121,6 +121,27 @@ def test_el_ejercicio_de_la_diapositiva_10_diverge():
     assert any("diverge" in n or "alejo" in n for n in resultado.notes), resultado.notes
 
 
+def test_cuando_diverge_la_grafica_tampoco_marca_una_raiz():
+    """El resumen dice que no hay raiz; el plano tiene que decir lo mismo.
+
+    Con el ejercicio del docente la sucesion se va a -1.6e+301. Ese numero
+    sigue siendo finito, asi que marcarlo sobre el eje x lo presenta como la
+    raiz que el metodo nunca encontro, justo en el ejercicio que el docente va
+    a revisar. Si `result["raiz"]` es None, `plot.series["root"]` tambien.
+    """
+    resultado = resolver(
+        {"fx": VON_MISES_EJERCICIO["fx"], "x0": VON_MISES_EJERCICIO["x0"]},
+        max_iterations=200,
+    )
+
+    assert resultado.result["raiz"] is None
+    assert resultado.plot is not None
+    assert resultado.plot.series["root"] is None, (
+        "el plano marca una raiz que el metodo no encontro: "
+        f"{resultado.plot.series['root']}"
+    )
+
+
 def test_newton_raphson_si_resuelve_ese_mismo_ejercicio():
     """Contraste util para el informe: el problema es del metodo, no del enunciado.
 
