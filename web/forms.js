@@ -17,11 +17,17 @@ export class Formulario {
     this.campos = [];
   }
 
-  dibujar(metodo) {
+  dibujar(metodo, params) {
     this.contenedor.innerHTML = "";
     this.campos = [];
     for (const campo of metodo.inputs) {
-      const control = crearControl(campo);
+      // Un ejercicio cargado reemplaza todos los datos, incluso opcionales
+      // vacios. Nunca se conserva una derivada o una fila del ejercicio previo.
+      const definicion = params === undefined ? campo : {
+        ...campo,
+        default: params[campo.name] ?? (campo.kind === "points" ? [] : null),
+      };
+      const control = crearControl(definicion);
       this.campos.push(control);
       this.contenedor.append(control.elemento);
     }
@@ -61,14 +67,46 @@ function etiquetaDe(campo) {
 function envoltorio(campo, control) {
   const div = document.createElement("div");
   div.className = "campo";
-  div.append(etiquetaDe(campo), control);
+  const etiqueta = etiquetaDe(campo);
+  const id = `campo-${campo.name}`;
+  if (control.matches("input, textarea, select")) {
+    control.id = id;
+    etiqueta.htmlFor = id;
+  } else {
+    etiqueta.id = `${id}-etiqueta`;
+    control.setAttribute("role", "group");
+    control.setAttribute("aria-labelledby", etiqueta.id);
+  }
+  div.append(etiqueta, control);
   if (campo.help) {
     const ayuda = document.createElement("p");
     ayuda.className = "campo-ayuda";
+    ayuda.id = `${id}-ayuda`;
     ayuda.textContent = campo.help;
+    control.setAttribute("aria-describedby", ayuda.id);
     div.append(ayuda);
   }
   return div;
+}
+
+function numero(bruto, etiqueta, entero = false) {
+  const n = Number(bruto);
+  if (!Number.isFinite(n)) {
+    throw new Error(`${etiqueta} tiene que ser un numero finito.`);
+  }
+  if (entero && !Number.isInteger(n)) {
+    throw new Error(`${etiqueta} tiene que ser un entero, sin decimales.`);
+  }
+  return n;
+}
+
+function leerTexto(input, etiqueta) {
+  // Un input numerico invalido (p. ej. 1e309) puede exponerse como value="".
+  // Su estado badInput lo distingue de un campo opcional que se dejo vacio.
+  if (input.validity.badInput) {
+    throw new Error(`${etiqueta} tiene que ser un numero finito.`);
+  }
+  return input.value.trim();
 }
 
 function crearControl(campo) {
@@ -96,12 +134,10 @@ function controlSimple(campo) {
     definicion: campo,
     elemento: envoltorio(campo, input),
     leer() {
-      const bruto = input.value.trim();
+      const bruto = leerTexto(input, campo.label);
       if (bruto === "") return null;
       if (campo.kind === "expression") return bruto;
-      const n = Number(bruto);
-      if (Number.isNaN(n)) throw new Error(`${campo.label} tiene que ser un numero.`);
-      return campo.kind === "integer" ? Math.round(n) : n;
+      return numero(bruto, campo.label, campo.kind === "integer");
     },
   };
 }
@@ -122,6 +158,7 @@ function controlLista(campo) {
   agregar.type = "button";
   agregar.className = "boton-tenue boton-agregar";
   agregar.textContent = "+ agregar";
+  agregar.setAttribute("aria-label", `Agregar valor a ${campo.label}`);
 
   const nuevaFila = (valor = "") => {
     const fila = document.createElement("div");
@@ -158,7 +195,10 @@ function controlLista(campo) {
     todas.forEach((fila, i) => {
       const indice = fila.querySelector(".lista-indice");
       indice.textContent = todas.length > 1 ? `${i + 1}` : "";
+      fila.querySelector("input").setAttribute("aria-label",
+        todas.length > 1 ? `${campo.label}, valor ${i + 1}` : campo.label);
       const quitar = fila.querySelector(".boton-quitar");
+      quitar.setAttribute("aria-label", `Quitar valor ${i + 1} de ${campo.label}`);
       const sobra = todas.length > 1;
       quitar.style.visibility = sobra ? "visible" : "hidden";
       quitar.disabled = !sobra;
@@ -166,7 +206,8 @@ function controlLista(campo) {
   };
 
   agregar.addEventListener("click", () => nuevaFila());
-  nuevaFila(campo.default ?? "");
+  const iniciales = Array.isArray(campo.default) ? campo.default : [campo.default ?? ""];
+  for (const valor of iniciales.length ? iniciales : [""]) nuevaFila(valor);
   caja.append(filas, agregar);
 
   return {
@@ -174,14 +215,15 @@ function controlLista(campo) {
     elemento: envoltorio(campo, caja),
     leer() {
       const valores = [...filas.querySelectorAll("input")]
-        .map((i) => i.value.trim())
-        .filter((v) => v !== "");
-      if (!valores.length) return null;
+        .map((input, indice) => leerTexto(input, `${campo.label}, valor ${indice + 1}`));
+      if (valores.every(valor => valor === "")) return null;
+      const incompleta = valores.indexOf("");
+      if (incompleta !== -1) {
+        throw new Error(`${campo.label}: completa el valor de la fila ${incompleta + 1} o elimina esa fila.`);
+      }
       const convertir = (v) => {
         if (campo.kind === "expression") return v;
-        const n = Number(v);
-        if (Number.isNaN(n)) throw new Error(`${campo.label}: '${v}' no es un numero.`);
-        return campo.kind === "integer" ? Math.round(n) : n;
+        return numero(v, campo.label, campo.kind === "integer");
       };
       const lista = valores.map(convertir);
       return lista.length === 1 ? lista[0] : lista;
@@ -203,11 +245,7 @@ function controlVector(campo) {
     leer() {
       const bruto = input.value.trim();
       if (bruto === "") return null;
-      return bruto.split(/[,\s]+/).filter(Boolean).map((v) => {
-        const n = Number(v);
-        if (Number.isNaN(n)) throw new Error(`${campo.label}: '${v}' no es un numero.`);
-        return n;
-      });
+      return bruto.split(/[,\s]+/).filter(Boolean).map(v => numero(v, campo.label));
     },
   };
 }
@@ -223,6 +261,15 @@ function controlPuntos(campo) {
   tabla.innerHTML = "<thead><tr><th>x</th><th>y</th><th></th></tr></thead>";
   const cuerpo = document.createElement("tbody");
   tabla.append(cuerpo);
+
+  const renumerar = () => {
+    [...cuerpo.children].forEach((tr, indice) => {
+      const [x, y] = tr.querySelectorAll("input");
+      x.setAttribute("aria-label", `x del punto ${indice + 1}`);
+      y.setAttribute("aria-label", `y del punto ${indice + 1}`);
+      tr.querySelector("button").setAttribute("aria-label", `Quitar punto ${indice + 1}`);
+    });
+  };
 
   const nuevaFila = (x = "", y = "") => {
     const tr = document.createElement("tr");
@@ -241,10 +288,14 @@ function controlPuntos(campo) {
     quitar.type = "button";
     quitar.className = "boton-tenue boton-quitar";
     quitar.textContent = "×";
-    quitar.addEventListener("click", () => tr.remove());
+    quitar.addEventListener("click", () => {
+      tr.remove();
+      renumerar();
+    });
     td.append(quitar);
     tr.append(td);
     cuerpo.append(tr);
+    renumerar();
   };
 
   const agregar = document.createElement("button");
@@ -253,7 +304,7 @@ function controlPuntos(campo) {
   agregar.textContent = "+ punto";
   agregar.addEventListener("click", () => nuevaFila());
 
-  const iniciales = Array.isArray(campo.default) && campo.default.length
+  const iniciales = Array.isArray(campo.default)
     ? campo.default
     : [[1, 0], [4, 1.386294], [6, 1.791759]];
   for (const [x, y] of iniciales) nuevaFila(x, y);
@@ -265,14 +316,16 @@ function controlPuntos(campo) {
     elemento: envoltorio(campo, caja),
     leer() {
       const puntos = [];
-      for (const tr of cuerpo.children) {
+      for (const [indice, tr] of [...cuerpo.children].entries()) {
         const [ex, ey] = tr.querySelectorAll("input");
-        if (ex.value.trim() === "" && ey.value.trim() === "") continue;
-        const x = Number(ex.value);
-        const y = Number(ey.value);
-        if (Number.isNaN(x) || Number.isNaN(y)) {
-          throw new Error("Hay un punto con un valor que no es numero.");
+        const xTexto = leerTexto(ex, `La x del punto ${indice + 1}`);
+        const yTexto = leerTexto(ey, `La y del punto ${indice + 1}`);
+        if (xTexto === "" && yTexto === "") continue;
+        if (xTexto === "" || yTexto === "") {
+          throw new Error(`El punto ${indice + 1} esta incompleto: escribe ambas coordenadas x e y, o elimina la fila.`);
         }
+        const x = numero(xTexto, `La x del punto ${indice + 1}`);
+        const y = numero(yTexto, `La y del punto ${indice + 1}`);
         puntos.push([x, y]);
       }
       return puntos.length ? puntos : null;
@@ -299,11 +352,7 @@ function controlMatriz(campo) {
       const bruto = area.value.trim();
       if (bruto === "") return null;
       const filas = bruto.split("\n").map((linea) =>
-        linea.trim().split(/[,\s]+/).filter(Boolean).map((v) => {
-          const n = Number(v);
-          if (Number.isNaN(n)) throw new Error(`En la matriz, '${v}' no es un numero.`);
-          return n;
-        }),
+        linea.trim().split(/[,\s]+/).filter(Boolean).map(v => numero(v, campo.label)),
       );
       const ancho = filas[0].length;
       if (filas.some((f) => f.length !== ancho)) {
