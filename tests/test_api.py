@@ -374,12 +374,16 @@ def test_create_app_carga_los_metodos_reales_cuando_se_solicita():
 
     create_app(cargar_metodos=True)
 
-    assert {method.slug for method in all_methods()} == {
+    # Contencion, no igualdad: los cuatro del primer parcial tienen que estar,
+    # pero el docente pidio unos diez a lo largo del semestre. Con una igualdad
+    # exacta, agregar el quinto metodo rompe esta prueba, y eso contradice lo
+    # que la arquitectura promete. Ver tests/test_extensibilidad.py.
+    assert {
         "newton-raphson",
         "von-mises",
         "interpolacion-newton",
         "runge-kutta",
-    }
+    } <= {method.slug for method in all_methods()}
 
 
 def test_app_se_construye_aunque_web_aun_no_exista(
