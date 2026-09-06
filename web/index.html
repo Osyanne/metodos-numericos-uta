@@ -21,12 +21,17 @@
   <aside class="panel-lateral">
     <section class="bloque">
       <h2>Método</h2>
-      <select id="metodo" class="control"></select>
+      <select id="metodo" class="control" aria-label="Método"></select>
       <p id="descripcion" class="campo-ayuda"></p>
     </section>
 
     <section class="bloque">
       <h2>Datos</h2>
+      <div class="campo">
+        <label class="campo-etiqueta" for="preset">Ejercicio de ejemplo</label>
+        <select id="preset" class="control" aria-describedby="preset-descripcion"></select>
+        <p id="preset-descripcion" class="campo-ayuda"></p>
+      </div>
       <div id="formulario"></div>
     </section>
 
@@ -81,7 +86,7 @@
   </aside>
 
   <section class="panel-principal">
-    <p id="aviso" class="aviso" hidden></p>
+    <p id="aviso" class="aviso" role="alert" hidden></p>
     <div id="resumen" class="resumen-caja"></div>
 
     <nav class="pestanas">
@@ -98,10 +103,11 @@
         </div>
       </div>
       <div class="plano-caja">
-        <canvas id="plano"></canvas>
+        <canvas id="plano" role="img" aria-label="Plano cartesiano interactivo" aria-describedby="plano-ayuda"></canvas>
       </div>
-      <p class="campo-ayuda">
+      <p id="plano-ayuda" class="campo-ayuda">
         Rueda para acercar, arrastrar para mover, doble clic para volver al inicio.
+        Con el plano enfocado: flechas para mover, +/− para zoom y Home para vista inicial.
         Al acercarte la curva se recalcula.
       </p>
       <div id="comparacion"></div>

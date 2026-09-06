@@ -57,6 +57,26 @@ def test_una_raiz_exacta_se_reporta_como_exacta():
     assert resultado.result["raiz"] == pytest.approx(2.0)
 
 
+def test_una_raiz_exacta_no_recorta_las_n_iteraciones_pedidas():
+    """R5: con stop_on_tolerance en False corren las n iteraciones igual.
+
+    Ese es el contrato entero de la bandera: "corre exactamente n iteraciones
+    aunque ya haya convergido". Caer justo sobre la raiz es un caso mas de "ya
+    convergio", no una excepcion: el docente que pide cinco iteraciones tiene
+    que ver cinco filas. La sucesion se queda quieta en la raiz, que es
+    exactamente lo que hace el metodo, y la nota lo dice.
+    """
+    resultado = resolver(
+        {"fx": "x^2 - 4", "x0": 2.0}, max_iterations=5, stop_on_tolerance=False
+    )
+
+    assert len(resultado.iterations) == 5
+    assert all(fila.values["xi"] == pytest.approx(2.0) for fila in resultado.iterations)
+    assert all(fila.values["fxi"] == 0.0 for fila in resultado.iterations)
+    assert resultado.stop_reason is StopReason.EXACT
+    assert resultado.converged
+
+
 # ---------- la derivada ----------
 
 def test_deriva_sola_y_lo_dice():

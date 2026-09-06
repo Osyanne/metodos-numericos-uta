@@ -70,6 +70,9 @@ const MOTIVO = {
   tolerancia_alcanzada: ["ok", "Alcanzó la tolerancia"],
   n_iteraciones_completadas: ["aviso", "Completó las n iteraciones sin alcanzar la tolerancia"],
   solucion_exacta: ["ok", "Solución exacta"],
+  // Un metodo de malla fija termina cuando recorre sus n pasos. Eso es el final
+  // normal, en verde: no persigue ninguna tolerancia que pudiera no alcanzar.
+  integracion_completada: ["ok", "Integración completada"],
   divergio: ["mal", "El método diverge"],
   fallo: ["mal", "Falló"],
 };

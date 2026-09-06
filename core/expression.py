@@ -77,13 +77,18 @@ class Expression:
             )
         try:
             resultado = self._funcion(*(valores[v] for v in self.variables))
+            # La conversion va DENTRO del try. Una expresion valida para SymPy
+            # puede evaluarse a un complejo (sqrt(-1) se simplifica a I), y ahi
+            # float() levanta TypeError. Afuera, eso sale por HTTP como un 500
+            # con traceback en vez del mensaje explicado que recibe cualquier
+            # otro error matematico.
+            numero = float(resultado)
         except (ValueError, ZeroDivisionError, OverflowError, TypeError) as exc:
             raise MethodError(
                 f"No se puede evaluar {self.texto} en "
                 f"{self._punto(valores)}: {self._causa(exc)}."
             ) from exc
 
-        numero = float(resultado)
         if not math.isfinite(numero):
             raise MethodError(
                 f"{self.texto} no esta definida en {self._punto(valores)}: el "

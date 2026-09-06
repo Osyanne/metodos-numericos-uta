@@ -112,15 +112,31 @@ def resolver(
             break
 
         if fxi == 0.0:
-            # Ya estamos parados sobre la raiz. Hay que salir antes de tocar la
+            # Ya estamos parados sobre la raiz. Hay que seguir sin tocar la
             # derivada: si no, una raiz exacta donde ademas f'(x) se anula se
             # reportaria como error de derivada en vez de como solucion.
+            #
+            # El error de estas filas se fija a mano en 0. Calcularlo daria
+            # infinito cuando la raiz es exactamente 0.0, porque el error
+            # relativo divide por el valor actual.
             iteraciones.append(
-                Iteration(n=n, values={"xi": xi, "fxi": 0.0, "xi_sig": xi}, error=None)
+                Iteration(
+                    n=n,
+                    values={"xi": xi, "fxi": 0.0, "xi_sig": xi},
+                    error=None if n == 0 else 0.0,
+                )
             )
+            if razon is not StopReason.EXACT:
+                notas.append(f"f({xi:g}) = 0 exactamente: la raiz no es aproximada.")
             razon, convergio, x_sig = StopReason.EXACT, True, xi
-            notas.append(f"f({xi:g}) = 0 exactamente: la raiz no es aproximada.")
-            break
+
+            # R5 manda: con stop_on_tolerance en False corren las n iteraciones
+            # aunque ya se haya convergido, y caer sobre la raiz es un caso mas
+            # de "ya convergio". La sucesion se queda quieta, que es lo que hace
+            # el metodo, y el docente ve las n filas que pidio.
+            if cfg.stop_on_tolerance:
+                break
+            continue
 
         x_sig = siguiente(xi, fxi)
 
@@ -197,7 +213,7 @@ def _armar(
         converged=convergio,
         stop_reason=razon,
         decimals=cfg.decimals,
-        plot=_grafica(f, x0, raiz, iteraciones, titulo),
+        plot=_grafica(f, x0, raiz, iteraciones, titulo, marcar_raiz=not diverge),
         notes=notas,
     )
 
@@ -211,6 +227,8 @@ def _grafica(
     raiz: float,
     iteraciones: list[Iteration],
     titulo: str,
+    *,
+    marcar_raiz: bool = True,
 ) -> PlotSpec:
     """Muestrea f alrededor de donde ocurrio todo, para el plano interactivo."""
     visitados = [
@@ -234,7 +252,7 @@ def _grafica(
     return plots.function_root(
         xs,
         ys,
-        root=raiz if math.isfinite(raiz) else None,
+        root=raiz if (marcar_raiz and math.isfinite(raiz)) else None,
         iterates=[(it.n, it.values["xi"], it.values["fxi"]) for it in iteraciones],
         title=titulo,
         resample=Resample(expression=str(f), domain=(x_min, x_max)),

@@ -374,26 +374,38 @@ def test_create_app_carga_los_metodos_reales_cuando_se_solicita():
 
     create_app(cargar_metodos=True)
 
-    assert {method.slug for method in all_methods()} == {
+    # Contencion, no igualdad: los cuatro del primer parcial tienen que estar,
+    # pero el docente pidio unos diez a lo largo del semestre. Con una igualdad
+    # exacta, agregar el quinto metodo rompe esta prueba, y eso contradice lo
+    # que la arquitectura promete. Ver tests/test_extensibilidad.py.
+    assert {
         "newton-raphson",
         "von-mises",
         "interpolacion-newton",
         "runge-kutta",
-    }
+    } <= {method.slug for method in all_methods()}
 
 
-def test_app_se_construye_aunque_web_aun_no_exista(
+def test_sin_la_carpeta_web_la_app_falla_fuerte_en_vez_de_servir_una_api_muda(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Antes se construia igual y arrancaba sin interfaz.
+
+    `check_dir=False` existia porque la interfaz la escribia otro carril y la
+    app tenia que poder construirse antes de que `web/` existiera. Ese andamio
+    ya no hace falta, y lo que dejaba era peor: una instalacion a la que le
+    falta `web/` levanta, responde la API y no muestra nada, y el que la corre
+    tiene que adivinar por que la pantalla esta en blanco. Que reviente al
+    arrancar, diciendo que falta.
+    """
     from api import main
 
     web_ausente = Path(__file__).resolve().parent / "directorio-web-inexistente"
     assert not web_ausente.exists()
     monkeypatch.setattr(main, "WEB_DIR", web_ausente)
 
-    application = main.create_app(cargar_metodos=False)
-
-    assert application is not None
+    with pytest.raises(RuntimeError, match="web"):
+        main.create_app(cargar_metodos=False)
 
 
 def test_raiz_y_archivos_estaticos_salen_de_web(
@@ -415,3 +427,24 @@ def test_raiz_y_archivos_estaticos_salen_de_web(
     assert static_file.status_code == 200
     assert "class SolveRequest" in static_file.text
     assert api_response.status_code == 200
+
+
+def test_una_expresion_que_evalua_a_complejo_es_422_y_no_500():
+    """Regresion: `sqrt(-1)` salia con traceback.
+
+    SymPy la acepta y la simplifica a `I`; al convertirla a float reventaba con
+    TypeError fuera del try de `Expression.evaluar`, y el manejador global lo
+    convertia en un 500 generico. La expresion la escribe el usuario y llega
+    por HTTP: tiene que responder como cualquier otro error matematico.
+    """
+    from api import main
+
+    with TestClient(main.create_app(cargar_metodos=True)) as test_client:
+        response = test_client.post(
+            "/api/methods/newton-raphson/solve",
+            json={"params": {"fx": "sqrt(-1)", "x0": 1.0}},
+        )
+
+    assert response.status_code == 422, response.text
+    assert "dominio" in response.json()["detail"]
+    assert "Traceback" not in response.text

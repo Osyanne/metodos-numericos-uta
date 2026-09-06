@@ -65,10 +65,8 @@ def test_rk4_aproxima_una_solucion_analitica_conocida(metodo):
     }
     assert len(resultado.iterations) == 11
     assert resultado.iterations[0].values == {"x": 0.0, "y": 1.0}
-    assert resultado.iterations[0].error is None
-    assert resultado.iterations[1].error is not None
     assert resultado.converged is True
-    assert resultado.stop_reason is StopReason.MAX_ITERATIONS
+    assert resultado.stop_reason is StopReason.COMPLETED
 
 
 def test_resuelve_un_sistema_evaluando_las_componentes_simultaneamente(metodo):
@@ -215,7 +213,98 @@ def test_rechaza_un_orden_que_no_sea_dos_o_cuatro(metodo, orden):
         )
 
 
-def test_respeta_el_criterio_de_error_configurado_sin_detener_la_malla(metodo):
+def test_no_reporta_error_por_iteracion_y_explica_por_que(metodo):
+    """Un metodo de paso unico no produce estimacion de error por iteracion.
+
+    Lo que se venia mostrando era |y(i+1) - y(i)|, que mide cuanto cambio la
+    solucion entre pasos, no cuanto se equivoca. Son cosas distintas: una
+    solucion que cambia poco puede estar muy lejos de la verdadera, y una que
+    cambia mucho puede ser exacta. Antes que un numero que nadie puede
+    interpretar, la columna va vacia y la nota dice por que.
+    """
+    resultado = resolver(
+        metodo,
+        {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.1, "n": 5},
+    )
+
+    assert [it.error for it in resultado.iterations] == [None] * 6
+    assert any(
+        "error" in nota.lower() and "paso" in nota.lower()
+        for nota in resultado.notes
+    ), resultado.notes
+
+
+def test_el_oscilador_no_muestra_errores_absurdos_al_cruzar_el_cero(metodo):
+    """Regresion del 342 %.
+
+    Con y1' = y2, y2' = -y1 desde (0, 1) la solucion es (sen x, cos x). En el
+    paso 16 la primera componente pasa por cero, y el error relativo entre dos
+    pasos consecutivos se disparaba a 342 % mientras la solucion numerica
+    coincidia con cos(1.6) hasta el sexto decimal. En la pantalla eso se lee
+    como que el programa esta roto.
+    """
+    resultado = resolver(
+        metodo,
+        {"fxy": ["y2", "-y1"], "x0": 0.0, "y0": [0.0, 1.0], "h": 0.1, "n": 16},
+    )
+
+    # El error verdadero contra cos(1.6) es de 1.3e-6: la solucion numerica es
+    # buenisima justo donde la columna marcaba 342 %.
+    assert resultado.iterations[-1].values["y2"] == pytest.approx(
+        math.cos(1.6), abs=5e-6
+    )
+    assert all(it.error is None for it in resultado.iterations), [
+        it.error for it in resultado.iterations
+    ]
+
+
+def test_terminar_la_malla_no_se_reporta_como_iteraciones_agotadas(metodo):
+    """Recorrer los n pasos es el final normal, no quedarse corto.
+
+    MAX_ITERATIONS se traduce en pantalla como "completo las n iteraciones sin
+    alcanzar la tolerancia", y Runge-Kutta nunca persigue una tolerancia.
+    """
+    resultado = resolver(
+        metodo,
+        {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.1, "n": 5},
+    )
+
+    assert resultado.stop_reason is StopReason.COMPLETED
+
+
+def test_una_malla_desmesurada_se_rechaza_con_una_causa(metodo):
+    """El tope de 10.000 de la API protege max_iterations, no este n.
+
+    `n` viaja dentro de `params`, asi que no pasa por esa validacion: un
+    n = 200000 entraba al bucle y devolvia 200.001 filas con HTTP 200. La
+    entrada llega por HTTP y cada fila se guarda entera en memoria.
+    """
+    with pytest.raises(MethodError, match="10000|10.000|demasiado"):
+        resolver(
+            metodo,
+            {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.0001, "n": 200000},
+        )
+
+
+def test_la_malla_grande_pero_razonable_sigue_andando(metodo):
+    """El tope no puede quedar tan bajo que estorbe un uso legitimo."""
+    resultado = resolver(
+        metodo,
+        {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.0001, "n": 10000},
+    )
+
+    assert len(resultado.iterations) == 10001
+
+
+def test_la_malla_se_recorre_entera_aunque_se_pida_parar_por_tolerancia(metodo):
+    """La tolerancia no aplica a un metodo de malla fija.
+
+    Con una tolerancia holgada y `stop_on_tolerance`, un metodo iterativo
+    cortaria en el primer paso. Runge-Kutta tiene que recorrer los n pasos
+    igual: el usuario pidio la solucion hasta x0 + n*h, no hasta que algo deje
+    de moverse. Antes esto se verificaba mirando la columna de error, que ya no
+    existe; ahora se verifica donde importa, en la cantidad de filas.
+    """
     resultado = resolver(
         metodo,
         {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.1, "n": 2},
@@ -225,7 +314,8 @@ def test_respeta_el_criterio_de_error_configurado_sin_detener_la_malla(metodo):
     )
 
     assert len(resultado.iterations) == 3
-    assert resultado.iterations[1].error == pytest.approx(0.1051708333, abs=1e-10)
+    assert resultado.stop_reason is StopReason.COMPLETED
+    assert resultado.result["x"] == pytest.approx(0.2)
 
 
 def test_grafica_escalar_tiene_una_componente_llamada_y(metodo):
