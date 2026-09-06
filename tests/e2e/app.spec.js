@@ -90,7 +90,9 @@ test("integración completada se presenta en verde y errores null como raya", as
     dibujarResumen(document.querySelector("#resumen"), resultado, 6);
     dibujarTabla(document.querySelector("#tabla"), resultado, 6);
   });
-  await expect(page.locator("#resumen .estado-ok")).toHaveText("Integracion completada");
+  // Con tilde: el resto del mapa MOTIVO tambien la lleva ("Alcanzó la
+  // tolerancia", "Solución exacta") y es texto que ve el usuario.
+  await expect(page.locator("#resumen .estado-ok")).toHaveText("Integración completada");
   await expect(page.locator("#tabla .col-error")).toHaveText("—");
 });
 
@@ -110,7 +112,10 @@ for (const formato of ["csv", "pdf"]) {
     if (formato === "pdf") expect(contenido.subarray(0, 5).toString()).toBe("%PDF-");
     else {
       expect(contenido.toString("utf8")).toContain("error");
-      expect(contenido.toString("utf8")).toContain("2.100000");
+      // Sin redondear, por contrato: "redondear es cosa de la pantalla"
+      // (docs/CONTRATO.md). Exportar con los decimales de la vista perderia
+      // precision de forma permanente. La raiz completa lo demuestra.
+      expect(contenido.toString("utf8")).toContain("2.0945514815423265");
     }
     await expect(boton).toBeEnabled();
   });

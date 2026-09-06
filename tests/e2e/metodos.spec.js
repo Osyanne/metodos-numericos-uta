@@ -62,7 +62,7 @@ test("@contrato-a Runge-Kutta completa la integración y no inventa error", asyn
   expect.soft(resultado.stop_reason).toBe("integracion_completada");
   expect.soft(resultado.iterations.every(fila => fila.error === null)).toBe(true);
   expect.soft(resultado.notes.length).toBeGreaterThan(0);
-  await expect.soft(page.locator("#resumen .estado-ok")).toHaveText("Integracion completada");
+  await expect.soft(page.locator("#resumen .estado-ok")).toHaveText("Integración completada");
   await page.locator("#ver-tabla").click();
   await expect(page.locator("#tabla .col-error")).toHaveText(Array(17).fill("—"));
 });

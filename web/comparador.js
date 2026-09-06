@@ -37,6 +37,7 @@ export function montarComparador({ api, estado, plano, configuracion, formulario
       return;
     }
 
+    const corrida = ++estado.corrida;
     boton.disabled = true;
     const cuerpo = { params, ...configuracion() };
     const corridas = [];
@@ -50,6 +51,10 @@ export function montarComparador({ api, estado, plano, configuracion, formulario
       }
     }
     boton.disabled = false;
+
+    // El usuario ya eligio otra cosa: lo que volvio contesta una pregunta que
+    // nadie esta haciendo.
+    if (corrida !== estado.corrida) return;
 
     dibujarComparacion(caja, corridas, Number($("#decimales").value));
     superponerConvergencia(plano, corridas);
