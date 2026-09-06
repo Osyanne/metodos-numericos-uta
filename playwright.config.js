@@ -3,10 +3,6 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 
-process.env.PLAYWRIGHT_BROWSERS_PATH ??= fileURLToPath(
-  new URL("./tests/e2e/artifacts/browsers", import.meta.url),
-);
-
 // Ruta absoluta y con el separador del sistema. Playwright lanza el webServer a
 // traves de cmd.exe en Windows, y ahi ".venv/Scripts/python.exe" con barras
 // normales no se reconoce como comando.
@@ -22,6 +18,10 @@ const python = existsSync(enVenv)
   ? enVenv
   : (process.platform === "win32" ? "python" : "python3");
 
+// Los navegadores van a la cache por defecto de Playwright, no a una carpeta
+// dentro del repositorio. Apuntarla aca solo tenia efecto al cargar ESTE
+// archivo, y `npx playwright install` corre como otro proceso: instalaba en un
+// lado y las pruebas buscaban en el otro. En CI eso hizo fallar las 35 de una.
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
