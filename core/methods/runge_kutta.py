@@ -21,12 +21,25 @@ from core.types import (
 )
 
 
+# El tope de 10.000 de api/schemas.py protege max_iterations, que es otra cosa:
+# n viaja dentro de params y no pasa por esa validacion. Se usa el mismo numero
+# para que el limite del aplicativo sea uno solo y no dos.
+MAX_PASOS = 10_000
+
+
 def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
     """Resuelve una EDO o sistema sobre una malla de paso constante."""
     x0 = _numero_finito(params.get("x0"), "El valor inicial x0")
     expresiones, estado, escalar = _problema(params.get("fxy"), params.get("y0"))
     orden = _orden(params.get("orden", 4))
     h, n = _malla(params, x0, config.max_iterations)
+    if n > MAX_PASOS:
+        raise MethodError(
+            f"La malla pedida tiene {n} pasos y el maximo es {MAX_PASOS}. "
+            "Cada paso es una fila que se calcula y se guarda entera; con mas "
+            "que eso la tabla deja de ser algo que se pueda leer. Aumenta h o "
+            "acerca el extremo xf."
+        )
     _validar_extremo_malla(x0, h, n)
 
     nombres = (

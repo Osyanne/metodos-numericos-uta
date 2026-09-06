@@ -415,3 +415,24 @@ def test_raiz_y_archivos_estaticos_salen_de_web(
     assert static_file.status_code == 200
     assert "class SolveRequest" in static_file.text
     assert api_response.status_code == 200
+
+
+def test_una_expresion_que_evalua_a_complejo_es_422_y_no_500():
+    """Regresion: `sqrt(-1)` salia con traceback.
+
+    SymPy la acepta y la simplifica a `I`; al convertirla a float reventaba con
+    TypeError fuera del try de `Expression.evaluar`, y el manejador global lo
+    convertia en un 500 generico. La expresion la escribe el usuario y llega
+    por HTTP: tiene que responder como cualquier otro error matematico.
+    """
+    from api import main
+
+    with TestClient(main.create_app(cargar_metodos=True)) as test_client:
+        response = test_client.post(
+            "/api/methods/newton-raphson/solve",
+            json={"params": {"fx": "sqrt(-1)", "x0": 1.0}},
+        )
+
+    assert response.status_code == 422, response.text
+    assert "dominio" in response.json()["detail"]
+    assert "Traceback" not in response.text

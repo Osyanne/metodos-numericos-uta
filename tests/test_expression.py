@@ -123,3 +123,18 @@ def test_evaluar_seguro_devuelve_none_en_vez_de_fallar():
     f = parse("log(x)")
     assert f.evaluar_seguro(x=-1.0) is None
     assert f.evaluar_seguro(x=1.0) == pytest.approx(0.0)
+
+
+def test_un_resultado_complejo_es_error_matematico_y_no_un_traceback():
+    """`sqrt(-1)` es una entrada valida para SymPy y la simplifica a `I`.
+
+    Al convertirla a float reventaba con TypeError fuera del try, y como la
+    expresion entra por HTTP eso salia como un 500 con traceback en vez del
+    mensaje explicado que recibe cualquier otro error matematico.
+    """
+    with pytest.raises(MethodError, match="fuera del dominio"):
+        parse("sqrt(-1)").evaluar(x=1.0)
+
+
+def test_evaluar_seguro_tampoco_revienta_con_un_resultado_complejo():
+    assert parse("sqrt(-1)").evaluar_seguro(x=1.0) is None

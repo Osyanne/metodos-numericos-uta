@@ -272,6 +272,30 @@ def test_terminar_la_malla_no_se_reporta_como_iteraciones_agotadas(metodo):
     assert resultado.stop_reason is StopReason.COMPLETED
 
 
+def test_una_malla_desmesurada_se_rechaza_con_una_causa(metodo):
+    """El tope de 10.000 de la API protege max_iterations, no este n.
+
+    `n` viaja dentro de `params`, asi que no pasa por esa validacion: un
+    n = 200000 entraba al bucle y devolvia 200.001 filas con HTTP 200. La
+    entrada llega por HTTP y cada fila se guarda entera en memoria.
+    """
+    with pytest.raises(MethodError, match="10000|10.000|demasiado"):
+        resolver(
+            metodo,
+            {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.0001, "n": 200000},
+        )
+
+
+def test_la_malla_grande_pero_razonable_sigue_andando(metodo):
+    """El tope no puede quedar tan bajo que estorbe un uso legitimo."""
+    resultado = resolver(
+        metodo,
+        {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.0001, "n": 10000},
+    )
+
+    assert len(resultado.iterations) == 10001
+
+
 def test_la_malla_se_recorre_entera_aunque_se_pida_parar_por_tolerancia(metodo):
     """La tolerancia no aplica a un metodo de malla fija.
 
