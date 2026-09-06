@@ -34,6 +34,7 @@ export class Plano {
     this.vistaInicial = { ...this.vista };
     this.cursor = null;
     this.temporizador = null;
+    this.versionMuestreo = 0;
 
     this._conectar();
     this._ajustarTamano();
@@ -45,6 +46,7 @@ export class Plano {
   // capas: [{tipo, nombre, xs, ys, puntos, color}]
   // resample: {expression, variables, domain} o null
   mostrar(capas, resample = null, etiquetas = {}) {
+    this._invalidarRemuestreo();
     this.capas = capas.map((c, i) => ({ color: COLORES[i % COLORES.length], ...c }));
     this.resample = resample;
     this.etiquetas = { x: "x", y: "y", ...etiquetas };
@@ -52,13 +54,16 @@ export class Plano {
   }
 
   limpiar() {
+    this._invalidarRemuestreo();
     this.capas = [];
     this.resample = null;
+    this.cursor = null;
     this._pintar();
   }
 
   // Encuadra la vista sobre todo lo que hay, con un margen del 10 %.
   encuadrar() {
+    this._invalidarRemuestreo();
     const xs = [];
     const ys = [];
     for (const capa of this.capas) {
@@ -121,32 +126,43 @@ export class Plano {
 
   _conectar() {
     const c = this.canvas;
+    c.tabIndex = 0;
+    c.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight ArrowUp ArrowDown + - Home");
 
     c.addEventListener("wheel", (e) => {
       e.preventDefault();
       const [mx, my] = this._posicion(e);
       const [wx, wy] = this._aMundo(mx, my);
       const factor = this._factorZoom(e);
-      const v = this.vista;
-
-      const anchoNuevo = (v.x1 - v.x0) * factor;
-      const altoNuevo = (v.y1 - v.y0) * factor;
-      const fueraDeRango = (n) => n < ANCHO_MINIMO || n > ANCHO_MAXIMO;
-      if (fueraDeRango(anchoNuevo) || fueraDeRango(altoNuevo)) return;
-
       // El zoom se centra en el cursor, no en el origen.
-      this.vista = {
-        x0: wx + (v.x0 - wx) * factor,
-        x1: wx + (v.x1 - wx) * factor,
-        y0: wy + (v.y0 - wy) * factor,
-        y1: wy + (v.y1 - wy) * factor,
-      };
-      this._pintar();
-      this._pedirRemuestreo();
+      this._zoom(factor, wx, wy);
     }, { passive: false });
+
+    c.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const v = this.vista;
+      if (["+", "=", "-", "−"].includes(e.key)) {
+        e.preventDefault();
+        const factor = e.key === "+" || e.key === "=" ? 1 / FACTOR_MAX : FACTOR_MAX;
+        this._zoom(factor, (v.x0 + v.x1) / 2, (v.y0 + v.y1) / 2);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        this.reiniciarVista();
+      } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
+        e.preventDefault();
+        const dx = (v.x1 - v.x0) * 0.1 * (e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0);
+        const dy = (v.y1 - v.y0) * 0.1 * (e.key === "ArrowUp" ? 1 : e.key === "ArrowDown" ? -1 : 0);
+        this.vista = { x0: v.x0 + dx, x1: v.x1 + dx, y0: v.y0 + dy, y1: v.y1 + dy };
+        this.cursor = null;
+        this._pintar();
+        this._pedirRemuestreo();
+      }
+    });
 
     let arrastrando = null;
     c.addEventListener("pointerdown", (e) => {
+      this._invalidarRemuestreo();
+      c.focus({ preventScroll: true });
       arrastrando = { ...this._posicionObj(e), vista: { ...this.vista } };
       c.setPointerCapture(e.pointerId);
       c.classList.add("arrastrando");
@@ -181,6 +197,21 @@ export class Plano {
     c.addEventListener("dblclick", () => this.reiniciarVista());
   }
 
+  _zoom(factor, wx, wy) {
+    const v = this.vista;
+    const fueraDeRango = (n) => !Number.isFinite(n) || n < ANCHO_MINIMO || n > ANCHO_MAXIMO;
+    if (fueraDeRango((v.x1 - v.x0) * factor) || fueraDeRango((v.y1 - v.y0) * factor)) return;
+    this.vista = {
+      x0: wx + (v.x0 - wx) * factor,
+      x1: wx + (v.x1 - wx) * factor,
+      y0: wy + (v.y0 - wy) * factor,
+      y1: wy + (v.y1 - wy) * factor,
+    };
+    this.cursor = null;
+    this._pintar();
+    this._pedirRemuestreo();
+  }
+
   // deltaMode dice en que unidad viene deltaY: 0 pixeles, 1 lineas, 2 paginas.
   // Firefox suele mandar lineas donde Chrome manda pixeles, y sin normalizar
   // el mismo gesto zoomea muy distinto en cada navegador.
@@ -203,26 +234,36 @@ export class Plano {
   // Pide puntos nuevos para el rango visible, pero solo si la curva viene de
   // una expresion. Se espera a que el usuario deje de moverse, y se pide mas
   // ancho que lo visible para que un paneo chico no dispare otra peticion.
-  _pedirRemuestreo() {
-    if (!this.resample || !this.alMuestrear) return;
+  _invalidarRemuestreo() {
     clearTimeout(this.temporizador);
+    this.temporizador = null;
+    this.versionMuestreo += 1;
+  }
+
+  _pedirRemuestreo() {
+    // Se invalida al mover la vista, antes del debounce: una petición en vuelo
+    // tampoco debe pintar durante la espera del siguiente muestreo.
+    this._invalidarRemuestreo();
+    if (!this.resample || !this.alMuestrear) return;
+    const version = this.versionMuestreo;
+    const curva = this.capas.find((c) => c.tipo === "curva");
+    if (!curva) return;
+    const v = { ...this.vista };
+    const ancho = v.x1 - v.x0;
+    const peticion = {
+      expression: this.resample.expression,
+      variables: this.resample.variables ?? ["x"],
+      x_min: v.x0 - ancho * 0.5,
+      x_max: v.x1 + ancho * 0.5,
+      points: 600,
+    };
     this.temporizador = setTimeout(async () => {
-      const v = this.vista;
-      const ancho = v.x1 - v.x0;
-      const puntos = await this.alMuestrear({
-        expression: this.resample.expression,
-        variables: this.resample.variables ?? ["x"],
-        x_min: v.x0 - ancho * 0.5,
-        x_max: v.x1 + ancho * 0.5,
-        points: 600,
-      });
-      if (!puntos) return;
-      const curva = this.capas.find((c) => c.tipo === "curva");
-      if (curva) {
-        curva.xs = puntos.x;
-        curva.ys = puntos.y;
-        this._pintar();
-      }
+      this.temporizador = null;
+      const puntos = await this.alMuestrear(peticion);
+      if (!puntos || version !== this.versionMuestreo) return;
+      curva.xs = puntos.x;
+      curva.ys = puntos.y;
+      this._pintar();
     }, ESPERA_REMUESTREO);
   }
 
@@ -230,9 +271,12 @@ export class Plano {
 
   _ajustarTamano() {
     const dpr = window.devicePixelRatio || 1;
-    const caja = this.canvas.parentElement.getBoundingClientRect();
-    this.ancho = Math.max(320, Math.floor(caja.width));
-    this.alto = Math.max(260, Math.floor(caja.height));
+    const caja = this.canvas.parentElement;
+    // clientWidth excluye el borde. El canvas debe caber también cuando el
+    // panel tiene menos de 320 px disponibles o vuelve de una pestaña oculta.
+    if (!caja.clientWidth || !caja.clientHeight) return;
+    this.ancho = caja.clientWidth;
+    this.alto = caja.clientHeight;
     this.canvas.width = this.ancho * dpr;
     this.canvas.height = this.alto * dpr;
     this.canvas.style.width = `${this.ancho}px`;

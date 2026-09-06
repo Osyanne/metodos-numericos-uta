@@ -121,4 +121,16 @@ edites.
 
 ## Bitacora
 
-- [ ] (pendiente)
+### Plan de ejecución (2026-09-05)
+
+- [ ] Reproducir resultados zombi y respuestas tardías en navegador; invalidar
+  resultados, comparaciones y operaciones anteriores en `web/app.js` y
+  `web/comparador.js`; conservar el detalle y el estado ocupado al exportar.
+- [ ] Validar puntos incompletos y enteros sin redondeos en `web/forms.js`;
+  cargar ejercicios completos desde `web/presets.js` y el selector de la UI.
+- [ ] Traducir `integracion_completada` en `web/tabla.js`; verificarlo junto
+  con las columnas, CSV/PDF y las respuestas del servidor real.
+- [ ] Proteger el remuestreo y habilitar teclado en `web/plano.js`; corregir
+  anchos mínimos en `web/styles.css` y comprobar 320/360 px.
+- [ ] Ejecutar Playwright en 8002, revisar los cambios y registrar salida real
+  y dependencias de integración. Sin git, sin editar archivos del carril A.
