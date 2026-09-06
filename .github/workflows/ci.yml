@@ -83,3 +83,26 @@ jobs:
           name: reporte-playwright
           path: tests/e2e/artifacts/report
           retention-days: 7
+
+  # La proteccion de rama de main exige un check llamado exactamente "test".
+  # Al renombrar los trabajos de arriba ese nombre dejo de existir, y un check
+  # requerido que nunca aparece deja los PR trabados para siempre esperandolo.
+  #
+  # Este trabajo es esa puerta: no corre pruebas, solo falla si fallo alguno de
+  # los anteriores. Asi los trabajos reales pueden cambiar de nombre sin tocar
+  # la configuracion del repositorio.
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    needs: [pruebas, instalacion-limpia, navegador]
+    if: always()
+    steps:
+      - name: Fallar si algo anterior no paso
+        run: |
+          if ${{ contains(needs.*.result, 'failure')
+                 || contains(needs.*.result, 'cancelled')
+                 || contains(needs.*.result, 'skipped') }}; then
+            echo "Algun trabajo anterior no termino bien."
+            exit 1
+          fi
+          echo "Todos los trabajos anteriores pasaron."
