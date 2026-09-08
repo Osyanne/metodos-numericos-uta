@@ -57,7 +57,7 @@ def create_app(cargar_metodos: bool = True) -> FastAPI:
     # va a usar a mano en una demostracion. Si falta, hay que decirlo al
     # arrancar. Antes se montaba con check_dir=False, que dejaba levantar el
     # servidor igual y servir una pantalla en blanco sin explicar nada; ese
-    # permiso existia solo mientras la interfaz la escribia otro carril.
+    # permiso existia solo mientras `web/` todavia no estaba escrita.
     if not WEB_DIR.is_dir():
         raise RuntimeError(
             f"No se encuentra la carpeta web/ en {WEB_DIR}. El aplicativo se "

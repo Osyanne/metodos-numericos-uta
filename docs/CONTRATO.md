@@ -1,7 +1,7 @@
-# Contrato entre carriles
+# Contrato de datos y superficie HTTP
 
-CONGELADO. Los dos carriles programan contra este documento. Cambiar algo de
-aca rompe el otro carril, asi que se acuerda antes de tocarlo.
+CONGELADO. El nucleo, la API y la interfaz programan contra este documento.
+Cambiar algo de aca las rompe a las tres, asi que se revisa antes de tocarlo.
 
 ## Peticion
 

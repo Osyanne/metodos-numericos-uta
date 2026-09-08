@@ -1,6 +1,6 @@
 """Parseo, derivacion y evaluacion de las expresiones que escribe el usuario.
 
-CONGELADO: lo consumen los dos carriles.
+CONGELADO: lo consumen el nucleo, la API y el muestreo del plano.
 
 La entrada llega por HTTP, asi que no se le pasa texto arbitrario a sympy: se
 parsea y despues se recorre el arbol rechazando cualquier simbolo o funcion que

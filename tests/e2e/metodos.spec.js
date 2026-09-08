@@ -55,8 +55,8 @@ test("Runge-Kutta sistema: dos series y valor final del oscilador", async ({ pag
 });
 
 // Estos casos exigen el contrato congelado al backend REAL. No se omiten ni
-// sustituyen respuestas: deben quedar verdes al integrar el carril A.
-test("@contrato-a Runge-Kutta completa la integración y no inventa error", async ({ page }) => {
+// se sustituyen respuestas con dobles: si el nucleo cambia, tienen que verlo.
+test("Runge-Kutta completa la integración y no inventa error", async ({ page }) => {
   await cargar(page, "runge-kutta", "runge-kutta-sistema");
   const resultado = await resolver(page, "runge-kutta");
   expect.soft(resultado.stop_reason).toBe("integracion_completada");
@@ -67,7 +67,7 @@ test("@contrato-a Runge-Kutta completa la integración y no inventa error", asyn
   await expect(page.locator("#tabla .col-error")).toHaveText(Array(17).fill("—"));
 });
 
-test("@contrato-a Von Mises divergente explica la causa sin marcar una raíz", async ({ page }) => {
+test("Von Mises divergente explica la causa sin marcar una raíz", async ({ page }) => {
   await cargar(page, "von-mises", "von-mises-divergente");
   const resultado = await resolver(page, "von-mises");
   expect(resultado.stop_reason).toBe("divergio");

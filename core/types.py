@@ -1,6 +1,7 @@
 """Contrato entre el nucleo numerico y todo lo que lo consume.
 
-CONGELADO. Cambiar algo de aca rompe el otro carril: hay que acordarlo antes.
+CONGELADO. Cambiar algo de aca rompe la API y la interfaz a la vez, asi que
+hay que revisar las tres puntas antes de tocarlo.
 
 Familias de entrada de los metodos del primer parcial:
 

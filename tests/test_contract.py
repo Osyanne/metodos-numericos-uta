@@ -1,6 +1,6 @@
 """Pruebas del contrato congelado.
 
-Si algo de aca se pone rojo, los dos carriles estan rotos, no uno.
+Si algo de aca se pone rojo, se rompen la API y la interfaz a la vez.
 """
 from __future__ import annotations
 
@@ -421,9 +421,9 @@ CASOS_POR_METODO = {
 def test_los_decimales_no_cambian_los_valores_calculados(slug, params, registro_limpio):
     """Pedir menos decimales no puede degradar lo que se guarda.
 
-    Es la clase de discrepancia que no se ve mirando un carril solo: dos
-    implementaciones pueden pasar sus propias pruebas y aun asi entender
-    'decimals' de forma distinta. Redondear al mostrar es reversible;
+    Es la clase de discrepancia que no se ve mirando un lado solo: el nucleo y
+    la interfaz pueden pasar cada uno sus pruebas y aun asi entender 'decimals'
+    de forma distinta. Redondear al mostrar es reversible;
     redondear al guardar no.
     """
     from core.config import SolveConfig

@@ -391,9 +391,9 @@ def test_sin_la_carpeta_web_la_app_falla_fuerte_en_vez_de_servir_una_api_muda(
 ):
     """Antes se construia igual y arrancaba sin interfaz.
 
-    `check_dir=False` existia porque la interfaz la escribia otro carril y la
-    app tenia que poder construirse antes de que `web/` existiera. Ese andamio
-    ya no hace falta, y lo que dejaba era peor: una instalacion a la que le
+    `check_dir=False` existia porque la app tenia que poder construirse cuando
+    `web/` todavia no estaba escrita. Ese andamio ya no hace falta, y lo que
+    dejaba era peor: una instalacion a la que le
     falta `web/` levanta, responde la API y no muestra nada, y el que la corre
     tiene que adivinar por que la pantalla esta en blanco. Que reviente al
     arrancar, diciendo que falta.
