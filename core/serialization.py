@@ -22,13 +22,30 @@ def finite_or_none(value: Any) -> float | None:
     return numero if math.isfinite(numero) else None
 
 
+def cell_value(value: Any) -> float | str | None:
+    """Una celda de la tabla: numero finito, texto, o None.
+
+    Las columnas declaradas con `numeric=False` llevan expresiones, no
+    mediciones: el polinomio base de una interpolacion se muestra factorizado
+    y no hay ningun float que lo represente. Pasar esas celdas por
+    `finite_or_none` las borraba a todas.
+
+    El texto viaja tal cual. Todo lo demas sigue la regla de siempre, asi que
+    inf y NaN siguen saliendo como None.
+    """
+    if isinstance(value, str):
+        return value
+    return finite_or_none(value)
+
+
 def jsonable_iteration(iteration: Iteration) -> dict[str, Any]:
     """Una fila lista para serializar, sin valores no finitos."""
     return {
         "n": iteration.n,
         "values": {
-            clave: finite_or_none(valor)
+            clave: cell_value(valor)
             for clave, valor in iteration.values.items()
         },
+        # El error siempre es una medicion: nunca lleva texto.
         "error": finite_or_none(iteration.error),
     }

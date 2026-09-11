@@ -232,6 +232,44 @@ def test_una_fila_con_error_infinito_sale_serializable():
     assert json.dumps(fila, allow_nan=False)
 
 
+def test_una_celda_de_texto_llega_entera_a_la_interfaz():
+    """Las columnas con numeric=False muestran expresiones, no mediciones.
+
+    `Column.numeric` y el renderizado de texto de la interfaz existian desde el
+    principio, pero la fila pasaba por `finite_or_none`, que convierte todo lo
+    que no sea numero en None. Una tabla simbolica llegaba entera en blanco.
+    """
+    import json
+
+    from core.serialization import jsonable_iteration
+    from core.types import Iteration
+
+    fila = jsonable_iteration(
+        Iteration(
+            n=0,
+            values={"xi": 1.0, "Li": "(x - 2)*(x - 3)/2"},
+            error=None,
+        )
+    )
+
+    assert fila["values"]["Li"] == "(x - 2)*(x - 3)/2"
+    assert fila["values"]["xi"] == 1.0
+    assert json.dumps(fila, allow_nan=False)
+
+
+def test_el_muestreo_del_plano_sigue_siendo_solo_numerico():
+    """`finite_or_none` no se aflojo: la curva del plano no admite texto.
+
+    Es la misma funcion que usa `POST /api/plot/sample`. Si dejara pasar
+    strings, una expresion sin evaluar viajaria como punto de la curva y el
+    plano dibujaria cualquier cosa.
+    """
+    from core.serialization import finite_or_none
+
+    assert finite_or_none("(x - 2)*(x - 3)/2") is None
+
+
+
 # ---------- forma de las series de graficas ----------
 
 def test_grafica_de_raiz_tiene_las_claves_del_contrato():
@@ -410,6 +448,10 @@ CASOS_POR_METODO = {
     "newton-raphson": {"fx": "x^3 - 2x - 5", "x0": 2.0},
     "von-mises": {"fx": "exp(-x) - log(x)", "x0": 1.0},
     "interpolacion-newton": {
+        "points": [[1.0, 0.0], [4.0, 1.386294], [6.0, 1.791759]],
+        "x": 2.0,
+    },
+    "interpolacion-lagrange": {
         "points": [[1.0, 0.0], [4.0, 1.386294], [6.0, 1.791759]],
         "x": 2.0,
     },

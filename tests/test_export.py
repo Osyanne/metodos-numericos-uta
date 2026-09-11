@@ -79,6 +79,56 @@ def test_pdf_descarga_metodo_parametros_tabla_y_resultado(client: TestClient):
     assert b"1.2689414213699952" in response.content
 
 
+LAGRANGE_REQUEST = {
+    "params": {"points": [[0.0, 1.0], [1.0, 3.0], [2.0, 0.0]], "x": 1.5},
+    "decimals": 2,
+    "max_iterations": 50,
+    "tolerance": 1e-6,
+    "error_criterion": "relativo_porcentual",
+    "stop_on_tolerance": True,
+}
+
+
+def test_csv_exporta_las_celdas_de_texto_tal_cual(client: TestClient):
+    """Las columnas con numeric=False llevan expresiones, no mediciones.
+
+    Antes salian vacias: la celda pasaba por la conversion a float y volvia
+    como None. Una tabla de Lagrange exportada no mostraba ningun L_i.
+    """
+    response = client.post(
+        "/api/methods/interpolacion-lagrange/export/csv",
+        json=LAGRANGE_REQUEST,
+    )
+
+    assert response.status_code == 200, response.text
+    rows = list(csv.reader(io.StringIO(response.content.decode("utf-8"))))
+
+    assert rows[0] == [
+        "i", "xi", "yi", "numerador", "denominador", "Li", "termino",
+        "Li_evaluado", "error",
+    ]
+    assert rows[1][3] == "(x - 1)*(x - 2)"
+    assert rows[1][4] == "(0 - 1)*(0 - 2)"
+    assert rows[1][5] != ""
+    # Y las numericas siguen sin redondear pese a decimals=2.
+    # L_0(1.5) = (0.5)(-0.5)/2 = -0.125
+    assert rows[1][1] == "0.0"
+    assert rows[1][7] == "-0.125"
+
+
+def test_pdf_exporta_las_celdas_de_texto(client: TestClient):
+    response = client.post(
+        "/api/methods/interpolacion-lagrange/export/pdf",
+        json=LAGRANGE_REQUEST,
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.content.startswith(b"%PDF-")
+    # En un PDF los parentesis delimitan las cadenas, asi que los del texto
+    # viajan escapados. Buscarlos sin escapar da un falso negativo.
+    assert rb"\(x - 1\)*\(x - 2\)" in response.content
+
+
 def test_exportar_un_formato_no_admitido_es_422(client: TestClient):
     response = client.post(
         "/api/methods/von-mises/export/json",

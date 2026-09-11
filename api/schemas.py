@@ -41,7 +41,12 @@ class SolveRequest(BaseModel):
 
 class IterationSchema(BaseModel):
     n: int
-    values: dict[str, float | None]
+    # Una celda es una medicion o una expresion. Las columnas con
+    # `numeric=False` llevan texto: el polinomio base de una interpolacion se
+    # muestra factorizado y no hay float que lo represente. `float` va primero
+    # para que un numero no se serialice como cadena.
+    values: dict[str, float | str | None]
+    # El error siempre es una medicion.
     error: float | None = None
 
 

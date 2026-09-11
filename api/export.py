@@ -24,7 +24,7 @@ def csv_bytes(result: MethodResult) -> bytes:
             [
                 iteration.n,
                 *(
-                    _number_text(iteration.values.get(column.key))
+                    _cell_text(iteration.values.get(column.key))
                     for column in result.columns
                 ),
                 _number_text(iteration.error),
@@ -125,7 +125,7 @@ def _write_iterations_table(pdf: FPDF, result: MethodResult) -> None:
         values = [
             str(iteration.n),
             *(
-                _number_text(iteration.values.get(column.key))
+                _cell_text(iteration.values.get(column.key))
                 for column in result.columns
             ),
             _number_text(iteration.error),
@@ -149,6 +149,17 @@ def _multi_line(pdf: FPDF, text: str, *, height: float = 5) -> None:
         new_x=XPos.LMARGIN,
         new_y=YPos.NEXT,
     )
+
+
+def _cell_text(value: Any) -> str:
+    """Una celda de la tabla exportada.
+
+    Las columnas con `numeric=False` llevan expresiones; salen tal cual. El
+    resto conserva la precision calculada, sin redondear.
+    """
+    if isinstance(value, str):
+        return value
+    return _number_text(value)
 
 
 def _number_text(value: Any) -> str:
