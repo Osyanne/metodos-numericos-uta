@@ -24,7 +24,7 @@ asi que los requisitos se acordaron en clase y se dejaron por escrito en
 [ESPECIFICACION.md](ESPECIFICACION.md), versionados junto al codigo. Ese
 documento cumple la funcion que habria cumplido la rubrica.
 
-## 2. Los cuatro metodos
+## 2. Los metodos
 
 ### Newton-Raphson
 
@@ -74,10 +74,37 @@ diferencias divididas, y lo entrega **expandido** (R8), no como producto de
 factores.
 
 Se implementaron las **cuatro variantes** —divididas, diferencias hacia
-adelante, hacia atras y automatica— porque no se confirmo cual espera el
-docente. El polinomio resultante es el mismo en todas; lo que cambia es la
-tabla intermedia que se muestra. Hay una prueba que verifica justamente esa
-equivalencia.
+adelante, hacia atras y automatica—. El polinomio resultante es el mismo en
+todas; lo que cambia es la tabla intermedia que se muestra. Hay una prueba que
+verifica justamente esa equivalencia.
+
+**El default es `divididas`**, y eso se decidio con el material del docente en
+la mano: sus ocho diapositivas usan solo diferencias divididas. Antes el default
+era `auto`, que con puntos equiespaciados elegia diferencias hacia adelante, asi
+que el aplicativo mostraba una tabla correcta pero **distinta de la de clase**.
+
+El metodo tambien devuelve la **forma anidada sin expandir** y los coeficientes
+`a_i` de la diagonal, que es lo que el docente escribe en el pizarron junto al
+polinomio expandido.
+
+### Interpolacion de Lagrange
+
+Llega al mismo polinomio que Newton por otro camino: en vez de diferencias
+divididas, arma un **polinomio base** `L_i(x)` por cada punto, que vale 1 en
+`x_i` y 0 en todos los demas, y suma `f(x_i) * L_i(x)`.
+
+Para el usuario la diferencia esta en la tabla. Aca no hay iteraciones que
+converjan a nada: **cada fila es un paso del procedimiento**, con el numerador y
+el denominador de su `L_i` a la vista, porque eso es lo que se corrige en clase.
+
+Esto obligo a algo que ningun metodo anterior habia necesitado: **celdas de
+texto**. Un `L_i` factorizado no es un numero, y hasta ahora toda celda pasaba
+por una conversion a float que la habria borrado. El detalle esta en la seccion
+de decisiones.
+
+Como los dos metodos construyen el mismo polinomio, hay una prueba que los corre
+sobre los mismos puntos y exige que coincidan. No dice cual esta mal si
+difieren; dice que hay que mirar.
 
 ### Runge-Kutta
 
@@ -127,8 +154,21 @@ sus campos y resolviendo, sin haber tocado ningun archivo existente.
 **`decimals` es formato, no calculo.** Los datos viajan con toda su precision y
 se redondean al mostrarlos. Redondear al guardar degradaria la grafica, el CSV y
 el remuestreo del zoom, y **no se puede deshacer**. Hay una prueba parametrizada
-que compara `decimals=2` contra `decimals=10` en los cuatro metodos y verifica
+que compara `decimals=2` contra `decimals=10` en todos los metodos y verifica
 que los valores calculados sean identicos.
+
+**Una celda de la tabla es una medicion o una expresion.** Lagrange fue el
+primer metodo que necesito mostrar texto —un `L_i` factorizado no es un
+numero— y ahi aparecio una tuberia a medio terminar: `Column.numeric` existia
+en el nucleo y en el esquema HTTP, y la interfaz ya sabia dibujar texto cuando
+valia `false`, pero **nadie lo habia usado nunca**. Los dos eslabones del medio
+seguian siendo solo numericos, asi que la tabla entera llegaba en blanco.
+
+Se completo sin ampliar el contrato: `finite_or_none` **se dejo como estaba**,
+porque es la misma funcion que valida los puntos de la curva del plano y ahi una
+expresion sin evaluar no puede pasar. El texto va por una funcion aparte,
+`cell_value`, que solo usan las celdas de la tabla. El `error` de una fila sigue
+siendo siempre numerico.
 
 **Sin librerias externas en el navegador.** El aplicativo tiene que funcionar
 sin internet para poder demostrarlo en el laboratorio. El plano cartesiano esta
@@ -189,16 +229,23 @@ Se declaran en vez de esconderse.
    fuera de este parcial por eso, no por olvido.
 2. **Los metodos 5 a 10 no estan implementados.** La arquitectura para
    agregarlos si, y esta ejercitada con una prueba que la usa de verdad.
-3. **Interpolacion trae las cuatro variantes** porque no se confirmo cual se
-   espera. Sobra codigo, pero no falta.
+3. **Interpolacion de Newton trae las cuatro variantes** aunque el docente solo
+   usa divididas, que es el default. Sobra codigo, pero no falta.
+4. **La validacion de puntos esta duplicada** entre los dos metodos de
+   interpolacion. Nacieron en paralelo y no comparten helper. Los casos de
+   referencia tambien viven en dos archivos por la misma razon. Unificarlos es
+   una limpieza pendiente, no un defecto de correctitud: las dos copias estan
+   cubiertas por pruebas.
 
 ## 6. Preguntas abiertas al docente
 
-1. **¿La divergencia del ejercicio de la diapositiva 10 es a proposito?** El
-   aplicativo la reporta correctamente, con la causa. Saber si el ejercicio
-   busca eso cambia como se presenta en la sustentacion.
-2. **¿Que variante de Interpolacion de Newton espera ver**, divididas o
-   diferencias finitas? No bloquea: estan las cuatro.
+1. **¿La divergencia del ejercicio de la diapositiva 10 de `VON MISES.pdf` es a
+   proposito?** El aplicativo la reporta correctamente, con la causa. Saber si
+   el ejercicio busca eso cambia como se presenta en la sustentacion.
+
+La pregunta sobre **que variante de Interpolacion de Newton** se esperaba quedo
+cerrada al recibir las diapositivas del metodo: son **diferencias divididas**, y
+ese es el default.
 
 ## 7. Conclusiones
 

@@ -73,25 +73,35 @@ Caso de referencia con la tabla del docente en `tests/casos_referencia.py`.
 
 Los puntos van en el orden en que el usuario los cargo, sin reordenar.
 
-**El docente pide el polinomio expandido**, asi que `result` lleva:
+**El docente pide el polinomio expandido**, y ademas escribe en el pizarron la
+forma anidada y los coeficientes `a_i`, asi que `result` lleva:
 
 ```json
 {
   "polinomio": "-0.0518731*x**2 + 0.7214635*x - 0.6695904",
+  "polinomio_newton": "0 + 0.462098*(x - 1) + -0.0518731*(x - 1)*(x - 4)",
+  "coeficientes": [0.0, 0.462098, -0.0518731],
   "valor": 0.5658442,
   "grado": 2,
   "variante_usada": "divididas"
 }
 ```
 
-**`variante` acepta cuatro valores.** No sabemos cual espera ver el docente, y
-la tabla de iteraciones se ve distinta segun cual sea, asi que estan las dos
-familias y el aplicativo elige sola por defecto:
+`polinomio` y `polinomio_newton` son el mismo polinomio: el primero expandido,
+el segundo conservando los factores y el orden en que se cargaron los puntos.
+`coeficientes` es la diagonal de diferencias divididas, `[a_0, a_1, ...]`, **sin
+redondear**.
+
+**`variante` acepta cuatro valores, y el default es `divididas`.** El material
+del docente (`Interpolacion del metodo de Newton.pdf`) usa **solo diferencias
+divididas**: las finitas no aparecen en ninguna de sus ocho diapositivas. Las
+otras tres variantes quedan disponibles porque la tabla se ve distinta segun
+cual sea y no cuesta nada ofrecerlas.
 
 | valor | que hace |
 |-------|----------|
-| `auto` | por defecto. Si los x estan igualmente espaciados usa `adelante`; si no, `divididas`. |
-| `divididas` | diferencias divididas. Caso general, funciona siempre. |
+| `divididas` | **por defecto**. Diferencias divididas, como el docente. Funciona siempre. |
+| `auto` | si los x estan igualmente espaciados usa `adelante`; si no, `divididas`. |
 | `adelante` | diferencias finitas hacia adelante (Newton-Gregory). Exige x equiespaciados. |
 | `atras` | diferencias finitas hacia atras. Exige x equiespaciados. |
 
@@ -102,6 +112,48 @@ El polinomio resultante es **el mismo** en las cuatro: por n+1 puntos pasa un
 unico polinomio de grado n. Lo que cambia es la tabla que se muestra. Por eso
 `variante_usada` viaja en el resultado, para que la interfaz pueda decir cual
 salio.
+
+### interpolacion-lagrange
+
+```json
+{
+  "points": [[0.0, 1.0], [1.0, 3.0], [2.0, 0.0]],
+  "x": 1.5
+}
+```
+
+No tiene variantes: el procedimiento de Lagrange es uno solo.
+
+```json
+{
+  "polinomio": "-2.5*x**2 + 4.5*x + 1.0",
+  "valor": 2.125,
+  "grado": 2
+}
+```
+
+**La tabla es el procedimiento, no una convergencia.** Cada fila es un `i`, y
+las columnas siguen los cinco pasos de la diapositiva del docente:
+
+| key | que es | `numeric` |
+|-----|--------|-----------|
+| `xi` | la abscisa del punto | si |
+| `yi` | `f(x_i)` | si |
+| `numerador` | `(x - x_j)` para todo `j != i`, factorizado | **no** |
+| `denominador` | `(x_i - x_j)` para todo `j != i`, con los valores sustituidos | **no** |
+| `Li` | `L_i(x)` expandido | **no** |
+| `termino` | `f(x_i) * L_i(x)` expandido | **no** |
+| `Li_evaluado` | `L_i` en la `x` pedida | si |
+
+Los binomios se escriben con el signo ya resuelto: con `x_j = -4` sale
+`(x + 4)`, no `(x - -4)`. El `(x - 0)` **no** se reduce a `x`, para que la fila
+se lea contra la tabla de puntos sin reconstruir que termino falta.
+
+Como `interpolacion-newton` y `interpolacion-lagrange` construyen el mismo
+polinomio por caminos distintos, hay una prueba que los corre sobre los mismos
+puntos y exige que coincidan. Si difieren, uno de los dos esta mal.
+
+Casos de referencia del docente en `tests/casos_referencia_lagrange.py`.
 
 ### runge-kutta
 
@@ -164,9 +216,23 @@ Reglas duras:
   y buscando esa `key` en `values`. Una key que no este en `columns` no se muestra.
 - La iteracion 0 siempre tiene `error: null`. No hay valor anterior con que compararla.
 - **Ningun numero puede ser `Infinity` ni `NaN`.** JSON no los admite y
-  `JSON.parse` los rechaza. Todo valor pasa por `core.serialization.finite_or_none`,
-  que los convierte en `null`. La interfaz muestra `null` como `—` y busca la
-  explicacion en `stop_reason` y `notes`.
+  `JSON.parse` los rechaza. Todo valor numerico pasa por
+  `core.serialization.finite_or_none`, que los convierte en `null`. La interfaz
+  muestra `null` como `—` y busca la explicacion en `stop_reason` y `notes`.
+- **Una celda es una medicion o una expresion.** Las columnas con
+  `numeric: false` llevan texto: el polinomio base de una interpolacion se
+  muestra factorizado y no hay ningun float que lo represente. Esas celdas
+  viajan como string y la interfaz las imprime tal cual, sin pasarlas por el
+  formateo de decimales. El camino completo es
+  `core.serialization.cell_value` -> `IterationSchema.values`
+  (`dict[str, float | str | None]`) -> `web/tabla.js`, y la exportacion a CSV y
+  PDF las escribe sin tocar.
+- **`finite_or_none` no admite texto y no debe admitirlo.** Es la misma funcion
+  que usa `POST /api/plot/sample`: si dejara pasar strings, una expresion sin
+  evaluar viajaria como punto de la curva. Las celdas de texto pasan por
+  `cell_value`, que es otra cosa.
+- **`error` siempre es una medicion.** Nunca lleva texto, aunque la fila tenga
+  columnas simbolicas.
 - `stop_reason` es uno de: `tolerancia_alcanzada`, `n_iteraciones_completadas`,
   `solucion_exacta`, `integracion_completada`, `divergio`, `fallo`.
 - **`integracion_completada`** es el final normal de un metodo de malla fija

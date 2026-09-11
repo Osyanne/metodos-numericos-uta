@@ -8,13 +8,14 @@ Docentes: Ing. Henry Cumbal, Dr. Victor Penafiel.
 | # | Requisito |
 |---|-----------|
 | R1 | El aplicativo cubrira alrededor de **10 metodos** a lo largo del semestre. |
-| R2 | Para el **primer parcial** son cuatro: Newton-Raphson, Interpolacion de Newton, Von Mises y Runge-Kutta. |
+| R2 | Para el **primer parcial** son cinco: Newton-Raphson, Interpolacion de Newton, Von Mises, Runge-Kutta e Interpolacion de Lagrange. |
 | R3 | La arquitectura **debe poder expandirse** para admitir los metodos restantes. |
 | R4 | Precision de **6 decimales por defecto**, ajustable por el usuario. |
 | R5 | Se puede pedir el calculo hasta **cualquier iteracion n**, desde el valor inicial. |
 | R6 | **Tabla con todas las iteraciones**, no solo el resultado final. |
 | R7 | **Graficacion** de los ejercicios. |
 | R8 | Interpolacion de Newton debe **mostrar el polinomio expandido**. |
+| R12 | **Interpolacion de Lagrange**, agregada sobre el cierre del parcial con sus diapositivas propias. |
 | R9 | Runge-Kutta debe resolver **sistemas de ecuaciones**, y aceptar tanto el paso `h` como el numero de pasos. |
 | R10 | Newton-Raphson: **la app deriva sola**, pero el usuario tambien puede escribir la derivada. |
 | R11 | Los **tres criterios de error** implementados y **configurables**. |
@@ -40,7 +41,8 @@ hoy no los consume nadie.
 |--------|--------|---------|--------|
 | Newton-Raphson | U1 | `f(x)`, x0 | raiz |
 | Von Mises | U1 | `f(x)`, x0 | raiz |
-| Interpolacion de Newton | U2 | tabla de puntos, x a evaluar | polinomio expandido y valor |
+| Interpolacion de Newton | U2 | tabla de puntos, x a evaluar | polinomio expandido, forma de Newton y valor |
+| Interpolacion de Lagrange | U2 | tabla de puntos, x a evaluar | polinomio expandido y valor |
 | Runge-Kutta | U3 | `f(x,y)` o sistema, condiciones iniciales, h o n | tabla solucion |
 
 ## Como se cumple cada requisito
@@ -60,8 +62,9 @@ hoy no los consume nadie.
 
 ## Casos de referencia
 
-En `tests/casos_referencia.py`, sacados del material del docente. Son la vara
-para medir si un metodo esta bien: reproducir estos numeros o esta mal.
+En `tests/casos_referencia.py` y `tests/casos_referencia_lagrange.py`, sacados
+del material del docente. Son la vara para medir si un metodo esta bien:
+reproducir estos numeros o esta mal.
 
 `f(x) = e^-x - ln(x)`, `x0 = 1`, derivada congelada `f'(1) = -1.36787944`:
 
@@ -74,17 +77,39 @@ para medir si un metodo esta bien: reproducir estos numeros o esta mal.
 Ejercicio propuesto en clase, sin resolver:
 `4x^3 - 18x^2 + 12x - 6 = 0` con `x0 = 1.165`.
 
+## Interpolacion de Lagrange
+
+El docente entrego las diapositivas sobre el cierre del parcial. El
+procedimiento que evalua tiene cinco pasos, y la tabla del aplicativo los
+muestra los cinco:
+
+    L_i(x) = producto sobre j != i de (x - x_j) / (x_i - x_j)
+    P_n(x) = suma de f(x_i) * L_i(x)
+
+**Consecuencia para la arquitectura:** es el primer metodo cuya tabla lleva
+**expresiones y no mediciones**. `Column.numeric` ya existia para eso y la
+interfaz ya sabia dibujarlo, pero la serializacion y el esquema HTTP solo
+admitian numeros, asi que las celdas simbolicas llegaban vacias. Ver
+`docs/CONTRATO.md`, seccion "Respuesta".
+
+Casos de referencia en `tests/casos_referencia_lagrange.py`: los dos ejercicios
+resueltos en clase y el propuesto.
+
 ## Preguntas que siguen abiertas
 
-Ninguna bloquea. Cada respuesta ahorra implementar dos variantes.
+Ninguna bloquea.
 
-1. **Interpolacion de Newton** — diferencias divididas o diferencias finitas?
-   Se implementa **divididas**, que es el caso general y cubre tambien puntos
-   equiespaciados.
-2. **Runge-Kutta** — que orden? Se implementan **2 (Heun) y 4 (clasico)**, con
+1. **Runge-Kutta** — que orden? Se implementan **2 (Heun) y 4 (clasico)**, con
    4 por defecto.
-3. **Fecha de entrega del primer parcial** y formato (repositorio, informe,
+2. **Fecha de entrega del primer parcial** y formato (repositorio, informe,
    sustentacion). No hay rubrica: el docente confirmo que no existe.
+
+### Cerradas por el material del docente
+
+- **Interpolacion de Newton: divididas o finitas?** **Divididas.** El PDF
+  `Interpolacion del metodo de Newton.pdf` usa solo diferencias divididas en
+  sus ocho diapositivas; las finitas no aparecen. Es el default del metodo.
+  Las otras tres variantes quedan disponibles.
 
 ## Sin rubrica
 

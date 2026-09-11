@@ -4,7 +4,7 @@ Universidad Tecnica de Ambato — FISEI — Carrera de Software, Nivel 3.
 
 Resuelve problemas de metodos numericos mostrando **todas las iteraciones**, con
 precision ajustable y un plano interactivo tipo GeoGebra. Disenado para crecer:
-los cuatro metodos del primer parcial son los primeros de una decena.
+los cinco metodos del primer parcial son los primeros de una decena.
 
 Funciona **sin internet**: no hay ninguna libreria externa ni CDN del lado del
 navegador. El plano esta dibujado a mano sobre Canvas.
@@ -15,7 +15,8 @@ navegador. El plano esta dibujado a mano sobre Canvas.
 |--------|--------|--------------|
 | Newton-Raphson | U1 | raices de `f(x) = 0`; la app deriva sola o acepta la derivada |
 | Von Mises | U1 | raices, con la derivada congelada en `x0` |
-| Interpolacion de Newton | U2 | polinomio expandido, en sus cuatro variantes |
+| Interpolacion de Newton | U2 | polinomio expandido y forma de Newton, por diferencias divididas |
+| Interpolacion de Lagrange | U2 | polinomio expandido, mostrando cada `L_i` con su numerador y denominador |
 | Runge-Kutta | U3 | EDO y sistemas de EDO, orden 2 y 4 |
 
 ## Instalar y ejecutar
@@ -52,7 +53,7 @@ Y abrir <http://127.0.0.1:8000>.
 pytest
 ```
 
-Tienen que dar **197 pruebas en verde**. Entre ellas hay cuatro que verifican
+Tienen que dar **227 pruebas en verde**. Entre ellas hay cuatro que verifican
 justamente la instalacion: que todo lo que el codigo importa este declarado en
 `pyproject.toml`, y que ningun archivo referenciado desde la interfaz falte en
 el repositorio. Las dos cosas pasan desapercibidas en la maquina donde se

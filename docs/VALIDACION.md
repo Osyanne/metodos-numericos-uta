@@ -55,17 +55,48 @@ Cada requisito de `ESPECIFICACION.md`, con la prueba que lo respalda.
 
 | # | Requisito | Como se comprueba | Evidencia |
 |---|---|---|---|
-| R1 | Alrededor de 10 metodos en el semestre | Los cuatro del parcial, con la arquitectura ejercitada para el quinto | `test_los_cuatro_metodos_del_parcial_siguen_estando` |
-| R2 | Los cuatro del primer parcial | Cada uno con su archivo de pruebas: 18 + 19 + 13 + 18 | `test_newton_raphson.py`, `test_von_mises.py`, `test_newton_interpolation.py`, `test_runge_kutta.py` |
+| R1 | Alrededor de 10 metodos en el semestre | Los cinco del parcial, con la arquitectura ejercitada para el sexto | `test_los_cuatro_metodos_del_parcial_siguen_estando` |
+| R2 | Los cinco del primer parcial | Cada uno con su archivo de pruebas | `test_newton_raphson.py`, `test_von_mises.py`, `test_newton_interpolation.py`, `test_lagrange_interpolation.py`, `test_runge_kutta.py` |
 | R3 | La arquitectura se expande | Se escribe un metodo nuevo en disco y aparece en el registro, en la API y con sus campos, **sin tocar ningun archivo existente** | `test_extensibilidad.py` (3 pruebas) |
 | R4 | 6 decimales por defecto, ajustable | Rango 2..12, recorte de valores invalidos, y que cambiar decimales **no cambie el calculo** | `test_decimales_por_defecto_son_seis`, `test_decimales_se_recortan_al_rango_permitido`, `test_los_decimales_no_cambian_los_valores_calculados` |
 | R5 | Calculo hasta cualquier iteracion n | Con `stop_on_tolerance=False` corren las n iteraciones, **incluso si cae sobre una raiz exacta** | `test_config_permite_correr_n_exacto_sin_parar_por_tolerancia`, `test_una_raiz_exacta_no_recorta_las_n_iteraciones_pedidas` |
 | R6 | Tabla con todas las iteraciones | Cada metodo declara sus columnas; el CSV baja la tabla completa y sin redondear | `test_las_columnas_son_las_de_la_tabla_del_docente`, `test_csv_descarga_la_tabla_real_completa_y_sin_redondear` |
 | R7 | Graficacion | Las cuatro clases de grafica, con sus claves de contrato, y el remuestreo al hacer zoom | `test_grafica_de_raiz_...`, `test_grafica_de_interpolacion_...`, `test_grafica_de_edo_...`, `test_grafica_de_convergencia_...` |
 | R8 | Polinomio expandido | Caso resuelto a mano, y la propiedad de que las cuatro variantes dan el mismo polinomio | `test_caso_resuelto_a_mano_devuelve_polinomio_expandido`, `test_las_cuatro_variantes_dan_el_mismo_polinomio` |
+| R12 | Interpolacion de Lagrange | Los tres ejercicios de las diapositivas, cada `L_i` por separado, y que coincida con Newton sobre los mismos puntos | `test_lagrange_interpolation.py` (25 pruebas), `test_coincide_con_la_interpolacion_de_newton` |
 | R9 | Runge-Kutta con sistemas, y h o n | Sistema de dos EDO contra la solucion analitica; las formas de definir la malla | `test_resuelve_un_sistema_evaluando_las_componentes_simultaneamente`, `test_acepta_las_formas_del_contrato_para_h_n_y_xf` |
 | R10 | La app deriva sola o acepta la derivada | Las dos vias dan el mismo resultado, y el aplicativo dice cual derivada uso | `test_deriva_sola_y_lo_dice`, `test_la_derivada_a_mano_da_el_mismo_resultado` |
 | R11 | Los tres criterios de error, configurables | Los tres implementados; el porcentual reproduce la columna del docente | `test_error_absoluto_y_relativo`, `test_error_relativo_porcentual_reproduce_la_tabla_del_docente` |
+
+## Lagrange: por que no alcanza con comparar el polinomio final
+
+El primer ejercicio del docente es `(0,1), (1,3), (2,0)`, y ahi **`y_2 = 0`**.
+Eso quiere decir que el tercer termino de la suma se anula entero: un `L_2`
+equivocado —con un signo cambiado, o saltando el factor que no debia— **da
+exactamente el mismo polinomio final**. Comparar solo `result.polinomio` dejaria
+pasar ese error.
+
+Por eso las pruebas comparan **cada `L_i` por separado** contra el de la
+diapositiva, y ademas verifican la propiedad que los define: `L_i` vale 1 en
+`x_i` y 0 en todos los demas puntos.
+
+La otra red es cruzada: `test_coincide_con_la_interpolacion_de_newton` corre los
+dos metodos sobre los mismos puntos y exige el mismo polinomio. No dice cual
+esta mal si difieren; dice que hay que mirar.
+
+## Las celdas de texto se verifican de punta a punta
+
+La tabla de Lagrange lleva expresiones, y esa clase de dato atravesaba **cuatro
+eslabones** que la convertian en `null` cada uno por su cuenta. Verificar solo
+el nucleo habria dejado la tabla en blanco en la pantalla con todas las pruebas
+en verde. Hay una prueba por eslabon:
+
+| Eslabon | Prueba |
+|---|---|
+| Nucleo | `test_una_celda_de_texto_llega_entera_a_la_interfaz` |
+| El plano **no** se afloja | `test_el_muestreo_del_plano_sigue_siendo_solo_numerico` |
+| Exportacion CSV y PDF | `test_csv_exporta_las_celdas_de_texto_tal_cual`, `test_pdf_exporta_las_celdas_de_texto` |
+| Navegador | `Lagrange muestra las expresiones de cada L(i), no guiones` |
 
 ## Von Mises: la trampa que se verifica a proposito
 

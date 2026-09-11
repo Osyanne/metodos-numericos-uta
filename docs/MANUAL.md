@@ -19,6 +19,7 @@ aparece una linea que explica que hace cada uno.
 | Newton-Raphson | encontrar una raiz de `f(x) = 0` |
 | Von Mises | lo mismo, con la derivada congelada en el punto inicial |
 | Interpolacion de Newton | armar el polinomio que pasa por unos puntos, y evaluarlo |
+| Interpolacion de Lagrange | lo mismo, por polinomios base en vez de diferencias divididas |
 | Runge-Kutta | resolver una EDO o un sistema de EDO |
 
 **Cambiar de metodo borra lo que haya en pantalla.** Es a proposito: una tabla
@@ -57,8 +58,19 @@ programa.
 
 ### Puntos, sistemas y derivadas
 
-- **Interpolacion de Newton** pide una tabla de puntos. El boton agrega filas.
-  Una fila a medio llenar se rechaza: no se convierte en el punto (0, 0).
+- **Los dos metodos de interpolacion** piden una tabla de puntos. El boton
+  agrega filas. Una fila a medio llenar se rechaza: no se convierte en el punto
+  (0, 0). **Los puntos se usan en el orden en que se cargaron**, sin ordenarlos
+  por x: asi la tabla se puede comparar fila por fila con la del pizarron.
+- **Interpolacion de Newton** tiene una casilla `variante`, opcional. Vacia usa
+  **diferencias divididas**, que es lo que se ve en clase. Las otras opciones
+  (`auto`, `adelante`, `atras`) muestran la misma respuesta con otra tabla
+  intermedia; `adelante` y `atras` necesitan que los x esten igualmente
+  espaciados y lo avisan si no lo estan.
+- **Interpolacion de Lagrange** no tiene variantes. Su tabla no son
+  iteraciones: cada fila es un paso del procedimiento, con el numerador y el
+  denominador de cada `L_i` escritos tal como se hacen a mano. Esas columnas
+  llevan expresiones, no numeros, asi que el control de decimales no las toca.
 - **Runge-Kutta** acepta un sistema. El boton agrega ecuaciones, y las
   incognitas se llaman `y1`, `y2`, ... Con una sola ecuacion la incognita se
   llama `y`. La malla se define con `h` y `n`, con `h` y `xf`, o con `n` y `xf`.

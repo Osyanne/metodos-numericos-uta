@@ -4,6 +4,7 @@ const casos = [
   ["newton-raphson", "newton-clasico", ["i", "xi", "f(xi)", "x(i+1)", "error"]],
   ["von-mises", "von-mises-docente", ["i", "xi", "f(xi)", "x(i+1)", "error"]],
   ["interpolacion-newton", "interpolacion-logaritmo", ["i", "x", "f(x)", "Diferencia dividida 1", "Diferencia dividida 2", "error"]],
+  ["interpolacion-lagrange", "lagrange-docente", ["i", "x_i", "f(x_i)", "Numerador", "Denominador", "L_i(x)", "f(x_i) L_i(x)", "L_i evaluado", "error"]],
   ["runge-kutta", "runge-kutta-escalar", ["i", "x", "y", "error"]],
 ];
 
@@ -65,6 +66,36 @@ test("Runge-Kutta completa la integración y no inventa error", async ({ page })
   await expect.soft(page.locator("#resumen .estado-ok")).toHaveText("Integración completada");
   await page.locator("#ver-tabla").click();
   await expect(page.locator("#tabla .col-error")).toHaveText(Array(17).fill("—"));
+});
+
+// El recorrido completo de la tubería de celdas de texto: núcleo, HTTP e
+// interfaz. Cada eslabón por separado convertía las expresiones en null, y la
+// tabla se veía entera con guiones sin que fallara ninguna prueba de unidad.
+test("Lagrange muestra las expresiones de cada L(i), no guiones", async ({ page }) => {
+  await cargar(page, "interpolacion-lagrange", "lagrange-docente");
+  const resultado = await resolver(page, "interpolacion-lagrange");
+
+  expect(resultado.iterations[0].values.numerador).toBe("(x - 1)*(x - 2)");
+  expect(resultado.iterations[0].values.denominador).toBe("(0 - 1)*(0 - 2)");
+
+  await page.locator("#ver-tabla").click();
+  const primera = page.locator("#tabla tbody tr").first();
+  await expect(primera.locator("td").nth(3)).toHaveText("(x - 1)*(x - 2)");
+  await expect(primera.locator("td").nth(4)).toHaveText("(0 - 1)*(0 - 2)");
+
+  // Y mover los decimales no las toca: son expresiones, no mediciones.
+  await page.locator("#decimales").fill("2");
+  await expect(primera.locator("td").nth(3)).toHaveText("(x - 1)*(x - 2)");
+});
+
+test("Lagrange reproduce el polinomio de la diapositiva", async ({ page }) => {
+  await cargar(page, "interpolacion-lagrange", "lagrange-ejercicio");
+  const resultado = await resolver(page, "interpolacion-lagrange");
+
+  // Ejercicio propuesto: (1,10), (-4,10), (-7,34) en x = -3.
+  expect(resultado.result.valor).toBeCloseTo(6, 9);
+  expect(resultado.result.grado).toBe(2);
+  expect(resultado.plot.series.points).toEqual([[1, 10], [-4, 10], [-7, 34]]);
 });
 
 test("Von Mises divergente explica la causa sin marcar una raíz", async ({ page }) => {
