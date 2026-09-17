@@ -76,6 +76,24 @@ export const PRESETS = [
     params: { fxy: ["y2", "-y1"], x0: 0, y0: [1, 0], h: 0.1, n: 16, xf: null, orden: 4 },
     config: { ...CONFIG_MALLA },
   },
+  {
+    id: "punto-medio-docente",
+    metodo: "punto-medio",
+    nombre: "Docente · ∫(0.25x³ − x) de −1.5 a 2",
+    fuente: "MÉTODO DE INTEGRACIÓN DEL PUNTO MEDIO.pdf, ejemplo del parcial 1",
+    descripcion: "Ejemplo del docente: integra 0.25x³ − x entre −1.5 y 2 con n = 7 rectángulos. El valor real es −0.1914; el método aproxima −0.2051.",
+    params: { fx: "0.25*x^3 - x", a: -1.5, b: 2, n: 7 },
+    config: { ...CONFIG_MALLA, decimals: 4 },
+  },
+  {
+    id: "punto-medio-refinado",
+    metodo: "punto-medio",
+    nombre: "Demo · mismo ejercicio con n = 100",
+    fuente: "MÉTODO DE INTEGRACIÓN DEL PUNTO MEDIO.pdf; refinamiento de la malla",
+    descripcion: "Mismo integrando, mismo intervalo, con cien rectángulos: el resultado se acerca al valor exacto −0.1914 y se ve cómo el error baja al refinar la malla.",
+    params: { fx: "0.25*x^3 - x", a: -1.5, b: 2, n: 100 },
+    config: { ...CONFIG_MALLA },
+  },
 ];
 
 export function presetsPara(slug) {

@@ -67,6 +67,7 @@ register(
         name="Von Mises",
         unit="U1",
         family="raices",
+        orden=2,
         description=(
             "Variante de Newton-Raphson que congela la derivada en el punto "
             "inicial. En vez de una tangente nueva por iteracion, traza "

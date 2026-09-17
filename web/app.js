@@ -6,6 +6,7 @@ import { Plano, capasDesdePlot } from "./plano.js";
 import { dibujarResumen, dibujarTabla } from "./tabla.js";
 import { montarComparador } from "./comparador.js";
 import { presetsPara } from "./presets.js";
+import { montarVistaIntegral } from "./vista-integral.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -107,8 +108,23 @@ function seleccionarMetodo(slug) {
   $("#descripcion").textContent = estado.metodo.description ?? "";
   llenarPresets(estado.metodo.slug);
   formulario.dibujar(estado.metodo);
+  mostrarVistaIntegral();
   limpiarPantalla();
   avisar("");
+}
+
+// La vista previa con el simbolo ∫ solo tiene sentido para los metodos de
+// integracion: se muestra encima del formulario del Punto Medio y se oculta
+// para los demas. Se remonta cada vez porque el formulario se redibujo.
+function mostrarVistaIntegral() {
+  const caja = $("#vista-integral");
+  if (estado.metodo?.family === "integracion") {
+    caja.hidden = false;
+    montarVistaIntegral(caja, formulario);
+  } else {
+    caja.hidden = true;
+    caja.innerHTML = "";
+  }
 }
 
 
@@ -148,6 +164,7 @@ function aplicarPreset(id) {
   // media carga (los datos nuevos con la precision vieja) da una tabla que no
   // es la del ejercicio ni la de nadie.
   formulario.dibujar(estado.metodo, preset.params);
+  mostrarVistaIntegral();
   $("#decimales").value = preset.config.decimals;
   $("#decimales-valor").textContent = preset.config.decimals;
   $("#iteraciones").value = preset.config.max_iterations;
@@ -184,6 +201,11 @@ async function resolver() {
     if (corrida !== estado.corrida) return;
     estado.resultado = resultado;
     pintarResultado();
+    // Si la pagina esta scrolleada hacia abajo (mirando los campos del
+    // formulario o la configuracion), la animacion del plano pasa fuera de
+    // pantalla y el usuario no la ve. Al terminar de resolver la traemos
+    // hacia arriba: primero el resumen con el numero, y despues el plano.
+    llevarLaVistaAlPlano();
   } catch (e) {
     if (corrida !== estado.corrida) return;
     avisar(e.message);
@@ -195,6 +217,42 @@ async function resolver() {
     // guard esta para no pintar datos viejos, no para trabar la interfaz.
     $("#resolver").disabled = false;
   }
+}
+
+// Lleva la vista al inicio del panel principal, para que el resumen y el
+// plano queden a la vista al terminar de resolver: sin esto, un usuario que
+// scrolleo hacia abajo mirando los campos del formulario se pierde toda la
+// animacion del dibujo. Se intenta primero el smooth-scroll nativo y se
+// asegura despues con un scroll directo, porque hay webviews embebidos que
+// aceptan el behavior "smooth" y lo ignoran sin fallar: sin este seguro, la
+// vista se queda donde estaba en esos entornos. En navegadores normales el
+// scrollTo suave ya movio la vista y el salto final es un no-op.
+function llevarLaVistaAlPlano() {
+  const panel = document.querySelector(".panel-principal");
+  if (!panel) return;
+
+  const destino = window.scrollY + panel.getBoundingClientRect().top;
+  if (Math.abs(destino - window.scrollY) < 4) return;
+
+  const sinAnimacion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  try {
+    window.scrollTo({
+      top: destino,
+      behavior: sinAnimacion ? "auto" : "smooth",
+    });
+  } catch {
+    // Firma antigua de scrollTo(x, y): no acepta objeto de opciones.
+    window.scrollTo(0, destino);
+  }
+
+  // Seguro: si el smooth-scroll no arranco (webview que lo ignora), la
+  // proxima vuelta del event loop scrollea de una. Cuando si arranco, el
+  // scrollTo directo simplemente confirma la posicion final.
+  setTimeout(() => {
+    if (Math.abs(window.scrollY - destino) > 4) {
+      window.scrollTo(0, destino);
+    }
+  }, 0);
 }
 
 function pintarResultado() {

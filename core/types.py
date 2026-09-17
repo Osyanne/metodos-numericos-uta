@@ -106,6 +106,7 @@ class PlotKind(str, Enum):
     INTERPOLATION = "interpolacion"
     CONVERGENCE = "convergencia"
     ODE_SOLUTION = "solucion_edo"
+    INTEGRATION = "integracion"
 
 
 @dataclass(frozen=True)
@@ -161,6 +162,12 @@ class MethodSpec:
 
     Agregar el metodo numero 5 es crear un archivo en core/methods/ que
     construya uno de estos y lo pase a registry.register(). Nada mas.
+
+    `orden` controla la posicion del metodo en el desplegable de la
+    interfaz. Se ordena primero por `orden` y despues por nombre alfabetico,
+    asi los metodos que no lo declaran caen al final sin romper el orden de
+    los que si lo hacen. El docente pidio un orden pedagogico especifico y
+    no coincide con el alfabetico ni con el codigo de unidad.
     """
 
     slug: str
@@ -171,6 +178,7 @@ class MethodSpec:
     solve: Callable[[dict[str, Any], "SolveConfig"], MethodResult]
     description: str = ""
     reference: str = ""
+    orden: int = 100
 
 
 class MethodError(Exception):
