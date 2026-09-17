@@ -24,7 +24,7 @@ async function arriba(page) {
 
 test("capturas del manual", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#metodo option")).toHaveCount(4);
+  await expect(page.locator("#metodo option")).toHaveCount(5);
 
   // Un caso que se explica solo: el ejercicio resuelto del docente.
   await page.locator("#metodo").selectOption("von-mises");

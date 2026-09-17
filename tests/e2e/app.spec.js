@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#metodo option")).toHaveCount(4);
+  await expect(page.locator("#metodo option")).toHaveCount(5);
 });
 
 async function resolverNewton(page) {

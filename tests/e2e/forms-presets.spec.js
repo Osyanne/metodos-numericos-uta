@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#metodo option")).toHaveCount(4);
+  await expect(page.locator("#metodo option")).toHaveCount(5);
 });
 
 test("una coordenada incompleta se explica sin enviar un cero inventado", async ({ page }) => {
