@@ -137,7 +137,7 @@ for (const ancho of [320, 360]) {
   test(`todos los formularios y el canvas caben a ${ancho}px`, async ({ page }) => {
     await page.setViewportSize({ width: ancho, height: 740 });
     await page.goto("/");
-    for (const metodo of ["newton-raphson", "von-mises", "interpolacion-newton", "interpolacion-lagrange", "runge-kutta"]) {
+    for (const metodo of ["newton-raphson", "von-mises", "interpolacion-newton", "interpolacion-lagrange", "punto-medio", "runge-kutta"]) {
       await page.locator("#metodo").selectOption(metodo);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(ancho);
       const medida = await page.locator("#plano").evaluate((canvas) => ({
