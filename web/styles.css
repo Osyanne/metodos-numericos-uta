@@ -197,6 +197,118 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .boton-quitar { padding: 2px 7px; line-height: 1; font-size: 15px; }
 
+/* ---------------------------------------------------------- vista integral
+
+   Preview del signo integral para el metodo del Punto Medio. Se arma con el
+   caracter unicode ∫ agrandado y los limites en columna a la derecha, para
+   que se lea como en la pizarra. La paleta debajo tiene botones que meten
+   el simbolo o la funcion en la casilla de f(x) donde este el cursor. */
+
+.vista-integral {
+  padding: 10px 12px 12px;
+  background: var(--accent-bg);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vista-integral-titulo {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.integral-formula {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: "Cambria Math", "Times New Roman", Cambria, serif;
+  font-size: 17px;
+  color: var(--ink);
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 4px 2px;
+}
+
+.integral-simbolo {
+  font-size: 46px;
+  line-height: 0.8;
+  color: var(--accent);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.integral-limites {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 40px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 2px 4px 2px 0;
+}
+
+.integral-superior { line-height: 1; }
+.integral-inferior { line-height: 1; }
+
+.integral-integrando {
+  font-family: var(--mono);
+  font-size: 15px;
+  padding: 0 4px;
+}
+
+.integral-dx {
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-left: 2px;
+}
+
+.paleta-simbolos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.paleta-ayuda {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  margin-right: 4px;
+}
+
+.boton-simbolo {
+  min-width: 30px;
+  padding: 4px 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule-firm);
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.boton-simbolo:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.boton-simbolo:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* tabla de puntos */
 
 .puntos { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }

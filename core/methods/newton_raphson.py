@@ -50,6 +50,7 @@ register(
         name="Newton-Raphson",
         unit="U1",
         family="raices",
+        orden=1,
         description=(
             "Aproxima una raiz de f(x) = 0 trazando la tangente en cada punto y "
             "tomando donde corta al eje x. Converge rapido cerca de la raiz, "

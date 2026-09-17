@@ -336,8 +336,9 @@ SPEC = register(
     MethodSpec(
         slug="interpolacion-newton",
         name="Interpolacion de Newton",
-        unit="U2",
+        unit="U1",
         family="interpolacion",
+        orden=3,
         inputs=[
             InputField(
                 "points",

@@ -27,7 +27,11 @@ def get(slug: str) -> MethodSpec:
 
 
 def all_methods() -> list[MethodSpec]:
-    return sorted(_REGISTRY.values(), key=lambda s: (s.unit, s.name))
+    # Se ordena por `orden` primero (posicion pedagogica declarada por cada
+    # metodo) y por `name` como desempate. Antes se ordenaba por (unit, name),
+    # que agrupaba correctamente por unidad pero no permitia decidir el orden
+    # dentro de una misma unidad ni poner un metodo de U3 despues de los de U1.
+    return sorted(_REGISTRY.values(), key=lambda s: (s.orden, s.name))
 
 
 def clear() -> None:

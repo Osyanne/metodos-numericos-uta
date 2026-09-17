@@ -131,10 +131,15 @@ def test_metodo_inexistente_lista_los_disponibles(registro_limpio):
         get("no-existe")
 
 
-def test_los_metodos_salen_ordenados_por_unidad(registro_limpio):
-    register(_spec("b"))
-    register(MethodSpec("a", "A", "U3", "edo", [], lambda p, c: None))
-    assert [s.slug for s in all_methods()] == ["b", "a"]
+def test_los_metodos_salen_ordenados_por_orden_explicito(registro_limpio):
+    """El orden en el desplegable de la interfaz lo elige cada metodo con su
+    campo `orden`. Los metodos que no lo declaran caen al final ordenados
+    alfabeticamente, para que no rompan el orden de los que si lo declaran.
+    """
+    register(_spec("z"))  # orden por defecto (100), cae al final
+    register(MethodSpec("a", "A", "U3", "edo", [], lambda p, c: None, orden=2))
+    register(MethodSpec("b", "B", "U1", "raices", [], lambda p, c: None, orden=1))
+    assert [s.slug for s in all_methods()] == ["b", "a", "z"]
 
 
 # ---------- tipos ----------

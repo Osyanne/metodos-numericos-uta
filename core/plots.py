@@ -113,3 +113,38 @@ def _componentes(
     if isinstance(valores, Mapping):
         return [{"name": nombre, "y": list(ys)} for nombre, ys in valores.items()]
     return [{"name": "y", "y": list(valores)}]
+
+
+def integration(
+    xs: Sequence[float],
+    ys: Sequence[float],
+    rectangles: Sequence[tuple[float, float, float]],
+    a: float,
+    b: float,
+    integral: float,
+    title: str = "",
+    resample: Resample | None = None,
+) -> PlotSpec:
+    """series = {curve: {x, y}, rectangles: [{x0, x1, y}], interval: {a, b}, integral}
+
+    Cada rectangulo es (x0, x1, y): sus bordes verticales y la altura f(m_i).
+    La interfaz los pinta como cajas semitransparentes y superpone la curva de
+    f encima, para que se lea a un golpe de vista cuanto sub- o sobreestima
+    cada barra el area real.
+    """
+    return PlotSpec(
+        kind=PlotKind.INTEGRATION,
+        series={
+            "curve": {"x": list(xs), "y": list(ys)},
+            "rectangles": [
+                {"x0": float(x0), "x1": float(x1), "y": float(y)}
+                for x0, x1, y in rectangles
+            ],
+            "interval": {"a": float(a), "b": float(b)},
+            "integral": float(integral),
+        },
+        x_label="x",
+        y_label="f(x)",
+        title=title,
+        resample=resample,
+    )

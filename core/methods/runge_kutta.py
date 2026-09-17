@@ -386,6 +386,7 @@ SPEC = register(
         name="Runge-Kutta",
         unit="U3",
         family="edo",
+        orden=5,
         inputs=[
             InputField(
                 "fxy",

@@ -64,7 +64,9 @@ export function dibujarTabla(contenedor, resultado, decimales) {
 // Claves que son conteos o etiquetas, no mediciones: mostrarlas con seis
 // decimales ("iteraciones 4.000000") es ruido y sugiere una precision que no
 // tienen.
-const CONTEOS = new Set(["iteraciones", "grado", "n", "orden", "pasos", "puntos"]);
+const CONTEOS = new Set([
+  "iteraciones", "grado", "n", "orden", "pasos", "puntos", "subintervalos",
+]);
 
 const MOTIVO = {
   tolerancia_alcanzada: ["ok", "Alcanzó la tolerancia"],

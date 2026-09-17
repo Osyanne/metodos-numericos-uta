@@ -15,8 +15,9 @@ navegador. El plano esta dibujado a mano sobre Canvas.
 |--------|--------|--------------|
 | Newton-Raphson | U1 | raices de `f(x) = 0`; la app deriva sola o acepta la derivada |
 | Von Mises | U1 | raices, con la derivada congelada en `x0` |
-| Interpolacion de Newton | U2 | polinomio expandido y forma de Newton, por diferencias divididas |
+| Interpolacion de Newton | U1 | polinomio expandido y forma de Newton, por diferencias divididas |
 | Interpolacion de Lagrange | U2 | polinomio expandido, mostrando cada `L_i` con su numerador y denominador |
+| Punto Medio | U1 | integral definida `∫[a,b] f(x)dx` con rectangulos centrados |
 | Runge-Kutta | U3 | EDO y sistemas de EDO, orden 2 y 4 |
 
 ## Instalar y ejecutar
