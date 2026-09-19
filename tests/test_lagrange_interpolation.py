@@ -52,7 +52,8 @@ def assert_polinomio(resultado, coeficientes) -> None:
 def test_queda_registrado_sin_registrarlo_a_mano(metodo):
     assert metodo in all_methods()
     assert metodo.slug == "interpolacion-lagrange"
-    assert metodo.unit == "U2"
+    # Primer parcial, como Interpolacion de Newton y Punto Medio.
+    assert metodo.unit == "U1"
     assert metodo.family == "interpolacion"
 
 

@@ -142,6 +142,26 @@ def test_los_metodos_salen_ordenados_por_orden_explicito(registro_limpio):
     assert [s.slug for s in all_methods()] == ["b", "a", "z"]
 
 
+def test_el_desplegable_sigue_el_orden_de_la_clase(registro_limpio):
+    """Las dos interpolaciones van juntas, antes de Punto Medio.
+
+    Un metodo que no declara `orden` cae al final, despues de Runge-Kutta. Eso
+    le pasaba a Lagrange, que nacio antes de que existiera el campo.
+    """
+    from core.registry import load_methods
+
+    load_methods(force=True)
+
+    assert [s.slug for s in all_methods()] == [
+        "newton-raphson",
+        "von-mises",
+        "interpolacion-newton",
+        "interpolacion-lagrange",
+        "punto-medio",
+        "runge-kutta",
+    ]
+
+
 # ---------- tipos ----------
 
 def test_columna_y_motivo_de_parada_son_serializables():

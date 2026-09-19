@@ -221,7 +221,7 @@ register(
         name="Punto Medio",
         unit="U1",
         family="integracion",
-        orden=4,
+        orden=5,
         description=(
             "Aproxima el valor de una integral definida sumando el area de "
             "rectangulos que usan el valor de la funcion en el CENTRO de cada "

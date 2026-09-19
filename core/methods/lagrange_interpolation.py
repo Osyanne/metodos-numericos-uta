@@ -246,8 +246,9 @@ SPEC = register(
     MethodSpec(
         slug="interpolacion-lagrange",
         name="Interpolacion de Lagrange",
-        unit="U2",
+        unit="U1",
         family="interpolacion",
+        orden=4,
         inputs=[
             InputField(
                 "points",
