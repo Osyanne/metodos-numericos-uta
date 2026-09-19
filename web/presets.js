@@ -107,7 +107,7 @@ export const PRESETS = [
     id: "runge-kutta-sistema",
     metodo: "runge-kutta",
     nombre: "Demo · oscilador de dos EDO",
-    fuente: "tests/test_runge_kutta.py; demostración hasta x = 1.6 en HANDOFF.md",
+    fuente: "tests/test_runge_kutta.py, la prueba del oscilador hasta x = 1.6",
     descripcion: "Sistema y₁′ = y₂, y₂′ = −y₁; y₁(0) = 1, y₂(0) = 0. Dieciséis pasos de 0.1 para observar el cruce por cero.",
     params: { fxy: ["y2", "-y1"], x0: 0, y0: [1, 0], h: 0.1, n: 16, xf: null, orden: 4 },
     config: { ...CONFIG_MALLA },
