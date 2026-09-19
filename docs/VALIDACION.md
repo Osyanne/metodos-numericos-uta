@@ -170,21 +170,21 @@ real. Cubren lo que romperia la demostracion:
 
 ## Instalacion verificada en limpio
 
-Procedimiento completo corrido sobre un clon nuevo, en un entorno virgen, con
-la version de los cuatro primeros metodos. Se vuelve a correr sobre la version
-que se entregue:
+Procedimiento completo corrido el 2026-09-18 sobre un clon nuevo, en un
+entorno virgen, con la version de los seis metodos:
 
 | Paso | Resultado |
 |---|---|
-| Clonar el repositorio | 15 entradas, arbol completo |
+| Clonar el repositorio | 13 entradas, arbol completo |
 | Entorno virtual desde CPython 3.12.13 | creado |
 | `pip install -e ".[dev]"` | sin errores |
 | Importar las seis dependencias | todas |
-| `pytest --ignore=tests/e2e` | **197 en verde** |
+| `pytest --ignore=tests/e2e` | **275 en verde** |
 | `GET /` | 200, con la interfaz |
-| Los siete modulos de `web/` | 200 cada uno |
-| `GET /api/methods` | 200, 4 metodos |
+| Los ocho archivos de `web/` | 200 cada uno |
+| `GET /api/methods` | 200, 6 metodos |
 | `POST solve` sobre el caso del docente | 200, `x₁ = 1.26894142` |
+| `POST solve` sobre el ejercicio de Newton | 200, `P(-4) = -8` |
 | `POST export/csv` | 200 |
 
 Ademas hay cuatro pruebas que cuidan esto de forma permanente

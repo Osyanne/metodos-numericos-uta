@@ -189,7 +189,7 @@ El detalle esta en [VALIDACION.md](VALIDACION.md). En resumen:
 |---|---|
 | Pruebas de Python | **275**, todas en verde |
 | Pruebas de navegador (Playwright) | **39**, todas en verde |
-| Instalacion probada en limpio | clon nuevo, entorno virgen, todo en verde y la interfaz sirviendo (version de cuatro metodos; se repite con la que se entregue) |
+| Instalacion probada en limpio | clon nuevo, entorno virgen, 275 en verde y la interfaz sirviendo (2026-09-18, seis metodos) |
 
 La vara principal es la **tabla del docente**: `f(x) = e⁻ˣ − ln(x)` con `x₀ = 1`.
 El aplicativo la reproduce fila por fila, columna por columna, incluida la de
