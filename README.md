@@ -4,7 +4,7 @@ Universidad Tecnica de Ambato — FISEI — Carrera de Software, Nivel 3.
 
 Resuelve problemas de metodos numericos mostrando **todas las iteraciones**, con
 precision ajustable y un plano interactivo tipo GeoGebra. Disenado para crecer:
-los cinco metodos del primer parcial son los primeros de una decena.
+los seis metodos del primer parcial son los primeros de una decena.
 
 Funciona **sin internet**: no hay ninguna libreria externa ni CDN del lado del
 navegador. El plano esta dibujado a mano sobre Canvas.
@@ -16,7 +16,7 @@ navegador. El plano esta dibujado a mano sobre Canvas.
 | Newton-Raphson | U1 | raices de `f(x) = 0`; la app deriva sola o acepta la derivada |
 | Von Mises | U1 | raices, con la derivada congelada en `x0` |
 | Interpolacion de Newton | U1 | polinomio expandido y forma de Newton, por diferencias divididas |
-| Interpolacion de Lagrange | U2 | polinomio expandido, mostrando cada `L_i` con su numerador y denominador |
+| Interpolacion de Lagrange | U1 | polinomio expandido, mostrando cada `L_i` con su numerador y denominador |
 | Punto Medio | U1 | integral definida `∫[a,b] f(x)dx` con rectangulos centrados |
 | Runge-Kutta | U3 | EDO y sistemas de EDO, orden 2 y 4 |
 
@@ -54,7 +54,7 @@ Y abrir <http://127.0.0.1:8000>.
 pytest
 ```
 
-Tienen que dar **250 pruebas en verde**. Entre ellas hay cuatro que verifican
+Tienen que dar **275 pruebas en verde**. Entre ellas hay cuatro que verifican
 justamente la instalacion: que todo lo que el codigo importa este declarado en
 `pyproject.toml`, y que ningun archivo referenciado desde la interfaz falte en
 el repositorio. Las dos cosas pasan desapercibidas en la maquina donde se
@@ -62,7 +62,7 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **38 pruebas de interfaz** con Playwright, que
+Aparte de las de Python hay **39 pruebas de interfaz** con Playwright, que
 levantan el servidor de verdad y manejan la pantalla:
 
 ```bash

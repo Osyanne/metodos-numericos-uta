@@ -16,8 +16,8 @@ Construir un aplicativo que resuelva los ejercicios de la asignatura mostrando
 **todas las iteraciones**, con precision ajustable y graficacion, y que pueda
 crecer para cubrir los aproximadamente diez metodos del semestre.
 
-El primer parcial cubre cuatro: Newton-Raphson, Von Mises, Interpolacion de
-Newton y Runge-Kutta.
+El primer parcial cubre seis: Newton-Raphson, Von Mises, Interpolacion de
+Newton, Interpolacion de Lagrange, Punto Medio y Runge-Kutta.
 
 No hubo especificacion escrita ni rubrica —el docente confirmo que no existe—,
 asi que los requisitos se acordaron en clase y se dejaron por escrito en
@@ -59,7 +59,7 @@ la derivada se acerca a cero en el camino.
 > parte de la bibliografia. Fue un error, y obligo a rehacer parte del diseno:
 > se habia previsto que algun metodo del parcial recibiria matrices. Se
 > corrigio contra el material del docente (`VON MISES.pdf`). Ninguno de los
-> cuatro metodos del parcial usa matrices.
+> metodos del parcial usa matrices.
 
 Esta confusion tiene una consecuencia practica: si por descuido se recalcula la
 derivada en cada paso, el metodo **sigue convergiendo y sigue pareciendo
@@ -187,8 +187,8 @@ El detalle esta en [VALIDACION.md](VALIDACION.md). En resumen:
 
 | | |
 |---|---|
-| Pruebas de Python | **250**, todas en verde |
-| Pruebas de navegador (Playwright) | **38**, todas en verde |
+| Pruebas de Python | **275**, todas en verde |
+| Pruebas de navegador (Playwright) | **39**, todas en verde |
 | Instalacion probada en limpio | clon nuevo, entorno virgen, todo en verde y la interfaz sirviendo (version de cuatro metodos; se repite con la que se entregue) |
 
 La vara principal es la **tabla del docente**: `f(x) = e⁻ˣ − ln(x)` con `x₀ = 1`.
@@ -230,7 +230,7 @@ Se declaran en vez de esconderse.
    resolver otra vez con la mitad del paso y comparar, y antes hay que decidir
    si se estima error local o global y como agregarlo en un sistema. Se dejo
    fuera de este parcial por eso, no por olvido.
-2. **Los metodos 6 a 10 no estan implementados.** La arquitectura para
+2. **Los metodos 7 a 10 no estan implementados.** La arquitectura para
    agregarlos si, y esta ejercitada con una prueba que la usa de verdad.
 3. **Interpolacion de Newton trae las cuatro variantes** aunque el docente solo
    usa divididas, que es el default. Sobra codigo, pero no falta.

@@ -8,7 +8,7 @@ Docentes: Ing. Henry Cumbal, Dr. Victor Penafiel.
 | # | Requisito |
 |---|-----------|
 | R1 | El aplicativo cubrira alrededor de **10 metodos** a lo largo del semestre. |
-| R2 | Para el **primer parcial** son cinco: Newton-Raphson, Interpolacion de Newton, Von Mises, Runge-Kutta e Interpolacion de Lagrange. |
+| R2 | Para el **primer parcial** son seis: Newton-Raphson, Interpolacion de Newton, Von Mises, Runge-Kutta, Interpolacion de Lagrange y Punto Medio. |
 | R3 | La arquitectura **debe poder expandirse** para admitir los metodos restantes. |
 | R4 | Precision de **6 decimales por defecto**, ajustable por el usuario. |
 | R5 | Se puede pedir el calculo hasta **cualquier iteracion n**, desde el valor inicial. |
@@ -41,8 +41,9 @@ hoy no los consume nadie.
 |--------|--------|---------|--------|
 | Newton-Raphson | U1 | `f(x)`, x0 | raiz |
 | Von Mises | U1 | `f(x)`, x0 | raiz |
-| Interpolacion de Newton | U2 | tabla de puntos, x a evaluar | polinomio expandido, forma de Newton y valor |
-| Interpolacion de Lagrange | U2 | tabla de puntos, x a evaluar | polinomio expandido y valor |
+| Interpolacion de Newton | U1 | tabla de puntos, x a evaluar | polinomio expandido, forma de Newton y valor |
+| Interpolacion de Lagrange | U1 | tabla de puntos, x a evaluar | polinomio expandido y valor |
+| Punto Medio | U1 | `f(x)`, a, b, n | integral aproximada, con cada punto medio y su rectangulo |
 | Runge-Kutta | U3 | `f(x,y)` o sistema, condiciones iniciales, h o n | tabla solucion |
 
 ## Como se cumple cada requisito

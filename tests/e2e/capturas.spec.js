@@ -23,6 +23,12 @@ async function arriba(page) {
   await page.waitForTimeout(150);
 }
 
+// Al resolver, el plano se dibuja con una animacion de 2 s (DURACION_ANIMACION
+// en web/plano.js). Una captura tomada antes muestra la curva a medio trazar.
+async function dibujoTerminado(page) {
+  await page.waitForTimeout(2300);
+}
+
 test("capturas del manual", async ({ page }) => {
   await page.goto("/");
   await esperarDesplegable(page);
@@ -33,6 +39,7 @@ test("capturas del manual", async ({ page }) => {
   await page.locator("#resolver").click();
   await expect(page.locator("#resumen .estado")).toBeVisible();
 
+  await dibujoTerminado(page);
   await arriba(page);
   await page.screenshot({ path: `${DESTINO}01-pantalla-principal.png` });
 
@@ -47,6 +54,7 @@ test("capturas del manual", async ({ page }) => {
   await page.locator("#preset").selectOption("runge-kutta-sistema");
   await page.locator("#resolver").click();
   await expect(page.locator("#leyenda .leyenda-item").first()).toBeVisible();
+  await dibujoTerminado(page);
   await arriba(page);
   await page.screenshot({ path: `${DESTINO}03-plano.png` });
 });
