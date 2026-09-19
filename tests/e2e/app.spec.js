@@ -1,9 +1,15 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { esperarDesplegable } from "./desplegable.js";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#metodo option")).toHaveCount(5);
+  await esperarDesplegable(page);
+});
+
+test("el desplegable muestra solo el nombre de cada metodo", async ({ page }) => {
+  const metodos = await esperarDesplegable(page);
+  await expect(page.locator("#metodo option")).toHaveText(metodos.map(m => m.name));
 });
 
 async function resolverNewton(page) {

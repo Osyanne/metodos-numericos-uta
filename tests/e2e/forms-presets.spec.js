@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { esperarDesplegable } from "./desplegable.js";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#metodo option")).toHaveCount(5);
+  await esperarDesplegable(page);
 });
 
 test("una coordenada incompleta se explica sin enviar un cero inventado", async ({ page }) => {

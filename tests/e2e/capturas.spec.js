@@ -9,6 +9,7 @@
 // En Windows (PowerShell):  $env:CAPTURAS=1; npx playwright test capturas
 import { test, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
+import { esperarDesplegable } from "./desplegable.js";
 
 const DESTINO = fileURLToPath(new URL("../../docs/capturas/", import.meta.url));
 
@@ -24,7 +25,7 @@ async function arriba(page) {
 
 test("capturas del manual", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#metodo option")).toHaveCount(5);
+  await esperarDesplegable(page);
 
   // Un caso que se explica solo: el ejercicio resuelto del docente.
   await page.locator("#metodo").selectOption("von-mises");

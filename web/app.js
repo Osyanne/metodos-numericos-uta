@@ -285,7 +285,7 @@ async function iniciar() {
   for (const m of estado.metodos) {
     const op = document.createElement("option");
     op.value = m.slug;
-    op.textContent = `${m.name}  ·  ${m.unit}`;
+    op.textContent = m.name;
     select.append(op);
   }
   select.addEventListener("change", () => seleccionarMetodo(select.value));
