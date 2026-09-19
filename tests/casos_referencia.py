@@ -46,3 +46,34 @@ VON_MISES_EJERCICIO = {
     "x0": 1.165,
     "filas": [],
 }
+
+# Interpolacion del metodo de Newton.pdf, diapositivas 5 a 8. Ejercicio
+# resuelto en clase, con diferencias divididas.
+#
+# Los puntos van en el orden del pizarron. No se ordenan por x: el orden
+# decide que diferencias se calculan y cuales son los a_i.
+NEWTON_DIVIDIDAS_RESUELTO = {
+    "fuente": "Interpolacion del metodo de Newton.pdf, diapositivas 5-8",
+    "puntos": [(1.0, 2.0), (0.0, 4.0), (-3.0, -2.0)],
+    # Diapositiva 6. La clave son los indices de los puntos que usa cada una:
+    # (0, 1) es f(X0, X1). En la tabla de las diapositivas 5 y 7 cada
+    # diferencia va en la fila de su ultimo punto, y la fila 0 no lleva
+    # ninguna.
+    "divididas": {
+        (0, 1): -2.0,
+        (1, 2): 2.0,
+        (0, 1, 2): -1.0,
+    },
+    # Diapositiva 7: los a_i marcados sobre la diagonal de esa tabla.
+    "a_i": (2.0, -2.0, -1.0),
+    # Diapositiva 7, antes de expandir, tal cual (en ASCII).
+    "forma_de_newton": "2+[(-2)(X-1)]+[(-1)(X-1)(X-0)]",
+    "polinomio": "-x^2 - x + 4",
+    # Del polinomio expandido, de mayor a menor grado, como en
+    # casos_referencia_lagrange.py. No son los a_i.
+    "coeficientes": (-1.0, -1.0, 4.0),
+    "grado": 2,
+    # Diapositiva 8.
+    "x": -4.0,
+    "valor": -8.0,
+}

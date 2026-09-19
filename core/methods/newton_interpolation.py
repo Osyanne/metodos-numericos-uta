@@ -25,14 +25,18 @@ from core.types import (
 )
 
 VARIANTES = {"auto", "divididas", "adelante", "atras"}
+# El material del docente usa solo diferencias divididas. `auto` sigue
+# disponible, pero con puntos equiespaciados elige diferencias hacia adelante y
+# esa no es la tabla de la clase.
+VARIANTE_POR_DEFECTO = "divididas"
 PUNTOS_GRAFICA = 201
 
 
 def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
-    """Interpola los puntos y devuelve el polinomio expandido y su tabla."""
+    """Interpola los puntos: polinomio expandido, forma de Newton y tabla."""
     puntos = _validar_puntos(params.get("points"))
     x_evaluado = _numero_finito(params.get("x"), "El valor x a evaluar")
-    variante = _validar_variante(params.get("variante", "auto"))
+    variante = _validar_variante(params.get("variante", VARIANTE_POR_DEFECTO))
 
     equiespaciados = _son_equiespaciados(puntos)
     if variante == "auto":
@@ -48,11 +52,17 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
 
     xs = [punto[0] for punto in puntos]
     ys = [punto[1] for punto in puntos]
-    polinomio, grado = _polinomio_expandido(xs, ys)
+    xs_exactos = [sympy.Rational(str(x)) for x in xs]
+    niveles = _divididas_exactas(
+        xs_exactos, [sympy.Rational(str(y)) for y in ys]
+    )
+    # Los a_i del pizarron: la diagonal de la tabla de diferencias divididas.
+    diagonal = [nivel[0] for nivel in niveles]
+    polinomio, grado = _polinomio_expandido(diagonal, xs_exactos)
     expresion = parse(polinomio)
     valor = expresion.evaluar(x=x_evaluado)
 
-    columns, iterations = _tabla(variante_usada, xs, ys, config.decimals)
+    columns, iterations = _tabla(variante_usada, xs, ys, niveles)
     curva_x, curva_y = sample(
         polinomio,
         x_min=min(xs),
@@ -66,6 +76,8 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
         iterations=iterations,
         result={
             "polinomio": polinomio,
+            "polinomio_newton": _forma_de_newton(diagonal, xs_exactos),
+            "coeficientes": [float(a) for a in diagonal],
             "valor": valor,
             "grado": grado,
             "variante_usada": variante_usada,
@@ -73,6 +85,7 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
         converged=True,
         stop_reason=StopReason.EXACT,
         decimals=config.decimals,
+        notes=_notas_de_la_tabla(variante_usada),
         plot=plots.interpolation(
             puntos,
             curva_x,
@@ -152,33 +165,74 @@ def _son_equiespaciados(puntos: Sequence[tuple[float, float]]) -> bool:
     )
 
 
-def _polinomio_expandido(
-    xs: Sequence[float],
-    ys: Sequence[float],
-) -> tuple[str, int]:
-    """Construye la forma de Newton y la expande a potencias de x."""
-    simbolo = sympy.Symbol("x")
-    xs_exactos = [sympy.Rational(str(x)) for x in xs]
-    niveles: list[list[sympy.Expr]] = [
-        [sympy.Rational(str(y)) for y in ys]
-    ]
+def _divididas_exactas(
+    xs: Sequence[sympy.Rational],
+    ys: Sequence[sympy.Rational],
+) -> list[list[sympy.Rational]]:
+    """Todos los niveles de diferencias divididas, en aritmetica exacta.
 
+    El nivel k lleva f(X_i, ..., X_i+k) para cada i posible, asi que el primer
+    elemento de cada nivel es el a_k de la forma de Newton.
+    """
+    niveles: list[list[sympy.Rational]] = [list(ys)]
     for orden in range(1, len(xs)):
         anterior = niveles[-1]
         niveles.append(
             [
                 sympy.cancel(
-                    (anterior[i + 1] - anterior[i])
-                    / (xs_exactos[i + orden] - xs_exactos[i])
+                    (anterior[i + 1] - anterior[i]) / (xs[i + orden] - xs[i])
                 )
                 for i in range(len(xs) - orden)
             ]
         )
+    return niveles
 
+
+def _forma_de_newton(
+    diagonal: Sequence[sympy.Rational],
+    xs: Sequence[sympy.Rational],
+) -> str:
+    """a0 + a1*(x - X0) + a2*(x - X0)*(x - X1) + ..., sin expandir.
+
+    Se arma a mano y no con `str()` de SymPy, que reordena y simplifica: lo que
+    tiene que verse es la forma del pizarron, con los factores en el orden en
+    que se cargaron los puntos. Cada a_i se escribe aunque valga 0 o 1, para
+    que se lea contra la diagonal de la tabla.
+    """
+    terminos = []
+    for orden, coeficiente in enumerate(diagonal):
+        factores = [_coeficiente_de_newton(coeficiente)]
+        factores.extend(_binomio(xs[j]) for j in range(orden))
+        terminos.append("*".join(factores))
+    return " + ".join(terminos)
+
+
+def _coeficiente_de_newton(valor: sympy.Rational) -> str:
+    """Un a_i negativo va entre parentesis, como lo escribe el docente."""
+    texto = _numero(valor)
+    return f"({texto})" if valor < 0 else texto
+
+
+def _binomio(valor: sympy.Rational) -> str:
+    """(x - X_j) con el signo ya resuelto; (x - 0) no se reduce a x."""
+    signo = "-" if valor >= 0 else "+"
+    return f"(x {signo} {_numero(abs(valor))})"
+
+
+def _numero(valor: sympy.Rational) -> str:
+    return str(int(valor)) if valor.is_Integer else str(float(valor))
+
+
+def _polinomio_expandido(
+    diagonal: Sequence[sympy.Rational],
+    xs_exactos: Sequence[sympy.Rational],
+) -> tuple[str, int]:
+    """Arma la forma de Newton con los a_i y la expande a potencias de x."""
+    simbolo = sympy.Symbol("x")
     polinomio: sympy.Expr = sympy.Integer(0)
     producto: sympy.Expr = sympy.Integer(1)
-    for orden, nivel in enumerate(niveles):
-        polinomio += nivel[0] * producto
+    for orden, coeficiente in enumerate(diagonal):
+        polinomio += coeficiente * producto
         producto *= simbolo - xs_exactos[orden]
 
     expandido = sympy.Poly(sympy.expand(polinomio), simbolo)
@@ -202,13 +256,18 @@ def _tabla(
     variante: str,
     xs: Sequence[float],
     ys: Sequence[float],
-    decimals: int,
+    divididas: Sequence[Sequence[sympy.Rational]],
 ) -> tuple[list[Column], list[Iteration]]:
     if variante == "divididas":
-        niveles = _diferencias_divididas(xs, ys)
+        # Las mismas diferencias exactas que dan los a_i y el polinomio. Si la
+        # tabla se recalculara en float, con abscisas muy juntas mostraria un
+        # a_i distinto del que usa el resultado.
+        niveles = [[float(valor) for valor in nivel] for nivel in divididas]
         prefijo = "dd"
         etiqueta = "Diferencia dividida"
-        desplazamiento = False
+        # Como en el pizarron: f(X_i-k, ..., X_i) va en la fila i, asi que la
+        # fila 0 no lleva ninguna y los a_k quedan sobre la diagonal.
+        desplazamiento = True
     elif variante == "adelante":
         niveles = _diferencias_finitas(ys)
         prefijo = "delta"
@@ -240,20 +299,27 @@ def _tabla(
     return columns, iterations
 
 
-def _diferencias_divididas(
-    xs: Sequence[float],
-    ys: Sequence[float],
-) -> list[list[float]]:
-    niveles = [list(ys)]
-    for orden in range(1, len(xs)):
-        anterior = niveles[-1]
-        niveles.append(
-            [
-                (anterior[i + 1] - anterior[i]) / (xs[i + orden] - xs[i])
-                for i in range(len(xs) - orden)
-            ]
+def _notas_de_la_tabla(variante_usada: str) -> list[str]:
+    """Con diferencias finitas, los a_i del resumen no estan en la tabla.
+
+    Los coeficientes y la forma de Newton son siempre los de diferencias
+    divididas. Sin esta aclaracion, ver a_2 = 1 al lado de una tabla que dice 2
+    parece un error.
+    """
+    if variante_usada == "divididas":
+        return []
+    nombre = "hacia adelante" if variante_usada == "adelante" else "hacia atras"
+    notas = [
+        f"La tabla muestra diferencias {nombre}, pero los coeficientes a_i y "
+        "la forma de Newton salen de diferencias divididas, con los puntos en "
+        "el orden ingresado: no coinciden celda por celda con la tabla."
+    ]
+    if variante_usada == "adelante":
+        notas.append(
+            "Con paso h, cada a_k es la diferencia adelante k de la fila 0 "
+            "dividida por k! * h^k."
         )
-    return niveles
+    return notas
 
 
 def _diferencias_finitas(ys: Sequence[float]) -> list[list[float]]:
@@ -284,8 +350,8 @@ SPEC = register(
                 "variante",
                 "Variante",
                 FieldKind.EXPRESSION,
-                default="auto",
-                help="auto, divididas, adelante o atras",
+                default=VARIANTE_POR_DEFECTO,
+                help="divididas (como en clase), auto, adelante o atras",
                 required=False,
             ),
         ],
