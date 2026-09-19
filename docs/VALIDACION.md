@@ -7,11 +7,11 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Al 2026-09-05: **197 pruebas de Python** y **35 de navegador**, todas en verde.
+Al 2026-09-18: **250 pruebas de Python** y **38 de navegador**, todas en verde.
 
 ```bash
-pytest --ignore=tests/e2e     # 197
-npx playwright test           # 35
+pytest --ignore=tests/e2e     # 250
+npx playwright test           # 38
 ```
 
 ## De donde salen los numeros
@@ -20,17 +20,17 @@ Esta es la distincion que mas importa, porque cambia el peso de cada prueba.
 
 | Origen | Que significa | Donde |
 |---|---|---|
-| **Material del docente** | Tabla publicada en `VON MISES.pdf`. El aplicativo la reproduce digito por digito. Si estos numeros no dan, el metodo esta mal. | `tests/casos_referencia.py` |
+| **Material del docente** | Tablas y ejercicios resueltos de `VON MISES.pdf` y de las diapositivas de interpolacion de Newton y de Lagrange. El aplicativo los reproduce digito por digito. Si estos numeros no dan, el metodo esta mal. | `tests/casos_referencia.py`, `tests/casos_referencia_lagrange.py` |
 | **Solucion analitica** | El resultado exacto se conoce por matematica, no por haberlo corrido. Se compara contra el, con una tolerancia declarada. | `test_rk4_aproxima_una_solucion_analitica_conocida`, `test_el_oscilador_no_muestra_errores_absurdos_al_cruzar_el_cero` |
 | **Resuelto a mano** | Ejercicio calculado a mano en papel antes de escribir el codigo. | `test_caso_resuelto_a_mano_devuelve_polinomio_expandido` |
-| **Propiedad** | No fija un numero: fija una relacion que tiene que cumplirse siempre. | `test_las_cuatro_variantes_dan_el_mismo_polinomio` |
+| **Propiedad** | No fija un numero: fija una relacion que tiene que cumplirse siempre. | `test_las_cuatro_variantes_dan_el_mismo_polinomio`, `test_la_forma_de_newton_es_el_mismo_polinomio_que_el_expandido` |
 
 **Lo que no cuenta como validacion:** correr el aplicativo, mirar la salida y
 escribir esa salida en la prueba. Eso solo congela lo que el codigo ya hacia,
 incluido el error. Ninguna prueba de este repositorio se escribio asi.
 
-`tests/casos_referencia.py` **no se modifica**. Son los numeros del docente: si
-una prueba falla contra ellos, lo que esta mal es el codigo.
+Los casos de referencia **se agregan, nunca se cambian**. Son los numeros del
+docente: si una prueba falla contra ellos, lo que esta mal es el codigo.
 
 ## El caso de referencia principal
 
@@ -62,7 +62,7 @@ Cada requisito de `ESPECIFICACION.md`, con la prueba que lo respalda.
 | R5 | Calculo hasta cualquier iteracion n | Con `stop_on_tolerance=False` corren las n iteraciones, **incluso si cae sobre una raiz exacta** | `test_config_permite_correr_n_exacto_sin_parar_por_tolerancia`, `test_una_raiz_exacta_no_recorta_las_n_iteraciones_pedidas` |
 | R6 | Tabla con todas las iteraciones | Cada metodo declara sus columnas; el CSV baja la tabla completa y sin redondear | `test_las_columnas_son_las_de_la_tabla_del_docente`, `test_csv_descarga_la_tabla_real_completa_y_sin_redondear` |
 | R7 | Graficacion | Las cuatro clases de grafica, con sus claves de contrato, y el remuestreo al hacer zoom | `test_grafica_de_raiz_...`, `test_grafica_de_interpolacion_...`, `test_grafica_de_edo_...`, `test_grafica_de_convergencia_...` |
-| R8 | Polinomio expandido | Caso resuelto a mano, y la propiedad de que las cuatro variantes dan el mismo polinomio | `test_caso_resuelto_a_mano_devuelve_polinomio_expandido`, `test_las_cuatro_variantes_dan_el_mismo_polinomio` |
+| R8 | Polinomio expandido | El ejercicio resuelto de las diapositivas de Newton (tabla celda por celda, `a_i`, forma de Newton y `P(-4) = -8`), un caso resuelto a mano, y la propiedad de que las cuatro variantes dan el mismo polinomio | `test_la_tabla_del_docente_lleva_cada_dividida_en_la_fila_de_su_ultimo_punto`, `test_la_forma_de_newton_y_los_a_i_son_los_del_docente`, `test_el_polinomio_expandido_y_el_valor_son_los_del_docente`, `test_caso_resuelto_a_mano_devuelve_polinomio_expandido`, `test_las_cuatro_variantes_dan_el_mismo_polinomio` |
 | R12 | Interpolacion de Lagrange | Los tres ejercicios de las diapositivas, cada `L_i` por separado, y que coincida con Newton sobre los mismos puntos | `test_lagrange_interpolation.py` (25 pruebas), `test_coincide_con_la_interpolacion_de_newton` |
 | R9 | Runge-Kutta con sistemas, y h o n | Sistema de dos EDO contra la solucion analitica; las formas de definir la malla | `test_resuelve_un_sistema_evaluando_las_componentes_simultaneamente`, `test_acepta_las_formas_del_contrato_para_h_n_y_xf` |
 | R10 | La app deriva sola o acepta la derivada | Las dos vias dan el mismo resultado, y el aplicativo dice cual derivada uso | `test_deriva_sola_y_lo_dice`, `test_la_derivada_a_mano_da_el_mismo_resultado` |
@@ -154,10 +154,10 @@ entrega. La columna va vacia y una nota lo explica en pantalla.
 
 ## Comprobado desde el navegador
 
-Las 35 pruebas de Playwright manejan la interfaz de verdad contra el servidor
+Las 38 pruebas de Playwright manejan la interfaz de verdad contra el servidor
 real. Cubren lo que romperia la demostracion:
 
-- Resolver los cuatro metodos y ver la tabla con sus columnas.
+- Resolver los cinco metodos y ver la tabla con sus columnas.
 - **Cambiar de metodo no resucita el resultado anterior**, ni siquiera moviendo
   el control de decimales.
 - Una respuesta que llega tarde no se pinta sobre el metodo que el usuario
@@ -166,11 +166,13 @@ real. Cubren lo que romperia la demostracion:
   vacia.
 - Exportar CSV y PDF de verdad, incluida la descarga.
 - Zoom, paneo, teclado, y que el remuestreo le pida los puntos al nucleo.
-- Que los cuatro formularios y el plano entren a 320 y a 360 px.
+- Que los cinco formularios y el plano entren a 320 y a 360 px.
 
 ## Instalacion verificada en limpio
 
-Procedimiento completo corrido sobre un clon nuevo, en un entorno virgen:
+Procedimiento completo corrido sobre un clon nuevo, en un entorno virgen, con
+la version de los cuatro primeros metodos. Se vuelve a correr sobre la version
+que se entregue:
 
 | Paso | Resultado |
 |---|---|
@@ -199,7 +201,8 @@ Se dejan escritas en vez de esconderlas.
 2. **El aplicativo se ejecuta desde una copia del repositorio**, no como paquete
    instalado: `web/` se busca al lado de `api/`. Si falta, el servidor no
    arranca y lo dice, en vez de servir una pantalla en blanco.
-3. **Interpolacion implementa las cuatro variantes** porque no se confirmo cual
-   espera el docente. El polinomio es el mismo en todas; cambia la tabla.
-4. **Los metodos 5 a 10 no estan.** La arquitectura para agregarlos si, y esta
+3. **Interpolacion de Newton trae cuatro variantes** aunque el docente usa solo
+   diferencias divididas, que son el default. El polinomio es el mismo en todas;
+   cambia la tabla.
+4. **Los metodos 6 a 10 no estan.** La arquitectura para agregarlos si, y esta
    ejercitada con una prueba.

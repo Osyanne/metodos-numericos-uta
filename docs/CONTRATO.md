@@ -79,7 +79,7 @@ forma anidada y los coeficientes `a_i`, asi que `result` lleva:
 ```json
 {
   "polinomio": "-0.0518731*x**2 + 0.7214635*x - 0.6695904",
-  "polinomio_newton": "0 + 0.462098*(x - 1) + -0.0518731*(x - 1)*(x - 4)",
+  "polinomio_newton": "0 + 0.462098*(x - 1) + (-0.0518731)*(x - 1)*(x - 4)",
   "coeficientes": [0.0, 0.462098, -0.0518731],
   "valor": 0.5658442,
   "grado": 2,
@@ -91,6 +91,20 @@ forma anidada y los coeficientes `a_i`, asi que `result` lleva:
 el segundo conservando los factores y el orden en que se cargaron los puntos.
 `coeficientes` es la diagonal de diferencias divididas, `[a_0, a_1, ...]`, **sin
 redondear**.
+
+`polinomio_newton` se arma a mano, no con `str()` de SymPy, para que se lea
+como en el pizarron:
+
+- cada `a_i` se escribe aunque valga 0 o 1, y si es negativo va entre
+  parentesis, tambien `a_0`: `(-2) + 2*(x + 3) + (-1)*(x + 3)*(x - 0)`;
+- el producto va explicito (`*`), asi el parser la puede releer;
+- los binomios llevan el signo resuelto, `(x + 3)` y no `(x - -3)`, y
+  `(x - 0)` no se reduce a `x`, igual que en Lagrange.
+
+**La tabla de `divididas` pone cada diferencia en la fila de su ultimo
+punto**, como las diapositivas 5 y 7: `f(X_i-k, ..., X_i)` va en la fila `i`,
+la fila 0 no lleva ninguna y los `a_k` quedan sobre la diagonal. Es la misma
+tabla cuando la elige `auto`.
 
 **`variante` acepta cuatro valores, y el default es `divididas`.** El material
 del docente (`Interpolacion del metodo de Newton.pdf`) usa **solo diferencias
@@ -107,6 +121,11 @@ cual sea y no cuesta nada ofrecerlas.
 
 Pedir `adelante` o `atras` con puntos no equiespaciados es `MethodError`
 explicando que esa variante necesita paso constante.
+
+Con `adelante` o `atras`, `coeficientes` y `polinomio_newton` siguen saliendo de
+diferencias divididas, asi que no coinciden con ninguna celda de la tabla.
+`notes` lo aclara, y con `adelante` da la relacion: `a_k` es la diferencia
+adelante `k` de la fila 0 dividida por `k! * h^k`.
 
 El polinomio resultante es **el mismo** en las cuatro: por n+1 puntos pasa un
 unico polinomio de grado n. Lo que cambia es la tabla que se muestra. Por eso

@@ -62,11 +62,13 @@ programa.
   agrega filas. Una fila a medio llenar se rechaza: no se convierte en el punto
   (0, 0). **Los puntos se usan en el orden en que se cargaron**, sin ordenarlos
   por x: asi la tabla se puede comparar fila por fila con la del pizarron.
-- **Interpolacion de Newton** tiene una casilla `variante`, opcional. Vacia usa
-  **diferencias divididas**, que es lo que se ve en clase. Las otras opciones
-  (`auto`, `adelante`, `atras`) muestran la misma respuesta con otra tabla
-  intermedia; `adelante` y `atras` necesitan que los x esten igualmente
-  espaciados y lo avisan si no lo estan.
+- **Interpolacion de Newton** tiene una casilla `variante`, opcional. Viene con
+  `divididas`, y vacia usa lo mismo: **diferencias divididas**, que es lo que se
+  ve en clase. Cada diferencia va en la fila de su ultimo punto, como en el
+  pizarron, asi que los `a_i` del resumen se leen sobre la diagonal de la tabla.
+  Las otras opciones (`auto`, `adelante`, `atras`) muestran la misma respuesta
+  con otra tabla intermedia; `adelante` y `atras` necesitan que los x esten
+  igualmente espaciados y lo avisan si no lo estan.
 - **Interpolacion de Lagrange** no tiene variantes. Su tabla no son
   iteraciones: cada fila es un paso del procedimiento, con el numerador y el
   denominador de cada `L_i` escritos tal como se hacen a mano. Esas columnas

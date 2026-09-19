@@ -70,8 +70,8 @@ tablas.
 ### Interpolacion de Newton
 
 Construye el polinomio de menor grado que pasa por un conjunto de puntos, por
-diferencias divididas, y lo entrega **expandido** (R8), no como producto de
-factores.
+diferencias divididas, y lo entrega **expandido** (R8) y tambien en **forma de
+Newton**, sin expandir, como lo escribe el docente.
 
 Se implementaron las **cuatro variantes** —divididas, diferencias hacia
 adelante, hacia atras y automatica—. El polinomio resultante es el mismo en
@@ -85,7 +85,10 @@ que el aplicativo mostraba una tabla correcta pero **distinta de la de clase**.
 
 El metodo tambien devuelve la **forma anidada sin expandir** y los coeficientes
 `a_i` de la diagonal, que es lo que el docente escribe en el pizarron junto al
-polinomio expandido.
+polinomio expandido. La tabla de divididas pone cada diferencia en la fila de
+su ultimo punto, como las diapositivas, asi que los `a_i` se leen sobre su
+diagonal. Con diferencias finitas no aparecen en ninguna celda, y una nota lo
+aclara.
 
 ### Interpolacion de Lagrange
 
@@ -184,9 +187,9 @@ El detalle esta en [VALIDACION.md](VALIDACION.md). En resumen:
 
 | | |
 |---|---|
-| Pruebas de Python | **197**, todas en verde |
-| Pruebas de navegador (Playwright) | **35**, todas en verde |
-| Instalacion probada en limpio | clon nuevo, entorno virgen, 197 en verde y la interfaz sirviendo |
+| Pruebas de Python | **250**, todas en verde |
+| Pruebas de navegador (Playwright) | **38**, todas en verde |
+| Instalacion probada en limpio | clon nuevo, entorno virgen, todo en verde y la interfaz sirviendo (version de cuatro metodos; se repite con la que se entregue) |
 
 La vara principal es la **tabla del docente**: `f(x) = e⁻ˣ − ln(x)` con `x₀ = 1`.
 El aplicativo la reproduce fila por fila, columna por columna, incluida la de
@@ -227,7 +230,7 @@ Se declaran en vez de esconderse.
    resolver otra vez con la mitad del paso y comparar, y antes hay que decidir
    si se estima error local o global y como agregarlo en un sistema. Se dejo
    fuera de este parcial por eso, no por olvido.
-2. **Los metodos 5 a 10 no estan implementados.** La arquitectura para
+2. **Los metodos 6 a 10 no estan implementados.** La arquitectura para
    agregarlos si, y esta ejercitada con una prueba que la usa de verdad.
 3. **Interpolacion de Newton trae las cuatro variantes** aunque el docente solo
    usa divididas, que es el default. Sobra codigo, pero no falta.
@@ -267,6 +270,8 @@ como si significara algo.
 ## Referencias
 
 - Material de clase: `VON MISES.pdf`, diapositivas 7 y 10.
+- Material de clase: `Interpolacion del metodo de Newton.pdf`, diapositivas 5 a 8.
+- Material de clase: `INTERPOLACION DE LAGRANGE.pdf`, diapositivas 5 a 10.
 - Silabo de Metodos Numericos, UTA-FISEI-SF-MP-UB-03-01.
 - Documentacion tecnica del proyecto: [ESPECIFICACION.md](ESPECIFICACION.md),
   [CONTRATO.md](CONTRATO.md), [VALIDACION.md](VALIDACION.md),
