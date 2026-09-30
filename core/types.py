@@ -8,6 +8,7 @@ Familias de entrada de los metodos del primer parcial:
     Newton-Raphson            EXPRESSION + NUMBER
     Von Mises                 EXPRESSION + NUMBER
     Interpolacion de Newton   POINTS + NUMBER
+    Punto Medio y Trapecio    EXPRESSION + NUMBER + INTEGER
     Runge-Kutta               EXPRESSION + NUMBER, admitiendo listas (sistemas)
 
 MATRIX y VECTOR quedan declarados para los metodos que vengan, pero hoy no los
@@ -79,7 +80,8 @@ class StopReason(str, Enum):
     """Por que se detuvo el metodo.
 
     COMPLETED es para los metodos que recorren una malla fija y no persiguen
-    ninguna tolerancia, como Runge-Kutta: terminar los n pasos es el final
+    ninguna tolerancia, como Runge-Kutta o las reglas de integracion: terminar
+    los n pasos es el final
     normal, no un fracaso. Reportarlo como MAX_ITERATIONS hace que la interfaz
     diga "sin alcanzar la tolerancia" sobre un metodo que nunca la busco.
     """

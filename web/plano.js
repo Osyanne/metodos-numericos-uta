@@ -118,7 +118,7 @@ export class Plano {
         if (Number.isFinite(p.x)) xs.push(p.x);
         if (Number.isFinite(p.y)) ys.push(p.y);
       }
-      // Los rectangulos del Punto Medio tambien tienen que caber en el
+      // Las aproximaciones de integracion tambien tienen que caber en el
       // encuadre inicial, o el usuario ve una vista vacia hasta hacer zoom.
       for (const r of capa.rectangulos ?? []) {
         if (Number.isFinite(r.x0)) xs.push(r.x0);
@@ -127,6 +127,13 @@ export class Plano {
           ys.push(r.y);
           ys.push(0);
         }
+      }
+      for (const t of capa.trapecios ?? []) {
+        if (Number.isFinite(t.x0)) xs.push(t.x0);
+        if (Number.isFinite(t.x1)) xs.push(t.x1);
+        if (Number.isFinite(t.y0)) ys.push(t.y0);
+        if (Number.isFinite(t.y1)) ys.push(t.y1);
+        ys.push(0);
       }
     }
     if (!xs.length || !ys.length) {
@@ -360,10 +367,11 @@ export class Plano {
     if (!this.ancho) return;
     ctx.clearRect(0, 0, this.ancho, this.alto);
     this._ejes();
-    // Los rectangulos se dibujan primero para que la curva y las marcas
-    // queden encima, no tapadas por su relleno semitransparente.
+    // Las areas de integracion se dibujan primero para que la curva y las
+    // marcas queden encima, no tapadas por su relleno semitransparente.
     for (const capa of this.capas) {
       if (capa.tipo === "rectangulos") this._rectangulos(capa);
+      else if (capa.tipo === "trapecios") this._trapecios(capa);
     }
     for (const capa of this.capas) {
       if (capa.tipo === "curva") this._curva(capa);
@@ -576,6 +584,77 @@ export class Plano {
     ctx.restore();
   }
 
+  _trapecios(capa) {
+    // La Regla del Trapecio aproxima f por la recta que une los dos extremos
+    // de cada subintervalo. La figura sombreada tiene que ser un trapecio,
+    // no un rectangulo: de otro modo la grafica estaria mostrando otro metodo.
+    const { ctx } = this;
+    const a = this._area;
+    if (!capa.trapecios?.length) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
+    ctx.clip();
+    ctx.strokeStyle = capa.color;
+    ctx.lineWidth = 1;
+
+    const total = capa.trapecios.length;
+    const posicion = total * this.animacion.progreso;
+    const enteros = Math.floor(posicion);
+    const fraccion = posicion - enteros;
+
+    for (let i = 0; i < total; i++) {
+      const t = capa.trapecios[i];
+      if (![t.x0, t.y0, t.x1, t.y1].every(Number.isFinite)) continue;
+      if (i > enteros) break;
+      const factor = i < enteros ? 1 : fraccion;
+      if (factor <= 0) continue;
+      const y0 = t.y0 * factor;
+      const y1 = t.y1 * factor;
+      const [px0, pyBase] = this._aPantalla(t.x0, 0);
+      const [px1] = this._aPantalla(t.x1, 0);
+      const [, py0] = this._aPantalla(t.x0, y0);
+      const [, py1] = this._aPantalla(t.x1, y1);
+
+      // Cuando el segmento cruza el eje x, se dibujan dos triangulos. Un solo
+      // poligono se cruzaria a si mismo y Canvas rellenaria una region ambigua.
+      const cruzaCero = y0 * y1 < 0;
+      if (cruzaCero) {
+        const proporcion = Math.abs(y0) / (Math.abs(y0) + Math.abs(y1));
+        const pxCero = px0 + (px1 - px0) * proporcion;
+        this._rellenarTrapecio([[px0, pyBase], [px0, py0], [pxCero, pyBase]], y0);
+        this._rellenarTrapecio([[pxCero, pyBase], [px1, py1], [px1, pyBase]], y1);
+      } else {
+        this._rellenarTrapecio(
+          [[px0, pyBase], [px0, py0], [px1, py1], [px1, pyBase]],
+          y0 || y1,
+        );
+      }
+
+      // El borde superior es la recta aproximante que define la regla.
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.moveTo(px0, pyBase);
+      ctx.lineTo(px0, py0);
+      ctx.lineTo(px1, py1);
+      ctx.lineTo(px1, pyBase);
+      ctx.closePath();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  _rellenarTrapecio(puntos, altura) {
+    const { ctx } = this;
+    ctx.beginPath();
+    ctx.moveTo(...puntos[0]);
+    for (const punto of puntos.slice(1)) ctx.lineTo(...punto);
+    ctx.closePath();
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.globalAlpha = altura >= 0 ? 0.16 : 0.10;
+    ctx.fill();
+  }
+
   _marcas(capa) {
     const { ctx } = this;
     const a = this._area;
@@ -584,8 +663,9 @@ export class Plano {
     ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
     ctx.clip();
     ctx.font = "10px ui-monospace, Consolas, monospace";
-    // Las marcas (iteraciones de Newton-Raphson, puntos medios del Punto
-    // Medio) aparecen una por una: primero i=1, despues i=2, etc. Es el
+    // Las marcas (iteraciones de Newton-Raphson, puntos medios y puntos de
+    // particion de las reglas de integracion) aparecen una por una: primero
+    // i=1, despues i=2, etc. Es el
     // efecto que hace visible el "recorrido" del metodo, no solo el
     // resultado final.
     const total = capa.puntos.length;
@@ -682,23 +762,31 @@ export function capasDesdePlot(plot) {
   }
 
   if (plot.kind === "integracion") {
-    // El Punto Medio pinta rectangulos + la curva superpuesta. Las marcas
-    // van sobre el punto medio de cada rectangulo, a la altura f(m_i), para
-    // que se lea de que valor sale cada barra.
-    const capas = [
-      {
+    // Punto Medio pinta rectangulos y Trapecio pinta las rectas entre puntos
+    // de particion. La curva real se superpone a ambas aproximaciones.
+    const capas = [];
+    if ((s.rectangles ?? []).length) {
+      capas.push({
         tipo: "rectangulos",
         nombre: "rectangulos",
         color: "#0e6e63",
         rectangulos: s.rectangles ?? [],
-      },
-      {
-        tipo: "curva",
-        nombre: "f(x)",
-        xs: s.curve?.x ?? [],
-        ys: s.curve?.y ?? [],
-      },
-    ];
+      });
+    }
+    if ((s.trapezoids ?? []).length) {
+      capas.push({
+        tipo: "trapecios",
+        nombre: "trapecios",
+        color: "#0e6e63",
+        trapecios: s.trapezoids ?? [],
+      });
+    }
+    capas.push({
+      tipo: "curva",
+      nombre: "f(x)",
+      xs: s.curve?.x ?? [],
+      ys: s.curve?.y ?? [],
+    });
     const marcas = (s.rectangles ?? []).map((r, i) => ({
       x: (r.x0 + r.x1) / 2,
       y: r.y,
@@ -710,6 +798,22 @@ export function capasDesdePlot(plot) {
         nombre: "puntos medios",
         color: "#b4531a",
         puntos: marcas,
+      });
+    }
+    const trapecios = s.trapezoids ?? [];
+    const puntosParticion = [];
+    if (trapecios.length) {
+      const primero = trapecios[0];
+      puntosParticion.push({ x: primero.x0, y: primero.y0, etiqueta: "x0" });
+      for (let i = 0; i < trapecios.length; i++) {
+        const t = trapecios[i];
+        puntosParticion.push({ x: t.x1, y: t.y1, etiqueta: `x${i + 1}` });
+      }
+      capas.push({
+        tipo: "marcas",
+        nombre: "puntos de particion",
+        color: "#b4531a",
+        puntos: puntosParticion,
       });
     }
     return { capas, resample: plot.resample ?? null };

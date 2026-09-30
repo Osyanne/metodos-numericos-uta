@@ -1,5 +1,5 @@
 // Vista previa de la integral definida, construida automaticamente a partir
-// de los valores del formulario del metodo del Punto Medio.
+// de los valores del formulario de cualquier regla de integracion.
 //
 // El signo de integral no se puede tipear en un teclado normal, y ademas es
 // una notacion que combina simbolo, limites superior e inferior, integrando

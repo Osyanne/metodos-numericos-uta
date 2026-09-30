@@ -174,6 +174,35 @@ puntos y exige que coincidan. Si difieren, uno de los dos esta mal.
 
 Casos de referencia del docente en `tests/casos_referencia_lagrange.py`.
 
+### trapecio
+
+```json
+{ "fx": "exp(x^4)", "a": -1.0, "b": 1.0, "n": 5 }
+```
+
+La Regla compuesta del Trapecio divide `[a, b]` en `n` subintervalos de ancho
+`Delta_x = (b - a) / n`, toma los **n + 1** puntos `x_i = a + i * Delta_x` y
+los une con rectas:
+
+```
+integral(f, a, b) ~= Delta_x / 2 *
+  [f(x_0) + 2*f(x_1) + ... + 2*f(x_(n-1)) + f(x_n)]
+```
+
+La tabla tiene una fila por punto de particion, desde `i = 0` hasta `i = n`.
+Los extremos tienen `peso = 1`; los puntos interiores, `peso = 2` porque cada
+uno pertenece a dos trapecios. `aporte` es `peso * f(x_i) * Delta_x / 2` y
+`suma` acumula esos aportes hasta la integral aproximada.
+
+El caso del material `Métodos de Integración Numérica.MÉTODO DEL TRAPECIO.pdf`
+es `f(x) = exp(x^4)`, entre `-1` y `1`, con `n = 5`: `Delta_x = 0.4` e
+integral aproximada `2.79929211`. Con `n = 1`, la misma formula usa solo los
+dos extremos y da `2e`.
+
+Su grafica de tipo `integracion` lleva una curva y un `trapezoids` por
+subintervalo. Cada trapecio incluye los extremos `{x0, y0, x1, y1}` para que
+la interfaz trace exactamente la recta aproximante, no un rectangulo.
+
 ### runge-kutta
 
 Una sola ecuacion:
@@ -255,12 +284,13 @@ Reglas duras:
 - `stop_reason` es uno de: `tolerancia_alcanzada`, `n_iteraciones_completadas`,
   `solucion_exacta`, `integracion_completada`, `divergio`, `fallo`.
 - **`integracion_completada`** es el final normal de un metodo de malla fija
-  (Runge-Kutta): recorrio sus n pasos y ninguno perdio la finitud. No es un
+  (Runge-Kutta, Punto Medio o Trapecio): recorrio sus pasos y ninguno perdio la finitud. No es un
   aviso: la interfaz lo muestra en verde, igual que `tolerancia_alcanzada`.
   `n_iteraciones_completadas` queda para los metodos iterativos que si
   persiguen una tolerancia y se quedaron sin iteraciones antes de alcanzarla.
-- **Un metodo de paso unico no reporta error por iteracion.** Runge-Kutta manda
-  `error: null` en todas las filas y explica por que en `notes`. La diferencia
+- **Un metodo de malla fija no reporta error por iteracion.** Runge-Kutta,
+  Punto Medio y Trapecio mandan `error: null` en todas las filas y explican por
+  que en `notes`. La diferencia
   entre `y(i+1)` e `y(i)` mide cuanto cambio la solucion, no cuanto se equivoca,
   y con una solucion que cruza el cero llega a valores absurdos.
 - **Si el metodo diverge no hay raiz, tampoco en la grafica.** `result.raiz` y
@@ -306,6 +336,7 @@ Lo construye `core/plots.py`. La interfaz no lee otras claves que estas.
 | `interpolacion` | `{"points": [[x, y]], "curve": {"x": [], "y": []}, "evaluated": {"x", "y"} \| null}` | si |
 | `convergencia` | `{"n": [], "error": []}` (misma longitud; error admite null) | no |
 | `solucion_edo` | `{"solution": {"x": [], "components": [{"name", "y": []}]}, "exact": igual \| null}` | no |
+| `integracion` | `{"curve": {"x": [], "y": []}, "rectangles": [{"x0", "x1", "y"}], "trapezoids": [{"x0", "y0", "x1", "y1"}], "interval": {"a", "b"}, "integral"}` | si |
 
 `convergencia` y `solucion_edo` no remuestrean porque son **puntos discretos**:
 salieron de correr el metodo con un paso y un numero de iteraciones dados. No hay

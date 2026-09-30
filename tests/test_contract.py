@@ -143,7 +143,7 @@ def test_los_metodos_salen_ordenados_por_orden_explicito(registro_limpio):
 
 
 def test_el_desplegable_sigue_el_orden_de_la_clase(registro_limpio):
-    """Las dos interpolaciones van juntas, antes de Punto Medio.
+    """Las dos interpolaciones van juntas, antes de los metodos de integracion.
 
     Un metodo que no declara `orden` cae al final, despues de Runge-Kutta. Eso
     le pasaba a Lagrange, que nacio antes de que existiera el campo.
@@ -158,6 +158,7 @@ def test_el_desplegable_sigue_el_orden_de_la_clase(registro_limpio):
         "interpolacion-newton",
         "interpolacion-lagrange",
         "punto-medio",
+        "trapecio",
         "runge-kutta",
     ]
 
@@ -481,6 +482,7 @@ CASOS_POR_METODO = {
         "x": 2.0,
     },
     "runge-kutta": {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.1, "n": 5},
+    "trapecio": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 5},
 }
 
 
