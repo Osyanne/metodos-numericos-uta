@@ -114,7 +114,7 @@ function seleccionarMetodo(slug) {
 }
 
 // La vista previa con el simbolo ∫ solo tiene sentido para los metodos de
-// integracion: se muestra encima del formulario del Punto Medio y se oculta
+// integracion: se muestra encima del formulario de la regla elegida y se oculta
 // para los demas. Se remonta cada vez porque el formulario se redibujo.
 function mostrarVistaIntegral() {
   const caja = $("#vista-integral");

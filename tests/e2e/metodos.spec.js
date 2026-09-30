@@ -5,6 +5,7 @@ const casos = [
   ["von-mises", "von-mises-docente", ["i", "xi", "f(xi)", "x(i+1)", "error"]],
   ["interpolacion-newton", "interpolacion-logaritmo", ["i", "x", "f(x)", "Diferencia dividida 1", "Diferencia dividida 2", "error"]],
   ["interpolacion-lagrange", "lagrange-docente", ["i", "x_i", "f(x_i)", "Numerador", "Denominador", "L_i(x)", "f(x_i) L_i(x)", "L_i evaluado", "error"]],
+  ["trapecio", "trapecio-docente", ["i", "xi", "f(xi)", "peso", "peso * f(xi) * dx / 2", "suma acumulada", "error"]],
   ["runge-kutta", "runge-kutta-escalar", ["i", "x", "y", "error"]],
 ];
 

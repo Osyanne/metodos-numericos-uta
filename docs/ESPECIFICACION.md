@@ -16,6 +16,7 @@ Docentes: Ing. Henry Cumbal, Dr. Victor Penafiel.
 | R7 | **Graficacion** de los ejercicios. |
 | R8 | Interpolacion de Newton debe **mostrar el polinomio expandido**. |
 | R12 | **Interpolacion de Lagrange**, agregada sobre el cierre del parcial con sus diapositivas propias. |
+| R13 | **Metodo del Trapecio (U1)**, agregado a partir del material de integracion numerica entregado; debe mostrar los puntos de particion, sus pesos y los trapecios. |
 | R9 | Runge-Kutta debe resolver **sistemas de ecuaciones**, y aceptar tanto el paso `h` como el numero de pasos. |
 | R10 | Newton-Raphson: **la app deriva sola**, pero el usuario tambien puede escribir la derivada. |
 | R11 | Los **tres criterios de error** implementados y **configurables**. |
@@ -44,6 +45,7 @@ hoy no los consume nadie.
 | Interpolacion de Newton | U1 | tabla de puntos, x a evaluar | polinomio expandido, forma de Newton y valor |
 | Interpolacion de Lagrange | U1 | tabla de puntos, x a evaluar | polinomio expandido y valor |
 | Punto Medio | U1 | `f(x)`, a, b, n | integral aproximada, con cada punto medio y su rectangulo |
+| Metodo del Trapecio | U1 | `f(x)`, a, b, n | integral aproximada, con los puntos extremos, sus pesos y cada trapecio |
 | Runge-Kutta | U3 | `f(x,y)` o sistema, condiciones iniciales, h o n | tabla solucion |
 
 ## Como se cumple cada requisito

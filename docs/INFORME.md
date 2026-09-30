@@ -19,6 +19,10 @@ crecer para cubrir los aproximadamente diez metodos del semestre.
 El primer parcial cubre seis: Newton-Raphson, Von Mises, Interpolacion de
 Newton, Interpolacion de Lagrange, Punto Medio y Runge-Kutta.
 
+Como extension de U1, se agrego el **Metodo del Trapecio** a partir del
+material de integracion numerica entregado. Conserva la misma entrada que Punto
+Medio (`f(x)`, `a`, `b`, `n`), pero aproxima la curva con segmentos rectos.
+
 No hubo especificacion escrita ni rubrica —el docente confirmo que no existe—,
 asi que los requisitos se acordaron en clase y se dejaron por escrito en
 [ESPECIFICACION.md](ESPECIFICACION.md), versionados junto al codigo. Ese
@@ -109,6 +113,21 @@ Como los dos metodos construyen el mismo polinomio, hay una prueba que los corre
 sobre los mismos puntos y exige que coincidan. No dice cual esta mal si
 difieren; dice que hay que mirar.
 
+### Metodo del Trapecio
+
+Divide el intervalo en `n` subintervalos de ancho `h = (b - a) / n` y une los
+valores vecinos de la funcion con rectas. Los extremos se pesan una vez y los
+puntos interiores dos veces:
+
+```
+I ~= h / 2 * [f(x_0) + 2 f(x_1) + ... + 2 f(x_(n-1)) + f(x_n)]
+```
+
+La tabla enseña los `n + 1` puntos, su peso, su aporte y la suma acumulada. El
+plano sombrea trapecios con el segmento aproximante visible: no reutiliza los
+rectangulos de Punto Medio. El caso del material, `exp(x^4)` en `[-1, 1]` con
+`n = 5`, da `2.79929211`.
+
 ### Runge-Kutta
 
 Resuelve `y' = f(x, y)` avanzando sobre una malla de paso fijo. Se
@@ -187,9 +206,9 @@ El detalle esta en [VALIDACION.md](VALIDACION.md). En resumen:
 
 | | |
 |---|---|
-| Pruebas de Python | **275**, todas en verde |
-| Pruebas de navegador (Playwright) | **39**, todas en verde |
-| Instalacion probada en limpio | clon nuevo, entorno virgen, 275 en verde y la interfaz sirviendo (2026-09-18, seis metodos) |
+| Pruebas de Python | **298**, todas en verde |
+| Pruebas de navegador (Playwright) | **40**, todas en verde |
+| Instalacion probada en limpio | historial: clon nuevo, entorno virgen, 275 en verde y la interfaz sirviendo (2026-09-18, antes de Trapecio) |
 
 La vara principal es la **tabla del docente**: `f(x) = e⁻ˣ − ln(x)` con `x₀ = 1`.
 El aplicativo la reproduce fila por fila, columna por columna, incluida la de

@@ -199,7 +199,7 @@ output { font-family: var(--mono); color: var(--accent); }
 
 /* ---------------------------------------------------------- vista integral
 
-   Preview del signo integral para el metodo del Punto Medio. Se arma con el
+   Preview del signo integral para las reglas de integracion. Se arma con el
    caracter unicode ∫ agrandado y los limites en columna a la derecha, para
    que se lea como en la pizarra. La paleta debajo tiene botones que meten
    el simbolo o la funcion en la casilla de f(x) donde este el cursor. */

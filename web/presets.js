@@ -130,6 +130,24 @@ export const PRESETS = [
     params: { fx: "0.25*x^3 - x", a: -1.5, b: 2, n: 100 },
     config: { ...CONFIG_MALLA },
   },
+  {
+    id: "trapecio-docente",
+    metodo: "trapecio",
+    nombre: "Docente · ∫eˣ⁴ de −1 a 1",
+    fuente: "Métodos de Integración Numérica.MÉTODO DEL TRAPECIO.pdf, caso n = 5",
+    descripcion: "Ejemplo del docente: integra eˣ⁴ entre −1 y 1 con cinco trapecios. El paso es 0.4 y la aproximación es 2.79929211.",
+    params: { fx: "exp(x^4)", a: -1, b: 1, n: 5 },
+    config: { ...CONFIG_MALLA, decimals: 8 },
+  },
+  {
+    id: "trapecio-simple",
+    metodo: "trapecio",
+    nombre: "Docente · un trapecio en [−1, 1]",
+    fuente: "Métodos de Integración Numérica.MÉTODO DEL TRAPECIO.pdf, caso n = 1",
+    descripcion: "El mismo integrando con n = 1. Usa solo los extremos y deja visible por qué una malla más fina mejora la aproximación.",
+    params: { fx: "exp(x^4)", a: -1, b: 1, n: 1 },
+    config: { ...CONFIG_MALLA, decimals: 8 },
+  },
 ];
 
 export function presetsPara(slug) {

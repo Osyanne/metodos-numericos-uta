@@ -20,6 +20,8 @@ aparece una linea que explica que hace cada uno.
 | Von Mises | lo mismo, con la derivada congelada en el punto inicial |
 | Interpolacion de Newton | armar el polinomio que pasa por unos puntos, y evaluarlo |
 | Interpolacion de Lagrange | lo mismo, por polinomios base en vez de diferencias divididas |
+| Punto Medio | aproximar una integral definida con rectangulos centrados |
+| Método del Trapecio | aproximar una integral definida con segmentos rectos y trapecios |
 | Runge-Kutta | resolver una EDO o un sistema de EDO |
 
 **Cambiar de metodo borra lo que haya en pantalla.** Es a proposito: una tabla
@@ -76,6 +78,10 @@ programa.
 - **Runge-Kutta** acepta un sistema. El boton agrega ecuaciones, y las
   incognitas se llaman `y1`, `y2`, ... Con una sola ecuacion la incognita se
   llama `y`. La malla se define con `h` y `n`, con `h` y `xf`, o con `n` y `xf`.
+- **Punto Medio y Método del Trapecio** piden `f(x)`, los extremos `a`, `b` y
+  el numero de subintervalos `n`. En ambos aparece arriba la integral que se
+  va a resolver. Punto Medio evalua el centro de cada intervalo; Trapecio
+  muestra sus extremos con peso 1 o 2 y los une con segmentos rectos.
 - **Newton-Raphson** deriva solo. Si se escribe la derivada en su casilla, usa
   esa. En las dos formas dice abajo cual uso.
 
@@ -100,7 +106,7 @@ detuvo:
 |---|---|
 | Alcanzo la tolerancia | Converge. |
 | Solucion exacta | Cayo justo sobre la raiz. |
-| Integracion completada | Runge-Kutta recorrio sus n pasos. Es el final normal. |
+| Integracion completada | Runge-Kutta o una regla de integracion recorrio su malla. Es el final normal. |
 | Completo las n iteraciones sin alcanzar la tolerancia | Se quedo sin iteraciones. Subir n o aflojar la tolerancia. |
 | El metodo diverge | Se aleja en vez de acercarse. **No hay raiz**, y el aplicativo no inventa una. Debajo explica por que. |
 
@@ -114,9 +120,9 @@ por que se detuvo.
 Una fila por iteracion, con las columnas propias del metodo. La primera fila no
 lleva error: no hay valor anterior con que compararla.
 
-Una raya `—` significa que ese valor no existe. En Runge-Kutta **toda** la
-columna de error es raya: un metodo de paso unico no produce una estimacion de
-error por iteracion, y la nota lo explica.
+Una raya `—` significa que ese valor no existe. En Runge-Kutta y en las reglas
+de integracion **toda** la columna de error es raya: un metodo de malla fija no
+produce una estimacion de error por fila, y la nota lo explica.
 
 ### El plano
 
