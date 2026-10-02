@@ -44,11 +44,11 @@ async function pedir(ruta, opciones) {
 }
 
 export const api = {
-  metodos: () => pedir("/api/methods"),
+  metodos: () => pedir("api/methods"),
   resolver: (slug, cuerpo) =>
-    pedir(`/api/methods/${slug}/solve`, { method: "POST", body: JSON.stringify(cuerpo) }),
+    pedir(`api/methods/${slug}/solve`, { method: "POST", body: JSON.stringify(cuerpo) }),
   muestrear: (cuerpo) =>
-    pedir("/api/plot/sample", { method: "POST", body: JSON.stringify(cuerpo) }),
+    pedir("api/plot/sample", { method: "POST", body: JSON.stringify(cuerpo) }),
 };
 
 // ------------------------------------------------------------ configuracion
@@ -328,7 +328,7 @@ for (const formato of ["csv", "pdf"]) {
     boton.disabled = true;
     try {
       const respuesta = await fetch(
-        `/api/methods/${estado.metodo.slug}/export/${formato}`,
+        `api/methods/${estado.metodo.slug}/export/${formato}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

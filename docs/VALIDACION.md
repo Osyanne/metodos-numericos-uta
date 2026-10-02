@@ -7,13 +7,14 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual: **298 pruebas de Python** y **98 de navegador**,
-todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
+Verificacion local actual: **301 pruebas de Python**, **98 de navegador** y
+**5 del sitio de GitHub Pages**, todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
 tenia 275 y 39 respectivamente.
 
 ```bash
-pytest --ignore=tests/e2e     # 298
+pytest --ignore=tests/e2e     # 301
 npx playwright test           # 98
+npx playwright test --config playwright.pages.config.js   # 5, necesita internet
 ```
 
 ## De donde salen los numeros
@@ -174,6 +175,25 @@ real. Cubren lo que romperia la demostracion:
 - Exportar CSV y PDF de verdad, incluida la descarga.
 - Zoom, paneo, teclado, y que el remuestreo le pida los puntos al nucleo.
 - Que los siete formularios y el plano entren a 320 y a 360 px.
+
+## Comprobado en la version en linea
+
+El sitio de GitHub Pages corre el nucleo con Pyodide, sin servidor. Antes de
+cada publicacion, `tests/pages/sitio.spec.js` arma el sitio, lo sirve como
+archivos estaticos bajo `/metodos-numericos-uta/` (la misma subcarpeta que usa
+Pages) y verifica con Python corriendo en el navegador:
+
+- Los 56 ejercicios del desplegable, por la interfaz, con sus valores esperados.
+- El remuestreo del zoom, incluido el hueco de `1/x` en cero.
+- Los errores con el mismo codigo y mensaje que en local: 422 de un metodo,
+  404 de un metodo inexistente y 422 de un pedido invalido.
+- La exportacion a CSV y PDF desde los botones.
+- Que no quede ningun error en la consola.
+
+Si alguna falla, el workflow no publica. `tests/test_pages.py` fija ademas que
+el sitio lleve todo el codigo de `core/` y `api/`, que el puente cargue antes
+que `app.js` y que la interfaz no use rutas absolutas, que en Pages apuntarian
+fuera del proyecto.
 
 ## Instalacion verificada en limpio
 

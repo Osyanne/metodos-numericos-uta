@@ -103,10 +103,13 @@ def test_index_html_no_referencia_archivos_que_no_estan_en_el_repositorio(atribu
     web = RAIZ / "web"
     html = (web / "index.html").read_text(encoding="utf-8")
 
+    # Las rutas son relativas para que el mismo index.html sirva en la raiz
+    # (uvicorn) y bajo /metodos-numericos-uta/ (GitHub Pages). Todo lo que no
+    # sea una URL externa es un archivo de web/.
     referencias = [
         ruta
         for ruta in re.findall(rf'{atributo}="([^"]+)"', html)
-        if ruta.startswith("/") and not ruta.startswith("//")
+        if not re.match(r"^([a-z]+:|//|#)", ruta)
     ]
 
     assert referencias, f"index.html no referencia nada por {atributo}"
