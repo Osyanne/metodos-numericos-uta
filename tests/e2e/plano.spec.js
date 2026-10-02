@@ -87,6 +87,41 @@ test("plano admite foco, flechas, zoom y reinicio con teclado", async ({ page })
   await expect(canvas).toHaveAccessibleDescription(/flechas.*zoom/i);
 });
 
+test("una curva discreta crece dentro del paso actual, sin saltar al siguiente", async ({ page }) => {
+  await page.goto("/");
+  const trazo = await page.evaluate(async () => {
+    const { Plano } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    caja.append(canvas);
+    document.body.append(caja);
+    const plano = new Plano(canvas);
+    const lineas = [];
+    plano.ctx = {
+      save() {}, beginPath() {}, rect() {}, clip() {}, stroke() {}, restore() {},
+      moveTo(x, y) { lineas.push(["move", x, y]); },
+      lineTo(x, y) { lineas.push(["line", x, y]); },
+    };
+    plano.ancho = 600;
+    plano.alto = 300;
+    plano.vista = { x0: 0, x1: 1, y0: 0, y1: 1 };
+    plano.animacion.progreso = 0.25;
+    plano._curva({ color: "#000", xs: [0, 1], ys: [0, 1] });
+    return {
+      lineas,
+      cuarto: plano._aPantalla(0.25, 0.25),
+      final: plano._aPantalla(1, 1),
+    };
+  });
+
+  const segmento = trazo.lineas.find(([tipo]) => tipo === "line");
+  expect(segmento).toBeDefined();
+  expect(segmento[1]).toBeCloseTo(trazo.cuarto[0]);
+  expect(segmento[2]).toBeCloseTo(trazo.cuarto[1]);
+  expect(segmento[1]).not.toBeCloseTo(trazo.final[0]);
+});
+
 for (const accion of ["limpiar", "mostrar"]) {
   test(`cancelar debounce al ${accion} impide muestrear datos de otra gráfica`, async ({ page }) => {
     await prepararCarrera(page);
