@@ -480,26 +480,33 @@ export class Plano {
     ctx.lineJoin = "round";
     ctx.beginPath();
 
-    // Durante la animacion la curva se traza progresivamente de izquierda a
-    // derecha: solo se dibujan los primeros `hasta` puntos. Con progreso 1
-    // (fuera de animacion) se dibuja entera. Se usa Math.ceil para que el
-    // primer frame de la animacion muestre al menos un punto y no un canvas
-    // vacio, que se veria como un parpadeo.
-    const total = capa.xs.length;
-    const hasta = Math.max(2, Math.ceil(total * this.animacion.progreso));
+    // La curva se revela por SEGMENTO, no por punto entero. Es especialmente
+    // importante para Runge-Kutta: una EDO solo tiene un punto por paso y con
+    // cinco pasos hay seis puntos. Revelar solo los primeros puntos convertia
+    // dos segundos de animacion en cinco saltos visibles. El ultimo segmento
+    // se interpola solo para pintar; los datos del resultado siguen siendo
+    // exactamente los puntos discretos que calculo el metodo.
+    const total = Math.min(capa.xs.length, capa.ys.length);
+    const posicion = Math.max(
+      0,
+      Math.min(total - 1, (total - 1) * this.animacion.progreso),
+    );
+    const ultimoCompleto = Math.floor(posicion);
+    const fraccion = posicion - ultimoCompleto;
 
     let dibujando = false;
-    for (let i = 0; i < Math.min(total, hasta); i++) {
-      const y = capa.ys[i];
+    let ultimoY = null;
+    const trazar = (x, y) => {
       // Un null es un hueco del dominio: la linea se CORTA. Si se uniera,
       // 1/x saldria con una raya vertical falsa cruzando la asintota.
-      if (y === null || y === undefined || !Number.isFinite(y)) {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
         dibujando = false;
-        continue;
+        ultimoY = null;
+        return;
       }
-      const [px, py] = this._aPantalla(capa.xs[i], y);
+      const [px, py] = this._aPantalla(x, y);
       // Un salto enorme entre puntos vecinos tambien es una asintota.
-      if (dibujando && Math.abs(py - this._ultimoY) > (a.abajo - a.arriba) * 4) {
+      if (dibujando && Math.abs(py - ultimoY) > (a.abajo - a.arriba) * 4) {
         dibujando = false;
       }
       if (!dibujando) {
@@ -508,7 +515,27 @@ export class Plano {
       } else {
         ctx.lineTo(px, py);
       }
-      this._ultimoY = py;
+      ultimoY = py;
+    };
+
+    for (let i = 0; i <= ultimoCompleto; i++) {
+      trazar(capa.xs[i], capa.ys[i]);
+    }
+
+    // El ultimo tramo crece de forma continua entre dos pasos. No se dibuja
+    // si cruza una discontinuidad: en ese caso, como antes, queda un hueco.
+    if (fraccion > 0 && ultimoCompleto < total - 1) {
+      const x0 = capa.xs[ultimoCompleto];
+      const y0 = capa.ys[ultimoCompleto];
+      const x1 = capa.xs[ultimoCompleto + 1];
+      const y1 = capa.ys[ultimoCompleto + 1];
+      if ([x0, y0, x1, y1].every(Number.isFinite)) {
+        const [, py0] = this._aPantalla(x0, y0);
+        const [, py1] = this._aPantalla(x1, y1);
+        if (Math.abs(py1 - py0) <= (a.abajo - a.arriba) * 4) {
+          trazar(x0 + (x1 - x0) * fraccion, y0 + (y1 - y0) * fraccion);
+        }
+      }
     }
     ctx.stroke();
     ctx.restore();
