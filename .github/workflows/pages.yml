@@ -3,9 +3,11 @@ name: GitHub Pages
 # Publica el aplicativo en https://osyanne.github.io/metodos-numericos-uta/
 # con el nucleo de Python corriendo en el navegador (Pyodide). Antes de
 # publicar se prueba el sitio armado: si algun ejercicio no da, no se publica.
+# En los PR solo se arma y se prueba; publicar es cosa de main.
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -45,6 +47,7 @@ jobs:
   publicar:
     name: Publicar en GitHub Pages
     needs: construir
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
