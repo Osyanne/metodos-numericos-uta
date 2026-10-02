@@ -1,0 +1,54 @@
+name: GitHub Pages
+
+# Publica el aplicativo en https://osyanne.github.io/metodos-numericos-uta/
+# con el nucleo de Python corriendo en el navegador (Pyodide). Antes de
+# publicar se prueba el sitio armado: si algun ejercicio no da, no se publica.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construir:
+    name: Armar y probar el sitio
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalar Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Probar el sitio con Python en el navegador
+        run: npx playwright test --config playwright.pages.config.js
+      - name: Armar el sitio
+        run: python pages/construir.py _site
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  publicar:
+    name: Publicar en GitHub Pages
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v5

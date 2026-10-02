@@ -196,6 +196,14 @@ siendo siempre numerico.
 sin internet para poder demostrarlo en el laboratorio. El plano cartesiano esta
 dibujado a mano sobre Canvas.
 
+**La version en linea corre el mismo Python en el navegador.** GitHub Pages no
+ejecuta Python, y pasar los metodos a JavaScript habria creado justo lo que la
+arquitectura evita: dos implementaciones que pueden discrepar. Con Pyodide el
+navegador ejecuta los mismos `core/` y `api/`; `pages/puente.js` intercepta los
+pedidos a `api/` y se los pasa a la aplicacion FastAPI por ASGI. El costo es la
+primera carga (unos 20 segundos) y que esa version necesita internet; la local
+sigue funcionando sin conexion.
+
 **Se ejecuta desde una copia del repositorio**, no como paquete instalado: la
 interfaz vive en `web/`, al lado de `api/`. Si esa carpeta falta, el servidor no
 arranca y lo dice, en vez de levantar una API sin pantalla.
@@ -206,7 +214,7 @@ El detalle esta en [VALIDACION.md](VALIDACION.md). En resumen:
 
 | | |
 |---|---|
-| Pruebas de Python | **298**, todas en verde |
+| Pruebas de Python | **301**, todas en verde |
 | Pruebas de navegador (Playwright) | **98**, todas en verde |
 | Instalacion probada en limpio | historial: clon nuevo, entorno virgen, 275 en verde y la interfaz sirviendo (2026-09-18, antes de Trapecio) |
 

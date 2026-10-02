@@ -11,6 +11,31 @@ para integracion numerica.
 Funciona **sin internet**: no hay ninguna libreria externa ni CDN del lado del
 navegador. El plano esta dibujado a mano sobre Canvas.
 
+## Version en linea
+
+**<https://osyanne.github.io/metodos-numericos-uta/>**
+
+Es el mismo aplicativo, sin instalar nada. GitHub Pages solo sirve archivos y
+no puede correr Python, asi que el nucleo corre **dentro del navegador** con
+[Pyodide](https://pyodide.org) (Python compilado a WebAssembly). No se
+reescribio ninguna formula en JavaScript: el navegador ejecuta los mismos
+`core/` y `api/`, con la misma aplicacion FastAPI, y `pages/puente.js` le
+entrega cada pedido a `api/` como lo haria uvicorn.
+
+Diferencias con la version local:
+
+- La primera visita tarda unos 20 segundos en descargar Python y SymPy; despues
+  queda en la cache del navegador.
+- **Necesita internet**: Pyodide y sus paquetes se bajan de jsDelivr y PyPI.
+  Para el laboratorio sin conexion sigue estando la version local de abajo.
+
+El sitio se publica solo con cada push a `main` (`.github/workflows/pages.yml`),
+y solo si antes pasan las pruebas del sitio armado:
+
+```bash
+npx playwright test --config playwright.pages.config.js
+```
+
 ## Metodos
 
 | Metodo | Unidad | Que resuelve |
@@ -57,7 +82,7 @@ Y abrir <http://127.0.0.1:8000>.
 pytest
 ```
 
-Tienen que dar **298 pruebas en verde**. Entre ellas hay cuatro que verifican
+Tienen que dar **301 pruebas en verde**. Entre ellas hay cuatro que verifican
 justamente la instalacion: que todo lo que el codigo importa este declarado en
 `pyproject.toml`, y que ningun archivo referenciado desde la interfaz falte en
 el repositorio. Las dos cosas pasan desapercibidas en la maquina donde se
@@ -102,7 +127,8 @@ core/           nucleo numerico puro, sin dependencias de web
   methods/      un archivo por metodo, se auto-registra al importarse
 api/            capa HTTP (FastAPI), no contiene matematica
 web/            interfaz: formularios, tabla de iteraciones, plano, presets
-tests/          pruebas de Python; tests/e2e/ las de navegador
+pages/          armado del sitio de GitHub Pages y puente a Pyodide
+tests/          pruebas de Python; tests/e2e/ las de navegador; tests/pages/ las del sitio
 docs/           especificacion, contrato y validacion
 ```
 
