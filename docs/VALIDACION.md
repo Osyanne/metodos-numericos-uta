@@ -7,13 +7,13 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual: **298 pruebas de Python** y **40 de navegador**,
+Verificacion local actual: **298 pruebas de Python** y **98 de navegador**,
 todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
 tenia 275 y 39 respectivamente.
 
 ```bash
 pytest --ignore=tests/e2e     # 298
-npx playwright test           # 40
+npx playwright test           # 98
 ```
 
 ## De donde salen los numeros
@@ -157,10 +157,14 @@ entrega. La columna va vacia y una nota lo explica en pantalla.
 
 ## Comprobado desde el navegador
 
-Las 40 pruebas de Playwright manejan la interfaz de verdad contra el servidor
+Las 98 pruebas de Playwright manejan la interfaz de verdad contra el servidor
 real. Cubren lo que romperia la demostracion:
 
 - Resolver los siete metodos y ver la tabla con sus columnas.
+- **Cargar y resolver cada ejercicio del desplegable** por la interfaz. Los
+  de practica se comparan ademas contra su valor esperado, sacado de una
+  formula cerrada o de la regla aplicada a mano (`presets.spec.js`). Cada
+  metodo tiene que ofrecer al menos ocho.
 - **Cambiar de metodo no resucita el resultado anterior**, ni siquiera moviendo
   el control de decimales.
 - Una respuesta que llega tarde no se pinta sobre el metodo que el usuario

@@ -65,7 +65,7 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **40 pruebas de interfaz** con Playwright, que
+Aparte de las de Python hay **98 pruebas de interfaz** con Playwright, que
 levantan el servidor de verdad y manejan la pantalla:
 
 ```bash
@@ -78,8 +78,8 @@ npx playwright test
 
 1. Elegir el metodo.
 2. Cargar un **ejercicio de ejemplo** del desplegable, o escribir los datos a
-   mano. Los ejemplos incluyen los ejercicios del material del docente, con la
-   fuente de cada uno.
+   mano. Los ejemplos incluyen los ejercicios del material del docente y
+   ejercicios de practica para cada metodo, con la fuente de cada uno.
 3. Ajustar precision, iteraciones, tolerancia y criterio de error.
 4. **Resolver**, y mirar la tabla completa de iteraciones o el plano.
 5. **Comparar metodos** enfrenta sobre el mismo problema a los que reciben los

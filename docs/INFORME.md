@@ -207,7 +207,7 @@ El detalle esta en [VALIDACION.md](VALIDACION.md). En resumen:
 | | |
 |---|---|
 | Pruebas de Python | **298**, todas en verde |
-| Pruebas de navegador (Playwright) | **40**, todas en verde |
+| Pruebas de navegador (Playwright) | **98**, todas en verde |
 | Instalacion probada en limpio | historial: clon nuevo, entorno virgen, 275 en verde y la interfaz sirviendo (2026-09-18, antes de Trapecio) |
 
 La vara principal es la **tabla del docente**: `f(x) = e⁻ˣ − ln(x)` con `x₀ = 1`.
