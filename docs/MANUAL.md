@@ -34,7 +34,10 @@ Hay dos formas.
 **Con un ejercicio de ejemplo.** El desplegable "Ejercicio de ejemplo" carga un
 problema completo de una sola vez: la funcion, el punto inicial, la precision,
 el criterio de error, todo. Debajo aparece de donde salio ese ejercicio. Los
-ejercicios del material del docente estan ahi.
+ejercicios del material del docente estan ahi, junto con ejercicios de
+practica (los que empiezan con "Practica"), hasta sumar ocho por metodo.
+Cada ejercicio de practica dice en su descripcion el valor exacto o el que
+da la regla, para comparar.
 
 **A mano.** El formulario se arma solo segun lo que el metodo pida. Las
 casillas marcadas "opcional" se pueden dejar vacias y el metodo aplica su
