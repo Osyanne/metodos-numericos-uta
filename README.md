@@ -102,11 +102,14 @@ npx playwright test
 
 ## Como usarlo
 
-1. Elegir el metodo.
+1. Elegir la familia en las pestanas (Raices, Interpolacion, Integracion, EDO)
+   y el metodo en sus botones.
 2. Cargar un **ejercicio de ejemplo** del desplegable, o escribir los datos a
    mano. Los ejemplos incluyen los ejercicios del material del docente y
    ejercicios de practica para cada metodo, con la fuente de cada uno.
-3. Ajustar precision, iteraciones, tolerancia y criterio de error.
+3. Si hace falta, abrir **Ajustes de calculo** para cambiar iteraciones,
+   tolerancia y criterio de error. Los decimales se mueven desde la tarjeta de
+   Resultado.
 4. **Resolver**, y mirar la tabla completa de iteraciones o el plano.
 5. **Comparar metodos** enfrenta sobre el mismo problema a los que reciben los
    mismos datos: Newton-Raphson contra Von Mises es el caso interesante.

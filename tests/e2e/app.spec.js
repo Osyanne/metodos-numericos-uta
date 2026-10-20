@@ -7,9 +7,9 @@ test.beforeEach(async ({ page }) => {
   await esperarDesplegable(page);
 });
 
-test("el desplegable muestra solo el nombre de cada metodo", async ({ page }) => {
+test("los chips muestran solo el nombre de cada metodo", async ({ page }) => {
   const metodos = await esperarDesplegable(page);
-  await expect(page.locator("#metodo option, #metodo label")).toHaveText(metodos.map(m => m.name));
+  await expect(page.locator("#metodo label")).toHaveText(metodos.map(m => m.name));
 });
 
 async function resolverNewton(page) {

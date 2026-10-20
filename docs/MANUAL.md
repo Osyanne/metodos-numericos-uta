@@ -6,13 +6,29 @@ Para instalarlo, ver el [README](../README.md). Este manual es para usarlo.
 
 ![Pantalla principal](capturas/01-pantalla-principal.png)
 
-La pantalla tiene dos mitades. A la izquierda se plantea el problema; a la
-derecha aparece la respuesta, con dos pestanas: **Plano** e **Iteraciones**.
+Arriba se elige el metodo. Debajo, la pantalla se arma en tarjetas numeradas
+en el orden en que se usan: a la izquierda **1 · Datos** y los ajustes de
+calculo; a la derecha **2 · Resultado**, la **Formula** del metodo y
+**3 · Grafica y tabla**, con dos vistas: **Plano** e **Iteraciones**. En un
+celular las tarjetas van una debajo de otra, en ese mismo orden.
+
+El boton de la luna (o del sol), arriba a la derecha, cambia entre tema claro y
+oscuro. La eleccion se recuerda; si nunca se toco, se sigue el tema del sistema.
 
 ## 1. Elegir el metodo
 
-El desplegable de arriba lista los metodos disponibles con su unidad. Abajo
-aparece una linea que explica que hace cada uno.
+Los metodos estan agrupados por familia, en pestanas: **Raices**,
+**Interpolacion**, **Integracion** y **EDO**. Cada familia tiene su color, que
+tine los botones y los pasos mientras se trabaja en ella. Debajo de las
+pestanas, un boton por metodo de esa familia; abajo aparece una linea que
+explica que hace el elegido. Con el teclado, las flechas recorren las familias y
+los metodos.
+
+Al volver a una familia queda marcado el ultimo metodo que se uso en ella.
+
+La tarjeta **Formula** muestra la formula del metodo en cuanto se elige, antes
+de resolver, con la notacion de clase. En Runge-Kutta cambia segun el orden
+(2 o 4) que se escriba en el formulario.
 
 | Metodo | Sirve para |
 |---|---|
@@ -97,6 +113,14 @@ programa.
 
 ## 3. Ajustar el calculo
 
+Los ajustes van plegados en **Ajustes de calculo**, debajo de los datos. El
+renglon plegado dice lo que esta vigente, por ejemplo
+`tol 0.000001 · máx 50 · relativo %` (y `sin parar` si se destildo la casilla),
+asi que un ejercicio de ejemplo que los cambie se nota sin abrirlos.
+
+El control de **Decimales** no esta ahi sino en la tarjeta de Resultado, junto a
+los numeros que cambia.
+
 | Control | Que hace |
 |---|---|
 | **Decimales** | Cuantos decimales se muestran. **Solo afecta la pantalla**: no se recalcula nada, y se puede mover despues de resolver. |
@@ -107,12 +131,18 @@ programa.
 
 ## 4. Resolver
 
-El boton **Resolver** calcula y llena las dos pestanas.
+El boton **Resolver** calcula y llena la tarjeta de Resultado y las dos vistas
+de la grafica. Antes de resolver, la tarjeta de Resultado lo indica con una
+linea de ayuda.
 
-Arriba del resultado aparece una franja de color con el motivo por el que se
+El numero que se vino a buscar va primero y en grande: la raiz, el polinomio,
+la integral o la `y` final, segun la familia. El resto del resumen va al lado,
+mas chico.
+
+Arriba del resultado aparece una insignia con el motivo por el que se
 detuvo:
 
-| Franja | Significa |
+| Insignia | Significa |
 |---|---|
 | Alcanzo la tolerancia | Converge. |
 | Solucion exacta | Cayo justo sobre la raiz. |

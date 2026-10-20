@@ -159,8 +159,8 @@ entrega. La columna va vacia y una nota lo explica en pantalla.
 
 ## Comprobado desde el navegador
 
-Las 109 pruebas de Playwright manejan la interfaz de verdad contra el servidor
-real. Cubren lo que romperia la demostracion:
+Las 126 pruebas de Playwright manejan la interfaz de verdad contra el servidor
+real (mas una que solo regenera las capturas del manual, a pedido). Cubren lo que romperia la demostracion:
 
 - Resolver los siete metodos y ver la tabla con sus columnas.
 - **Cargar y resolver cada ejercicio del desplegable** por la interfaz. Los
@@ -176,6 +176,39 @@ real. Cubren lo que romperia la demostracion:
 - Exportar CSV y PDF de verdad, incluida la descarga.
 - Zoom, paneo, teclado, y que el remuestreo le pida los puntos al nucleo.
 - Que los siete formularios y el plano entren a 320 y a 360 px.
+
+## La interfaz por tarjetas
+
+`tests/e2e/interfaz.spec.js` (18 pruebas) fija lo que la persona ve y toca en
+la pantalla nueva:
+
+- Las familias salen en el orden de la API, cada pestana muestra solo sus
+  metodos, al volver a una familia queda marcado el ultimo metodo usado, las
+  flechas del teclado cambian de familia, y una familia que la interfaz no
+  conoce cae en "Otros" sin romper nada.
+- El tema claro y oscuro alterna, se recuerda al recargar, repinta el plano con
+  los colores nuevos, sigue al sistema si nunca se eligio, y funciona aunque el
+  navegador bloquee el almacenamiento.
+- Los ajustes plegados muestran lo vigente y se actualizan al cargar un
+  ejercicio; antes de resolver se ve la invitacion, y al cambiar de metodo el
+  resumen queda vacio.
+- El valor principal es la raiz, el polinomio, la integral o la `y`, segun la
+  familia.
+- Cada metodo tiene su formula, la de Runge-Kutta cambia con el orden, y un
+  metodo sin formula oculta la tarjeta.
+- A 375 px no hay desplazamiento horizontal, los datos van antes que el
+  resultado, y ni un polinomio largo ni una formula desbordan su tarjeta.
+
+El contraste de cada par de colores se midio con la formula de WCAG 2.x, en los
+dos temas: 90 pares, todos por encima del minimo.
+
+| Tema | Texto (minimo 4.5:1) | Bordes de controles y curvas del plano (minimo 3:1) |
+|---|---|---|
+| Claro | el mas bajo, 4.69:1 (texto tenue sobre gris claro) | el mas bajo, 3.13:1 (borde de los campos) |
+| Oscuro | el mas bajo, 4.71:1 (texto tenue sobre gris oscuro) | el mas bajo, 3.13:1 (borde de los campos) |
+
+Tambien se recorrio la pagina solo con teclado: el foco sigue el orden de
+lectura y siempre se ve.
 
 ## Comprobado en la version en linea
 
