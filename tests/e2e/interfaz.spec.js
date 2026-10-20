@@ -2,7 +2,7 @@
 // metodo calcula lo prueban metodos.spec.js y presets.spec.js; aca se prueba
 // lo que la persona ve y toca.
 import { test, expect } from "@playwright/test";
-import { esperarDesplegable } from "./desplegable.js";
+import { esperarDesplegable, elegirMetodo } from "./desplegable.js";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -62,4 +62,48 @@ test("sin localStorage el tema igual alterna y no hay errores", async ({ page })
   await page.locator("#tema").click();
   await expect(page.locator("html")).toHaveAttribute("data-tema", "oscuro");
   expect(errores).toEqual([]);
+});
+
+// ------------------------------------------------------------------ familias
+
+// La ruta va ANTES del goto: si no, la pagina ya cargo la lista verdadera.
+async function conMetodoX(page) {
+  await page.route("**/api/methods", async (route) => {
+    const r = await route.fetch();
+    const m = await r.json();
+    m.push({ ...m[0], slug: "metodo-x", name: "Metodo X", family: "xyz", orden: 99 });
+    await route.fulfill({ response: r, json: m });
+  });
+  await page.goto("/");
+}
+
+test("familias en el orden de la API, solo sus chips, y recuerda el último", async ({ page }) => {
+  const metodos = await esperarDesplegable(page);
+  const familias = [...new Set(metodos.map((m) => m.family))];
+  expect(await page.locator("#familia input").evaluateAll((es) => es.map((e) => e.value)))
+    .toEqual(familias);
+  await page.locator('#familia input[value="integracion"]').check();
+  await expect(page.locator("#metodo label:visible"))
+    .toHaveText(metodos.filter((m) => m.family === "integracion").map((m) => m.name));
+  await page.locator('#metodo input[value="simpson"]').check();
+  await page.locator('#familia input[value="raices"]').check();
+  await expect(page.locator('#metodo input[value="newton-raphson"]')).toBeChecked();
+  await page.locator('#familia input[value="integracion"]').check();
+  await expect(page.locator('#metodo input[value="simpson"]')).toBeChecked();
+  await expect(page.locator("body")).toHaveAttribute("data-familia", "integracion");
+});
+
+test("la flecha derecha cambia de familia", async ({ page }) => {
+  const metodos = await esperarDesplegable(page);
+  await page.locator("#familia input:checked").focus();
+  await page.keyboard.press("ArrowRight");
+  const segunda = [...new Set(metodos.map((m) => m.family))][1];
+  await expect(page.locator(`#familia input[value="${segunda}"]`)).toBeChecked();
+  await expect(page.locator(`#metodo label[data-familia="${segunda}"]`).first()).toBeVisible();
+});
+
+test("una familia desconocida va a Otros", async ({ page }) => {
+  await conMetodoX(page);
+  await page.locator('#familia input[value="otros"]').check();
+  await expect(page.locator("#metodo label:visible")).toHaveText(["Metodo X"]);
 });

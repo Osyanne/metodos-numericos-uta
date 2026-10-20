@@ -20,6 +20,11 @@
   --warn-bg:   #faeeda;
   --mal:       #a32d2d;
   --mal-bg:    #fcebeb;
+  --raices: #534ab7;        --raices-bg: #eeedfe;
+  --interpolacion: #0f6e56; --interpolacion-bg: #e1f5ee;
+  --integracion: #854f0b;   --integracion-bg: #faeeda;
+  --edo: #993c1d;           --edo-bg: #faece7;
+  --otros: #5f5e5a;         --otros-bg: #f1efe8;
 
   /* Plano: la curva tiene color fijo; el resto son capas y series. */
   --curva:       #185fa5;
@@ -53,6 +58,11 @@
   --warn-bg:   #412402;
   --mal:       #f09595;
   --mal-bg:    #501313;
+  --raices: #afa9ec;        --raices-bg: #26215c;
+  --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
+  --integracion: #ef9f27;   --integracion-bg: #412402;
+  --edo: #f0997b;           --edo-bg: #4a1b0c;
+  --otros: #b4b2a9;         --otros-bg: #2c2c2a;
   --curva:       #85b7eb;
   --iteraciones: #f0997b;
   --raiz:        #97c459;
@@ -83,6 +93,11 @@
     --warn-bg:   #412402;
     --mal:       #f09595;
     --mal-bg:    #501313;
+    --raices: #afa9ec;        --raices-bg: #26215c;
+    --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
+    --integracion: #ef9f27;   --integracion-bg: #412402;
+    --edo: #f0997b;           --edo-bg: #4a1b0c;
+    --otros: #b4b2a9;         --otros-bg: #2c2c2a;
     --curva:       #85b7eb;
     --iteraciones: #f0997b;
     --raiz:        #97c459;
@@ -617,3 +632,74 @@ output { font-family: var(--mono); color: var(--accent); }
 }
 .boton-icono:hover { color: var(--ink); border-color: var(--ink-faint); }
 .boton-icono:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------- familias */
+
+/* La familia activa tine la interfaz: botones, chips, pasos. El plano no:
+   la curva tiene un color fijo. */
+body[data-familia="raices"]        { --accent: var(--raices);        --accent-bg: var(--raices-bg); }
+body[data-familia="interpolacion"] { --accent: var(--interpolacion); --accent-bg: var(--interpolacion-bg); }
+body[data-familia="integracion"]   { --accent: var(--integracion);   --accent-bg: var(--integracion-bg); }
+body[data-familia="edo"]           { --accent: var(--edo);           --accent-bg: var(--edo-bg); }
+body[data-familia="otros"]         { --accent: var(--otros);         --accent-bg: var(--otros-bg); }
+
+.familia[data-familia="raices"]        { --c: var(--raices);        --c-bg: var(--raices-bg); }
+.familia[data-familia="interpolacion"] { --c: var(--interpolacion); --c-bg: var(--interpolacion-bg); }
+.familia[data-familia="integracion"]   { --c: var(--integracion);   --c-bg: var(--integracion-bg); }
+.familia[data-familia="edo"]           { --c: var(--edo);           --c-bg: var(--edo-bg); }
+.familia[data-familia="otros"]         { --c: var(--otros);         --c-bg: var(--otros-bg); }
+
+.familias, .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.familias { margin-bottom: 10px; }
+
+/* El radio queda encima de su cara, invisible pero marcable: con display:none
+   el teclado y las pruebas no podrian elegirlo. */
+.familia, .chip { position: relative; display: inline-flex; }
+.familia input, .chip input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cara {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.familia .cara { padding: 6px 10px; border-radius: 10px; color: var(--ink-soft); }
+.familia [data-icono] { color: var(--c); }
+.familia input:hover + .cara { background: var(--surface-2); }
+.familia input:checked + .cara {
+  background: var(--c-bg);
+  border-color: var(--c);
+  color: var(--c);
+}
+
+.chip .cara {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border-color: var(--rule-firm);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+.chip input:hover + .cara { border-color: var(--accent); }
+.chip input:checked + .cara {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-tinta);
+}
+
+.familia input:focus-visible + .cara,
+.chip input:focus-visible + .cara { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+body { --accent-tinta: #ffffff; }
+:root[data-tema="oscuro"] body { --accent-tinta: var(--accent-bg); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) body { --accent-tinta: var(--accent-bg); }
+}

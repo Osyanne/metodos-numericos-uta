@@ -19,7 +19,21 @@ const estado = {
   // respuesta el contador cambio, el usuario ya pidio otra cosa y lo que
   // llego corresponde a una pregunta que nadie esta haciendo: se descarta.
   corrida: 0,
+  // Ultimo metodo marcado en cada familia, para volver a el al regresar.
+  ultimoPorFamilia: {},
 };
+
+// Nombre e icono de cada familia. `otros` recoge una familia que esta tabla
+// no conozca: un metodo nuevo aparece igual, solo que sin color propio.
+const FAMILIAS = {
+  raices: { nombre: "Raíces", icono: "target" },
+  interpolacion: { nombre: "Interpolación", icono: "chart-dots" },
+  integracion: { nombre: "Integración", icono: "chart-area-line" },
+  edo: { nombre: "EDO", icono: "wave-sine" },
+  otros: { nombre: "Otros", icono: "funcion" },
+};
+
+const familiaDe = (metodo) => (metodo.family in FAMILIAS ? metodo.family : "otros");
 
 // ------------------------------------------------------------ API
 
@@ -273,6 +287,74 @@ function pintarResultado() {
   }
 }
 
+// ------------------------------------------------------------ familias y chips
+
+// Radio nativo dentro de su etiqueta: las flechas y el lector de pantalla
+// funcionan sin codigo propio. Lo que se ve es `.cara`, el hermano del radio.
+function opcion(grupo, valor, texto, familia, icono) {
+  const label = document.createElement("label");
+  label.className = grupo === "familia" ? "familia" : "chip";
+  label.dataset.familia = familia;
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = grupo;
+  input.value = valor;
+  input.dataset.familia = familia;
+  const cara = document.createElement("span");
+  cara.className = "cara";
+  if (icono) {
+    const dibujo = document.createElement("span");
+    dibujo.dataset.icono = icono;
+    cara.append(dibujo);
+  }
+  const nombre = document.createElement("span");
+  nombre.textContent = texto;
+  cara.append(nombre);
+  label.append(input, cara);
+  return label;
+}
+
+// Las familias salen en el orden de su primer metodo: la API ya los da
+// ordenados por `orden`.
+function armarSelector(metodos) {
+  const familias = $("#familia");
+  const chips = $("#metodo");
+  familias.innerHTML = "";
+  chips.innerHTML = "";
+  for (const m of metodos) {
+    const familia = familiaDe(m);
+    if (!familias.querySelector(`input[value="${familia}"]`)) {
+      const { nombre, icono } = FAMILIAS[familia];
+      familias.append(opcion("familia", familia, nombre, familia, icono));
+    }
+    chips.append(opcion("metodo", m.slug, m.name, familia));
+  }
+  pintarIconos(familias);
+  familias.addEventListener("change", (e) => elegirFamilia(e.target.value));
+  chips.addEventListener("change", (e) => marcarMetodo(e.target.value));
+}
+
+function elegirFamilia(familia) {
+  marcarMetodo(
+    estado.ultimoPorFamilia[familia]
+      ?? $(`#metodo input[data-familia="${familia}"]`).value,
+  );
+}
+
+function marcarMetodo(slug) {
+  const chip = [...document.querySelectorAll("#metodo input")].find((i) => i.value === slug);
+  if (!chip) return;
+  const familia = chip.dataset.familia;
+  chip.checked = true;
+  $(`#familia input[value="${familia}"]`).checked = true;
+  for (const label of $("#metodo").children) {
+    label.hidden = label.dataset.familia !== familia;
+  }
+  estado.ultimoPorFamilia[familia] = slug;
+  document.body.dataset.familia = familia;
+  seleccionarMetodo(slug);
+}
+
 async function iniciar() {
   try {
     estado.metodos = await api.metodos();
@@ -281,16 +363,8 @@ async function iniciar() {
     return;
   }
 
-  const select = $("#metodo");
-  select.innerHTML = "";
-  for (const m of estado.metodos) {
-    const op = document.createElement("option");
-    op.value = m.slug;
-    op.textContent = m.name;
-    select.append(op);
-  }
-  select.addEventListener("change", () => seleccionarMetodo(select.value));
-  seleccionarMetodo(estado.metodos[0]?.slug);
+  armarSelector(estado.metodos);
+  if (estado.metodos.length) marcarMetodo(estado.metodos[0].slug);
 
   montarComparador({ api, estado, plano, configuracion, formulario });
 }
