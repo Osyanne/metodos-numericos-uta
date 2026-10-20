@@ -8,7 +8,7 @@
 // nunca de haber corrido el aplicativo.
 import { test, expect } from "@playwright/test";
 import { PRESETS } from "../../web/presets.js";
-import { esperarDesplegable } from "./desplegable.js";
+import { esperarDesplegable, elegirMetodo } from "./desplegable.js";
 
 function leerRuta(objeto, ruta) {
   return ruta.split(".").reduce(
@@ -46,7 +46,7 @@ for (const preset of PRESETS) {
   test(`preset ${preset.id} se resuelve desde la interfaz`, async ({ page }) => {
     await page.goto("/");
     await esperarDesplegable(page);
-    await page.locator("#metodo").selectOption(preset.metodo);
+    await elegirMetodo(page, preset.metodo);
     await page.locator("#preset").selectOption(preset.id);
 
     const recibida = page.waitForResponse(`**/${preset.metodo}/solve`);

@@ -1,19 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import { esperarDesplegable } from "./desplegable.js";
+import { esperarDesplegable, elegirMetodo } from "./desplegable.js";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await esperarDesplegable(page);
 });
 
-test("el desplegable muestra solo el nombre de cada metodo", async ({ page }) => {
+test("los chips muestran solo el nombre de cada metodo", async ({ page }) => {
   const metodos = await esperarDesplegable(page);
-  await expect(page.locator("#metodo option")).toHaveText(metodos.map(m => m.name));
+  await expect(page.locator("#metodo label")).toHaveText(metodos.map(m => m.name));
 });
 
 async function resolverNewton(page) {
-  await page.locator("#metodo").selectOption("newton-raphson");
+  await elegirMetodo(page, "newton-raphson");
   await page.locator("#resolver").click();
   await expect(page.locator("#tabla tbody tr").first()).toBeAttached();
 }
@@ -24,7 +24,7 @@ async function cambiarDecimales(page) {
 
 test("cambiar método y decimales no resucita resultados ni leyenda", async ({ page }) => {
   await resolverNewton(page);
-  await page.locator("#metodo").selectOption("runge-kutta");
+  await elegirMetodo(page, "runge-kutta");
   await cambiarDecimales(page);
   await expect(page.locator("#resumen")).toBeEmpty();
   await expect(page.locator("#tabla")).toBeEmpty();
@@ -51,8 +51,8 @@ for (const volver of [false, true]) {
     const retenida = await retener(page, "**/newton-raphson/solve");
     await page.locator("#resolver").click();
     await retenida.lista;
-    await page.locator("#metodo").selectOption("runge-kutta");
-    if (volver) await page.locator("#metodo").selectOption("newton-raphson");
+    await elegirMetodo(page, "runge-kutta");
+    if (volver) await elegirMetodo(page, "newton-raphson");
     const recibida = page.waitForResponse("**/newton-raphson/solve");
     retenida.entregar();
     await recibida;
@@ -76,7 +76,7 @@ test("una comparación tardía no dibuja sobre otro método", async ({ page }) =
   const retenida = await retener(page, "**/newton-raphson/solve");
   await page.locator("#comparar").click();
   await retenida.lista;
-  await page.locator("#metodo").selectOption("runge-kutta");
+  await elegirMetodo(page, "runge-kutta");
   const recibida = page.waitForResponse("**/newton-raphson/solve");
   retenida.entregar();
   await recibida;

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { elegirMetodo, abrirAjustes } from "./desplegable.js";
 
 const casos = [
   ["newton-raphson", "newton-clasico", ["i", "xi", "f(xi)", "x(i+1)", "error"]],
@@ -12,7 +13,7 @@ const casos = [
 
 async function cargar(page, metodo, preset) {
   await page.goto("/");
-  await page.locator("#metodo").selectOption(metodo);
+  await elegirMetodo(page, metodo);
   await page.locator("#preset").selectOption(preset);
 }
 
@@ -119,6 +120,7 @@ test("Von Mises divergente explica la causa sin marcar una raíz", async ({ page
 test("cargar otro preset reemplaza todos los datos y limpia el resultado", async ({ page }) => {
   await cargar(page, "runge-kutta", "runge-kutta-sistema");
   await resolver(page, "runge-kutta");
+  await abrirAjustes(page);
   await page.locator("#iteraciones").fill("2");
   await page.locator("#tolerancia").fill("0.5");
   await page.locator("#criterio").selectOption("absoluto");

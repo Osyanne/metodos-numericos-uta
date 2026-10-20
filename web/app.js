@@ -7,6 +7,8 @@ import { dibujarResumen, dibujarTabla } from "./tabla.js";
 import { montarComparador } from "./comparador.js";
 import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
+import { ICONOS } from "./iconos.js";
+import { formulaPara } from "./formulas.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -18,7 +20,21 @@ const estado = {
   // respuesta el contador cambio, el usuario ya pidio otra cosa y lo que
   // llego corresponde a una pregunta que nadie esta haciendo: se descarta.
   corrida: 0,
+  // Ultimo metodo marcado en cada familia, para volver a el al regresar.
+  ultimoPorFamilia: {},
 };
+
+// Nombre e icono de cada familia. `otros` recoge una familia que esta tabla
+// no conozca: un metodo nuevo aparece igual, solo que sin color propio.
+const FAMILIAS = {
+  raices: { nombre: "Raíces", icono: "target" },
+  interpolacion: { nombre: "Interpolación", icono: "chart-dots" },
+  integracion: { nombre: "Integración", icono: "chart-area-line" },
+  edo: { nombre: "EDO", icono: "wave-sine" },
+  otros: { nombre: "Otros", icono: "funcion" },
+};
+
+const familiaDe = (metodo) => (metodo.family in FAMILIAS ? metodo.family : "otros");
 
 // ------------------------------------------------------------ API
 
@@ -109,6 +125,7 @@ function seleccionarMetodo(slug) {
   llenarPresets(estado.metodo.slug);
   formulario.dibujar(estado.metodo);
   mostrarVistaIntegral();
+  mostrarFormula();
   limpiarPantalla();
   avisar("");
 }
@@ -127,6 +144,19 @@ function mostrarVistaIntegral() {
   }
 }
 
+
+// La formula se muestra en cuanto se elige el metodo, antes de resolver. Si
+// depende de un campo (el orden de Runge-Kutta), se lee lo que esta escrito.
+function mostrarFormula() {
+  const formula = estado.metodo
+    ? formulaPara(estado.metodo.slug,
+      (campo) => $(`#formulario #campo-${campo}`)?.value.trim() ?? "")
+    : null;
+  $("#formula").innerHTML = formula ?? "";
+  $("#tarjeta-formula").hidden = !formula;
+}
+
+$("#formulario").addEventListener("input", mostrarFormula);
 
 // ------------------------------------------------------------ presets
 
@@ -156,6 +186,7 @@ function aplicarPreset(id) {
   const preset = presetsPara(estado.metodo.slug).find((p) => p.id === id);
   if (!preset) {
     formulario.dibujar(estado.metodo);
+    mostrarFormula();
     $("#preset-descripcion").textContent = "";
     return;
   }
@@ -165,6 +196,7 @@ function aplicarPreset(id) {
   // es la del ejercicio ni la de nadie.
   formulario.dibujar(estado.metodo, preset.params);
   mostrarVistaIntegral();
+  mostrarFormula();
   $("#decimales").value = preset.config.decimals;
   $("#decimales-valor").textContent = preset.config.decimals;
   $("#iteraciones").value = preset.config.max_iterations;
@@ -174,6 +206,7 @@ function aplicarPreset(id) {
 
   $("#preset-descripcion").textContent =
     `${preset.descripcion} Fuente: ${preset.fuente}.`;
+  actualizarResumenAjustes();
 
   estado.resultado = null;
   estado.corrida += 1;
@@ -257,7 +290,7 @@ function llevarLaVistaAlPlano() {
 
 function pintarResultado() {
   const decimales = Number($("#decimales").value);
-  dibujarResumen($("#resumen"), estado.resultado, decimales);
+  dibujarResumen($("#resumen"), estado.resultado, decimales, estado.metodo.family);
   dibujarTabla($("#tabla"), estado.resultado, decimales);
   const { capas, resample } = capasDesdePlot(estado.resultado.plot);
   plano.mostrar(capas, resample);
@@ -267,9 +300,77 @@ function pintarResultado() {
     const item = document.createElement("span");
     item.className = "leyenda-item";
     item.innerHTML =
-      `<i style="background:${capa.color}"></i>${capa.nombre}`;
+      `<i style="background:var(${capa.color})"></i>${capa.nombre}`;
     $("#leyenda").append(item);
   }
+}
+
+// ------------------------------------------------------------ familias y chips
+
+// Radio nativo dentro de su etiqueta: las flechas y el lector de pantalla
+// funcionan sin codigo propio. Lo que se ve es `.cara`, el hermano del radio.
+function opcion(grupo, valor, texto, familia, icono) {
+  const label = document.createElement("label");
+  label.className = grupo === "familia" ? "familia" : "chip";
+  label.dataset.familia = familia;
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = grupo;
+  input.value = valor;
+  input.dataset.familia = familia;
+  const cara = document.createElement("span");
+  cara.className = "cara";
+  if (icono) {
+    const dibujo = document.createElement("span");
+    dibujo.dataset.icono = icono;
+    cara.append(dibujo);
+  }
+  const nombre = document.createElement("span");
+  nombre.textContent = texto;
+  cara.append(nombre);
+  label.append(input, cara);
+  return label;
+}
+
+// Las familias salen en el orden de su primer metodo: la API ya los da
+// ordenados por `orden`.
+function armarSelector(metodos) {
+  const familias = $("#familia");
+  const chips = $("#metodo");
+  familias.innerHTML = "";
+  chips.innerHTML = "";
+  for (const m of metodos) {
+    const familia = familiaDe(m);
+    if (!familias.querySelector(`input[value="${familia}"]`)) {
+      const { nombre, icono } = FAMILIAS[familia];
+      familias.append(opcion("familia", familia, nombre, familia, icono));
+    }
+    chips.append(opcion("metodo", m.slug, m.name, familia));
+  }
+  pintarIconos(familias);
+  familias.addEventListener("change", (e) => elegirFamilia(e.target.value));
+  chips.addEventListener("change", (e) => marcarMetodo(e.target.value));
+}
+
+function elegirFamilia(familia) {
+  marcarMetodo(
+    estado.ultimoPorFamilia[familia]
+      ?? $(`#metodo input[data-familia="${familia}"]`).value,
+  );
+}
+
+function marcarMetodo(slug) {
+  const chip = [...document.querySelectorAll("#metodo input")].find((i) => i.value === slug);
+  if (!chip) return;
+  const familia = chip.dataset.familia;
+  chip.checked = true;
+  $(`#familia input[value="${familia}"]`).checked = true;
+  for (const label of $("#metodo").children) {
+    label.hidden = label.dataset.familia !== familia;
+  }
+  estado.ultimoPorFamilia[familia] = slug;
+  document.body.dataset.familia = familia;
+  seleccionarMetodo(slug);
 }
 
 async function iniciar() {
@@ -280,19 +381,79 @@ async function iniciar() {
     return;
   }
 
-  const select = $("#metodo");
-  select.innerHTML = "";
-  for (const m of estado.metodos) {
-    const op = document.createElement("option");
-    op.value = m.slug;
-    op.textContent = m.name;
-    select.append(op);
-  }
-  select.addEventListener("change", () => seleccionarMetodo(select.value));
-  seleccionarMetodo(estado.metodos[0]?.slug);
+  armarSelector(estado.metodos);
+  if (estado.metodos.length) marcarMetodo(estado.metodos[0].slug);
 
   montarComparador({ api, estado, plano, configuracion, formulario });
 }
+
+// ------------------------------------------------------------ ajustes
+
+const CRITERIO_CORTO = {
+  relativo_porcentual: "relativo %",
+  relativo: "relativo",
+  absoluto: "absoluto",
+};
+
+// Los ajustes van plegados; este renglon dice lo vigente sin abrirlos. La
+// tolerancia va tal como esta escrita: es lo que la persona tecleo.
+function actualizarResumenAjustes() {
+  const partes = [
+    `tol ${$("#tolerancia").value}`,
+    `máx ${$("#iteraciones").value}`,
+    CRITERIO_CORTO[$("#criterio").value] ?? $("#criterio").value,
+  ];
+  if (!$("#parar").checked) partes.push("sin parar");
+  $("#ajustes-resumen").textContent = partes.join(" · ");
+}
+
+for (const id of ["iteraciones", "tolerancia", "criterio", "parar"]) {
+  $(`#${id}`).addEventListener("input", actualizarResumenAjustes);
+  $(`#${id}`).addEventListener("change", actualizarResumenAjustes);
+}
+actualizarResumenAjustes();
+
+// ------------------------------------------------------------ tema e iconos
+
+function pintarIconos(raiz = document) {
+  for (const el of raiz.querySelectorAll("[data-icono]")) {
+    el.innerHTML = ICONOS[el.dataset.icono] ?? "";
+  }
+}
+
+const sistemaOscuro = window.matchMedia("(prefers-color-scheme: dark)");
+
+function temaEfectivo() {
+  return document.documentElement.dataset.tema
+    ?? (sistemaOscuro.matches ? "oscuro" : "claro");
+}
+
+// El boton ofrece el tema contrario al que se ve.
+function rotularTema() {
+  const destino = temaEfectivo() === "oscuro" ? "claro" : "oscuro";
+  const boton = $("#tema");
+  boton.setAttribute("aria-label", `Cambiar a tema ${destino}`);
+  boton.querySelector("[data-icono]").dataset.icono = destino === "oscuro" ? "moon" : "sun";
+  pintarIconos(boton);
+}
+
+function alternarTema() {
+  const nuevo = temaEfectivo() === "oscuro" ? "claro" : "oscuro";
+  document.documentElement.dataset.tema = nuevo;
+  try {
+    localStorage.setItem("tema", nuevo);
+  } catch { /* almacenamiento bloqueado: el tema vale solo para esta visita */ }
+  rotularTema();
+  plano.repintar();
+}
+
+$("#tema").addEventListener("click", alternarTema);
+sistemaOscuro.addEventListener("change", () => {
+  rotularTema();
+  plano.repintar();
+});
+pintarIconos();
+rotularTema();
 
 // Cambiar la precision solo re-formatea: no se vuelve a pedir nada.
 $("#decimales").addEventListener("input", () => {

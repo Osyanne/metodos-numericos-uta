@@ -7,7 +7,7 @@
 // reescalan, porque no hay mas resolucion que obtener sin volver a resolver.
 
 const COLORES = [
-  "#0e6e63", "#b4531a", "#3b4e9e", "#7a3b7e", "#4a7c1f", "#9b372b",
+  "--serie-1", "--serie-2", "--serie-3", "--serie-4", "--serie-5", "--serie-6",
 ];
 
 const MARGEN = { izq: 56, der: 16, arriba: 16, abajo: 34 };
@@ -365,6 +365,12 @@ export class Plano {
     this._pintar();
   }
 
+  // Vuelve a dibujar con los colores vigentes: al cambiar el tema cambian
+  // las variables de CSS, no las capas.
+  repintar() {
+    this._pintar();
+  }
+
   _color(nombre) {
     return getComputedStyle(document.documentElement)
       .getPropertyValue(nombre).trim() || "#888";
@@ -484,7 +490,7 @@ export class Plano {
     ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
     ctx.clip();
 
-    ctx.strokeStyle = capa.color;
+    ctx.strokeStyle = this._color(capa.color);
     ctx.lineWidth = 2;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -557,7 +563,7 @@ export class Plano {
     ctx.beginPath();
     ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
     ctx.clip();
-    ctx.fillStyle = capa.color;
+    ctx.fillStyle = this._color(capa.color);
     // Durante la animacion los puntos (raiz, dato, evaluado) aparecen en la
     // segunda mitad, con un pequeno "pop" que agranda el radio de 0 al final.
     // Antes del 50 % no se ven: primero se traza la curva.
@@ -590,7 +596,7 @@ export class Plano {
     ctx.beginPath();
     ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
     ctx.clip();
-    ctx.strokeStyle = capa.color;
+    ctx.strokeStyle = this._color(capa.color);
     ctx.lineWidth = 1;
 
     const total = capa.rectangulos.length;
@@ -611,7 +617,7 @@ export class Plano {
       const w = Math.abs(px1 - px0);
       const y = Math.min(py0, py1);
       const h = Math.abs(py1 - py0);
-      ctx.fillStyle = capa.color;
+      ctx.fillStyle = this._color(capa.color);
       ctx.globalAlpha = r.y >= 0 ? 0.16 : 0.10;
       ctx.fillRect(x, y, w, h);
       ctx.globalAlpha = 1;
@@ -631,7 +637,7 @@ export class Plano {
     ctx.beginPath();
     ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
     ctx.clip();
-    ctx.strokeStyle = capa.color;
+    ctx.strokeStyle = this._color(capa.color);
     ctx.lineWidth = 1;
 
     const total = capa.trapecios.length;
@@ -691,8 +697,8 @@ export class Plano {
     ctx.beginPath();
     ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
     ctx.clip();
-    ctx.strokeStyle = capa.color;
-    ctx.fillStyle = capa.color;
+    ctx.strokeStyle = this._color(capa.color);
+    ctx.fillStyle = this._color(capa.color);
     ctx.lineWidth = 1;
 
     const total = capa.parabolas.length;
@@ -772,8 +778,8 @@ export class Plano {
       const p = capa.puntos[i];
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
       const [px, py] = this._aPantalla(p.x, p.y);
-      ctx.strokeStyle = capa.color;
-      ctx.fillStyle = capa.color;
+      ctx.strokeStyle = this._color(capa.color);
+      ctx.fillStyle = this._color(capa.color);
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(px, py, 3, 0, Math.PI * 2);
@@ -809,18 +815,18 @@ export function capasDesdePlot(plot) {
   const s = plot.series ?? {};
 
   if (plot.kind === "funcion_raiz") {
-    const capas = [{ tipo: "curva", nombre: "f(x)", xs: s.curve.x, ys: s.curve.y }];
+    const capas = [{ tipo: "curva", nombre: "f(x)", color: "--curva", xs: s.curve.x, ys: s.curve.y }];
     if (s.iterates?.length) {
       capas.push({
         tipo: "marcas",
         nombre: "iteraciones",
-        color: "#b4531a",
+        color: "--iteraciones",
         puntos: s.iterates.map((it) => ({ x: it.x, y: it.y, etiqueta: it.n })),
       });
     }
     if (s.root) {
       capas.push({
-        tipo: "puntos", nombre: "raiz", color: "#9b372b",
+        tipo: "puntos", nombre: "raiz", color: "--raiz",
         radio: 5, puntos: [{ x: s.root.x, y: s.root.y }],
       });
     }
@@ -828,14 +834,14 @@ export function capasDesdePlot(plot) {
   }
 
   if (plot.kind === "interpolacion") {
-    const capas = [{ tipo: "curva", nombre: "polinomio", xs: s.curve.x, ys: s.curve.y }];
+    const capas = [{ tipo: "curva", nombre: "polinomio", color: "--curva", xs: s.curve.x, ys: s.curve.y }];
     capas.push({
-      tipo: "puntos", nombre: "datos", color: "#3b4e9e",
+      tipo: "puntos", nombre: "datos", color: "--datos",
       puntos: (s.points ?? []).map(([x, y]) => ({ x, y })),
     });
     if (s.evaluated) {
       capas.push({
-        tipo: "puntos", nombre: "evaluado", color: "#9b372b",
+        tipo: "puntos", nombre: "evaluado", color: "--raiz",
         radio: 5, puntos: [s.evaluated],
       });
     }
@@ -867,7 +873,7 @@ export function capasDesdePlot(plot) {
       capas.push({
         tipo: "rectangulos",
         nombre: "rectangulos",
-        color: "#0e6e63",
+        color: "--area",
         rectangulos: s.rectangles ?? [],
       });
     }
@@ -875,7 +881,7 @@ export function capasDesdePlot(plot) {
       capas.push({
         tipo: "trapecios",
         nombre: "trapecios",
-        color: "#0e6e63",
+        color: "--area",
         trapecios: s.trapezoids ?? [],
       });
     }
@@ -883,13 +889,14 @@ export function capasDesdePlot(plot) {
       capas.push({
         tipo: "parabolas",
         nombre: "parabolas",
-        color: "#0e6e63",
+        color: "--area",
         parabolas: s.parabolas,
       });
     }
     capas.push({
       tipo: "curva",
       nombre: "f(x)",
+      color: "--curva",
       xs: s.curve?.x ?? [],
       ys: s.curve?.y ?? [],
     });
@@ -902,7 +909,7 @@ export function capasDesdePlot(plot) {
       capas.push({
         tipo: "marcas",
         nombre: "puntos medios",
-        color: "#b4531a",
+        color: "--iteraciones",
         puntos: marcas,
       });
     }
@@ -918,7 +925,7 @@ export function capasDesdePlot(plot) {
       capas.push({
         tipo: "marcas",
         nombre: "puntos de particion",
-        color: "#b4531a",
+        color: "--iteraciones",
         puntos: puntosParticion,
       });
     }
@@ -933,7 +940,7 @@ export function capasDesdePlot(plot) {
       capas.push({
         tipo: "marcas",
         nombre: "puntos de Simpson",
-        color: "#b4531a",
+        color: "--iteraciones",
         puntos,
       });
     }
