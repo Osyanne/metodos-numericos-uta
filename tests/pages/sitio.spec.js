@@ -16,7 +16,7 @@ test.beforeAll(async ({ browser }) => {
   page.on("console", m => { if (m.type() === "error") errores.push(m.text()); });
   await page.goto("./");
   await expect(page.locator("#puente-aviso")).toBeVisible();
-  await expect(page.locator("#metodo option")).toHaveCount(7, { timeout: 240_000 });
+  await expect(page.locator("#metodo option")).toHaveCount(8, { timeout: 240_000 });
   await expect(page.locator("#puente-aviso")).toHaveCount(0);
 });
 

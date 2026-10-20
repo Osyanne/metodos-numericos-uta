@@ -125,8 +125,9 @@ def integration(
     title: str = "",
     resample: Resample | None = None,
     trapezoids: Sequence[tuple[float, float, float, float]] = (),
+    parabolas: Sequence[tuple[float, float, float, float, float, float]] = (),
 ) -> PlotSpec:
-    """series = {curve, rectangles, trapezoids, interval, integral}.
+    """series = {curve, rectangles, trapezoids, parabolas, interval, integral}.
 
     Cada rectangulo es (x0, x1, y): sus bordes verticales y la altura f(m_i).
     La interfaz los pinta como cajas semitransparentes y superpone la curva de
@@ -137,6 +138,10 @@ def integration(
     aproxima f dentro del subintervalo. Punto Medio usa ``rectangles`` y la
     Regla del Trapecio usa ``trapezoids``; las dos representaciones pueden
     convivir sin que la interfaz conozca los metodos que las produjeron.
+
+    Cada parabola es (x0, y0, xm, ym, x1, y1): los extremos del subintervalo y
+    su punto medio. Simpson aproxima f por la parabola que pasa por esos tres
+    puntos, y la interfaz la reconstruye con ellos.
     """
     return PlotSpec(
         kind=PlotKind.INTEGRATION,
@@ -149,6 +154,14 @@ def integration(
             "trapezoids": [
                 {"x0": float(x0), "y0": float(y0), "x1": float(x1), "y1": float(y1)}
                 for x0, y0, x1, y1 in trapezoids
+            ],
+            "parabolas": [
+                {
+                    "x0": float(x0), "y0": float(y0),
+                    "xm": float(xm), "ym": float(ym),
+                    "x1": float(x1), "y1": float(y1),
+                }
+                for x0, y0, xm, ym, x1, y1 in parabolas
             ],
             "interval": {"a": float(a), "b": float(b)},
             "integral": float(integral),

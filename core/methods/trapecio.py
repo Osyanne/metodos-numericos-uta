@@ -16,7 +16,12 @@ from typing import Any
 
 from core import plots
 from core.config import SolveConfig
-from core.expression import parse
+from core.methods._integracion import (
+    leer_entero_positivo,
+    leer_funcion,
+    leer_numero,
+    validar_intervalo,
+)
 from core.registry import register
 from core.sampling import sample
 from core.types import (
@@ -52,22 +57,11 @@ COLUMNAS = [
 
 def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
     """Aproxima la integral de ``f`` en [a, b] con n trapecios."""
-    f = _leer_funcion(params)
-    a = _leer_numero(params, "a", "el extremo inferior a")
-    b = _leer_numero(params, "b", "el extremo superior b")
-    n = _leer_entero_positivo(params, "n", "el numero de subintervalos n")
-
-    if a == b:
-        raise MethodError(
-            "El intervalo [a, b] es vacio: a y b tienen que ser distintos."
-        )
-    if b < a:
-        raise MethodError(
-            f"El extremo superior b = {b:g} tiene que ser mayor que el "
-            f"extremo inferior a = {a:g}. Si buscabas la integral con signo "
-            f"cambiado, intercambia los valores: la integral de b a a es "
-            f"menos la integral de a a b."
-        )
+    f = leer_funcion(params)
+    a = leer_numero(params, "a", "el extremo inferior a")
+    b = leer_numero(params, "b", "el extremo superior b")
+    n = leer_entero_positivo(params, "n", "el numero de subintervalos n")
+    validar_intervalo(a, b)
     if n > MAX_SUBINTERVALOS:
         raise MethodError(
             f"Se piden {n} subintervalos y el maximo es {MAX_SUBINTERVALOS}. "
@@ -166,47 +160,6 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
         ),
         notes=notas,
     )
-
-
-# ---------------------------------------------------------------- entrada
-
-
-def _leer_funcion(params: dict[str, Any]) -> Any:
-    texto = params.get("fx")
-    if texto is None or not str(texto).strip():
-        raise MethodError("Hace falta la funcion f(x) para integrar.")
-    return parse(str(texto))
-
-
-def _leer_numero(params: dict[str, Any], clave: str, etiqueta: str) -> float:
-    valor = params.get(clave)
-    if valor is None or valor == "":
-        raise MethodError(f"Hace falta {etiqueta}.")
-    if isinstance(valor, bool):
-        raise MethodError(f"{etiqueta} tiene que ser un numero finito.")
-    try:
-        numero = float(valor)
-    except (TypeError, ValueError, OverflowError) as exc:
-        raise MethodError(
-            f"{etiqueta} tiene que ser un numero, y llego '{valor}'."
-        ) from exc
-    if not math.isfinite(numero):
-        raise MethodError(f"{etiqueta} tiene que ser un numero finito.")
-    return numero
-
-
-def _leer_entero_positivo(
-    params: dict[str, Any], clave: str, etiqueta: str
-) -> int:
-    valor = params.get(clave)
-    if valor is None or valor == "":
-        raise MethodError(f"Hace falta {etiqueta}.")
-    if isinstance(valor, bool):
-        raise MethodError(f"{etiqueta} tiene que ser un entero positivo.")
-    numero = _leer_numero({"__aux__": valor}, "__aux__", etiqueta)
-    if not numero.is_integer() or numero <= 0:
-        raise MethodError(f"{etiqueta} tiene que ser un entero positivo.")
-    return int(numero)
 
 
 # ---------------------------------------------------------------- registro

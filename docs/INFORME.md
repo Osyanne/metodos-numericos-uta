@@ -22,6 +22,8 @@ Newton, Interpolacion de Lagrange, Punto Medio y Runge-Kutta.
 Como extension de U1, se agrego el **Metodo del Trapecio** a partir del
 material de integracion numerica entregado. Conserva la misma entrada que Punto
 Medio (`f(x)`, `a`, `b`, `n`), pero aproxima la curva con segmentos rectos.
+Despues se sumo el **Metodo de Simpson**, a partir de `Método de Simpson.pdf`,
+con la misma entrada y arcos de parabola en lugar de segmentos.
 
 No hubo especificacion escrita ni rubrica —el docente confirmo que no existe—,
 asi que los requisitos se acordaron en clase y se dejaron por escrito en
@@ -128,6 +130,34 @@ plano sombrea trapecios con el segmento aproximante visible: no reutiliza los
 rectangulos de Punto Medio. El caso del material, `exp(x^4)` en `[-1, 1]` con
 `n = 5`, da `2.79929211`.
 
+### Metodo de Simpson
+
+Aproxima la curva con arcos de parabola: cada uno pasa por los extremos de un
+subintervalo y por su punto medio. El material pide `n` par y trae dos casos.
+Con `n = 2` hay una sola parabola sobre `[a, b]`:
+
+```
+I ~= (b - a) / 6 * [f(a) + 4 f((a + b)/2) + f(b)]
+```
+
+Con `n > 2`, `[a, b]` se parte en `n` subintervalos de ancho `h = (b - a) / n`
+y cada uno aporta su punto medio `m_i`:
+
+```
+I ~= (b - a) / (6n) * [f(x_0) + 4 sum f(m_i) + 2 sum f(x_i) + f(x_n)]
+```
+
+El primer caso es el segundo con un solo subintervalo, y asi se programo: una
+sola formula, con `n = 2` tratado como un subintervalo. La tabla muestra cada
+punto con su nombre (`x0`, `m1`, `x1`, ...), su peso 1, 4 o 2, y la suma del
+corchete que el docente escribe antes de multiplicar. El plano sombrea los
+arcos de parabola. Los casos del material, `sqrt(5 + x^3)` en `[0, 1]`, dan
+`2.29015714` con `n = 2` y `2.290473375` con `n = 4`.
+
+Una prueba corre los tres metodos de integracion sobre la misma malla y exige
+que Simpson sea `(Trapecio + 2 * Punto Medio) / 3`: si no se cumple, una de las
+tres reglas esta mal.
+
 ### Runge-Kutta
 
 Resuelve `y' = f(x, y)` avanzando sobre una malla de paso fijo. Se
@@ -214,8 +244,8 @@ El detalle esta en [VALIDACION.md](VALIDACION.md). En resumen:
 
 | | |
 |---|---|
-| Pruebas de Python | **301**, todas en verde |
-| Pruebas de navegador (Playwright) | **98**, todas en verde |
+| Pruebas de Python | **331**, todas en verde |
+| Pruebas de navegador (Playwright) | **109**, todas en verde |
 | Instalacion probada en limpio | historial: clon nuevo, entorno virgen, 275 en verde y la interfaz sirviendo (2026-09-18, antes de Trapecio) |
 
 La vara principal es la **tabla del docente**: `f(x) = e⁻ˣ − ln(x)` con `x₀ = 1`.

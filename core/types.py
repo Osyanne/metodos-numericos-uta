@@ -8,7 +8,7 @@ Familias de entrada de los metodos del primer parcial:
     Newton-Raphson            EXPRESSION + NUMBER
     Von Mises                 EXPRESSION + NUMBER
     Interpolacion de Newton   POINTS + NUMBER
-    Punto Medio y Trapecio    EXPRESSION + NUMBER + INTEGER
+    Reglas de integracion     EXPRESSION + NUMBER + INTEGER
     Runge-Kutta               EXPRESSION + NUMBER, admitiendo listas (sistemas)
 
 MATRIX y VECTOR quedan declarados para los metodos que vengan, pero hoy no los

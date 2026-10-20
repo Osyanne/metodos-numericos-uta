@@ -5,8 +5,8 @@ Universidad Tecnica de Ambato — FISEI — Carrera de Software, Nivel 3.
 Resuelve problemas de metodos numericos mostrando **todas las iteraciones**, con
 precision ajustable y un plano interactivo tipo GeoGebra. Disenado para crecer:
 los seis metodos confirmados del primer parcial son los primeros de una decena.
-Tambien incorpora la Regla del Trapecio de U1, a partir del material entregado
-para integracion numerica.
+Tambien incorpora la Regla del Trapecio y el Metodo de Simpson de U1, a partir
+del material entregado para integracion numerica.
 
 Funciona **sin internet**: no hay ninguna libreria externa ni CDN del lado del
 navegador. El plano esta dibujado a mano sobre Canvas.
@@ -46,6 +46,7 @@ npx playwright test --config playwright.pages.config.js
 | Interpolacion de Lagrange | U1 | polinomio expandido, mostrando cada `L_i` con su numerador y denominador |
 | Punto Medio | U1 | integral definida `∫[a,b] f(x)dx` con rectangulos centrados |
 | Método del Trapecio | U1 | integral definida `∫[a,b] f(x)dx` con segmentos y trapecios |
+| Método de Simpson | U1 | integral definida `∫[a,b] f(x)dx` con arcos de parabola, `n` par |
 | Runge-Kutta | U3 | EDO y sistemas de EDO, orden 2 y 4 |
 
 ## Instalar y ejecutar
@@ -82,7 +83,7 @@ Y abrir <http://127.0.0.1:8000>.
 pytest
 ```
 
-Tienen que dar **301 pruebas en verde**. Entre ellas hay cuatro que verifican
+Tienen que dar **331 pruebas en verde**. Entre ellas hay cuatro que verifican
 justamente la instalacion: que todo lo que el codigo importa este declarado en
 `pyproject.toml`, y que ningun archivo referenciado desde la interfaz falte en
 el repositorio. Las dos cosas pasan desapercibidas en la maquina donde se
@@ -90,7 +91,7 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **98 pruebas de interfaz** con Playwright, que
+Aparte de las de Python hay **109 pruebas de interfaz** con Playwright, que
 levantan el servidor de verdad y manejan la pantalla:
 
 ```bash
