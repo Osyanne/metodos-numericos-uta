@@ -207,3 +207,32 @@ test("a 375 px ninguna fórmula desborda su tarjeta", async ({ page }) => {
     expect(sobra, m.slug).toBeLessThanOrEqual(0);
   }
 });
+
+// ------------------------------------------------------------------ revision final
+
+test("el renglón de ajustes muestra que se puede desplegar", async ({ page }) => {
+  const marca = () => page.locator("#ajustes summary")
+    .evaluate((s) => getComputedStyle(s, "::before").content);
+  const cerrado = await marca();
+  expect(cerrado).not.toBe("none");
+  await page.locator("#ajustes summary").click();
+  await expect.poll(marca).not.toBe(cerrado);
+});
+
+test("en colores forzados se distinguen la familia y el método marcados", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await page.goto("/");
+  await esperarDesplegable(page);
+  const fondo = (sel) => page.locator(sel).first()
+    .evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(await fondo("#familia input:checked + .cara"))
+    .not.toBe(await fondo("#familia input:not(:checked) + .cara"));
+  expect(await fondo("#metodo input:checked + .cara"))
+    .not.toBe(await fondo("#metodo label:not([hidden]) input:not(:checked) + .cara"));
+});
+
+test("el orden escrito como 2.0 muestra la fórmula de Heun", async ({ page }) => {
+  await elegirMetodo(page, "runge-kutta");
+  await page.locator("#campo-orden").fill("2.0");
+  await expect(page.locator("#formula math")).toHaveAttribute("data-formula", "runge-kutta-2");
+});

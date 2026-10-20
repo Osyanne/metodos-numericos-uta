@@ -159,7 +159,7 @@ entrega. La columna va vacia y una nota lo explica en pantalla.
 
 ## Comprobado desde el navegador
 
-Las 126 pruebas de Playwright manejan la interfaz de verdad contra el servidor
+Las 129 pruebas de Playwright manejan la interfaz de verdad contra el servidor
 real (mas una que solo regenera las capturas del manual, a pedido). Cubren lo que romperia la demostracion:
 
 - Resolver los siete metodos y ver la tabla con sus columnas.
@@ -179,7 +179,7 @@ real (mas una que solo regenera las capturas del manual, a pedido). Cubren lo qu
 
 ## La interfaz por tarjetas
 
-`tests/e2e/interfaz.spec.js` (18 pruebas) fija lo que la persona ve y toca en
+`tests/e2e/interfaz.spec.js` (21 pruebas) fija lo que la persona ve y toca en
 la pantalla nueva:
 
 - Las familias salen en el orden de la API, cada pestana muestra solo sus
@@ -189,13 +189,15 @@ la pantalla nueva:
 - El tema claro y oscuro alterna, se recuerda al recargar, repinta el plano con
   los colores nuevos, sigue al sistema si nunca se eligio, y funciona aunque el
   navegador bloquee el almacenamiento.
-- Los ajustes plegados muestran lo vigente y se actualizan al cargar un
-  ejercicio; antes de resolver se ve la invitacion, y al cambiar de metodo el
+- Los ajustes plegados muestran lo vigente, se actualizan al cargar un
+  ejercicio y llevan la flecha que indica que se abren; antes de resolver se ve la invitacion, y al cambiar de metodo el
   resumen queda vacio.
 - El valor principal es la raiz, el polinomio, la integral o la `y`, segun la
   familia.
-- Cada metodo tiene su formula, la de Runge-Kutta cambia con el orden, y un
-  metodo sin formula oculta la tarjeta.
+- Cada metodo tiene su formula, la de Runge-Kutta cambia con el orden (tambien
+  si se escribe `2.0`), y un metodo sin formula oculta la tarjeta.
+- Con colores forzados (contraste alto de Windows) se sigue viendo que familia
+  y que metodo estan marcados.
 - A 375 px no hay desplazamiento horizontal, los datos van antes que el
   resultado, y ni un polinomio largo ni una formula desbordan su tarjeta.
 

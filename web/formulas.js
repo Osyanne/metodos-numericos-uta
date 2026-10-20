@@ -136,5 +136,7 @@ export function formulaPara(slug, valorDe) {
   const entrada = FORMULAS[slug];
   if (entrada === undefined) return null;
   if (typeof entrada === "string") return entrada;
-  return entrada.variantes[valorDe(entrada.campo)] ?? entrada.variantes[entrada.defecto];
+  // Se compara el numero, no el texto: "2.0" es el orden 2 que el nucleo calcula.
+  return entrada.variantes[String(Number(valorDe(entrada.campo)))]
+    ?? entrada.variantes[entrada.defecto];
 }

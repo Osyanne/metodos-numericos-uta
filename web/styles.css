@@ -820,3 +820,24 @@ body { --accent-tinta: #ffffff; }
   color: var(--ink);
 }
 #formula mtd { padding: 3px 0; text-align: left; math-style: normal; }
+
+/* ---------------------------------------------------------- senales */
+
+/* El renglon plegado tiene que decir que se abre: display:flex quita el
+   triangulo nativo del <details>. */
+#ajustes summary { list-style: none; }
+#ajustes summary::-webkit-details-marker { display: none; }
+#ajustes summary::before { content: "▸"; color: var(--ink-faint); }
+#ajustes[open] summary::before { content: "▾"; }
+
+/* Con colores forzados (contraste alto) el fondo y el borde los pone el
+   sistema: sin esto la familia y el metodo marcados se ven iguales al resto. */
+@media (forced-colors: active) {
+  .familia input:checked + .cara,
+  .chip input:checked + .cara {
+    forced-color-adjust: none;
+    background: Highlight;
+    border-color: Highlight;
+    color: HighlightText;
+  }
+}
