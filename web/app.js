@@ -8,6 +8,7 @@ import { montarComparador } from "./comparador.js";
 import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
 import { ICONOS } from "./iconos.js";
+import { formulaPara } from "./formulas.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -124,6 +125,7 @@ function seleccionarMetodo(slug) {
   llenarPresets(estado.metodo.slug);
   formulario.dibujar(estado.metodo);
   mostrarVistaIntegral();
+  mostrarFormula();
   limpiarPantalla();
   avisar("");
 }
@@ -142,6 +144,19 @@ function mostrarVistaIntegral() {
   }
 }
 
+
+// La formula se muestra en cuanto se elige el metodo, antes de resolver. Si
+// depende de un campo (el orden de Runge-Kutta), se lee lo que esta escrito.
+function mostrarFormula() {
+  const formula = estado.metodo
+    ? formulaPara(estado.metodo.slug,
+      (campo) => $(`#formulario #campo-${campo}`)?.value.trim() ?? "")
+    : null;
+  $("#formula").innerHTML = formula ?? "";
+  $("#tarjeta-formula").hidden = !formula;
+}
+
+$("#formulario").addEventListener("input", mostrarFormula);
 
 // ------------------------------------------------------------ presets
 
@@ -171,6 +186,7 @@ function aplicarPreset(id) {
   const preset = presetsPara(estado.metodo.slug).find((p) => p.id === id);
   if (!preset) {
     formulario.dibujar(estado.metodo);
+    mostrarFormula();
     $("#preset-descripcion").textContent = "";
     return;
   }
@@ -180,6 +196,7 @@ function aplicarPreset(id) {
   // es la del ejercicio ni la de nadie.
   formulario.dibujar(estado.metodo, preset.params);
   mostrarVistaIntegral();
+  mostrarFormula();
   $("#decimales").value = preset.config.decimals;
   $("#decimales-valor").textContent = preset.config.decimals;
   $("#iteraciones").value = preset.config.max_iterations;

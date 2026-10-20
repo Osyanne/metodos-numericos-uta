@@ -168,3 +168,32 @@ test("un polinomio largo no desborda a 375 px", async ({ page }) => {
   expect(await page.evaluate(() =>
     document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
+
+// ------------------------------------------------------------------ formula
+
+test("cada método de la API tiene su fórmula", async ({ page }) => {
+  const metodos = await esperarDesplegable(page);
+  for (const m of metodos) {
+    await elegirMetodo(page, m.slug);
+    await expect(page.locator("#formula math")).toBeVisible();
+    await expect(page.locator("#formula math")).toHaveAttribute("data-formula",
+      m.slug === "runge-kutta" ? "runge-kutta-4" : m.slug);
+  }
+});
+
+test("Runge-Kutta cambia de fórmula con el orden", async ({ page }) => {
+  await elegirMetodo(page, "runge-kutta");
+  await page.locator("#campo-orden").fill("2");
+  await expect(page.locator("#formula math")).toHaveAttribute("data-formula", "runge-kutta-2");
+  await page.locator("#campo-orden").fill("7");
+  await expect(page.locator("#formula math")).toHaveAttribute("data-formula", "runge-kutta-4");
+});
+
+test("un método sin fórmula oculta la tarjeta", async ({ page }) => {
+  await conMetodoX(page);
+  // Con el metodo inicial (Newton-Raphson) la tarjeta se ve; con uno sin
+  // formula cargada, se oculta.
+  await expect(page.locator("#tarjeta-formula")).toBeVisible();
+  await page.locator('#familia input[value="otros"]').check();
+  await expect(page.locator("#tarjeta-formula")).toBeHidden();
+});

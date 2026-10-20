@@ -809,3 +809,14 @@ body { --accent-tinta: #ffffff; }
   overflow-wrap: anywhere;
 }
 .estado svg { width: 14px; height: 14px; }
+
+/* ---------------------------------------------------------- formula */
+
+#formula { overflow-x: auto; }
+#formula math {
+  margin: 0;
+  text-align: left;
+  font-size: 1.15em;
+  color: var(--ink);
+}
+#formula mtd { padding: 3px 0; text-align: left; math-style: normal; }
