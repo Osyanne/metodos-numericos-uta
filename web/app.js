@@ -7,6 +7,7 @@ import { dibujarResumen, dibujarTabla } from "./tabla.js";
 import { montarComparador } from "./comparador.js";
 import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
+import { ICONOS } from "./iconos.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -267,7 +268,7 @@ function pintarResultado() {
     const item = document.createElement("span");
     item.className = "leyenda-item";
     item.innerHTML =
-      `<i style="background:${capa.color}"></i>${capa.nombre}`;
+      `<i style="background:var(${capa.color})"></i>${capa.nombre}`;
     $("#leyenda").append(item);
   }
 }
@@ -293,6 +294,48 @@ async function iniciar() {
 
   montarComparador({ api, estado, plano, configuracion, formulario });
 }
+
+// ------------------------------------------------------------ tema e iconos
+
+function pintarIconos(raiz = document) {
+  for (const el of raiz.querySelectorAll("[data-icono]")) {
+    el.innerHTML = ICONOS[el.dataset.icono] ?? "";
+  }
+}
+
+const sistemaOscuro = window.matchMedia("(prefers-color-scheme: dark)");
+
+function temaEfectivo() {
+  return document.documentElement.dataset.tema
+    ?? (sistemaOscuro.matches ? "oscuro" : "claro");
+}
+
+// El boton ofrece el tema contrario al que se ve.
+function rotularTema() {
+  const destino = temaEfectivo() === "oscuro" ? "claro" : "oscuro";
+  const boton = $("#tema");
+  boton.setAttribute("aria-label", `Cambiar a tema ${destino}`);
+  boton.querySelector("[data-icono]").dataset.icono = destino === "oscuro" ? "moon" : "sun";
+  pintarIconos(boton);
+}
+
+function alternarTema() {
+  const nuevo = temaEfectivo() === "oscuro" ? "claro" : "oscuro";
+  document.documentElement.dataset.tema = nuevo;
+  try {
+    localStorage.setItem("tema", nuevo);
+  } catch { /* almacenamiento bloqueado: el tema vale solo para esta visita */ }
+  rotularTema();
+  plano.repintar();
+}
+
+$("#tema").addEventListener("click", alternarTema);
+sistemaOscuro.addEventListener("change", () => {
+  rotularTema();
+  plano.repintar();
+});
+pintarIconos();
+rotularTema();
 
 // Cambiar la precision solo re-formatea: no se vuelve a pedir nada.
 $("#decimales").addEventListener("input", () => {

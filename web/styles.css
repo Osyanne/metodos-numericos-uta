@@ -1,42 +1,100 @@
 /* Interfaz del aplicativo. Sin librerias ni fuentes externas: todo tiene que
    andar sin internet, que es requisito para demostrarlo en el laboratorio. */
 
+/* El tema oscuro llega por dos caminos: el boton (html[data-tema="oscuro"]) o
+   el sistema, cuando la persona nunca eligio. Los dos bloques oscuros tienen
+   que ser iguales; plano.js lee estos mismos nombres al dibujar. */
+
 :root {
-  --paper:     #f2f4f2;
-  --surface:   #fbfcfb;
-  --surface-2: #e9edea;
-  --ink:       #1a211f;
-  --ink-soft:  #4c5854;
-  --ink-faint: #77837e;
-  --rule:      #d3dad5;
-  --rule-firm: #b9c3bd;
-  --accent:    #0e6e63;
-  --accent-bg: #deebe7;
-  --warn:      #8f570f;
-  --warn-bg:   #f1e5d2;
-  --mal:       #9b372b;
-  --mal-bg:    #f2dfdb;
+  --paper:     #f5f6fa;
+  --surface:   #ffffff;
+  --surface-2: #f0f1f6;
+  --ink:       #1c2033;
+  --ink-soft:  #454b63;
+  --ink-faint: #6a7086;
+  --rule:      #e1e4ee;
+  --rule-firm: #c9cedc;
+  --accent:    #534ab7;
+  --accent-bg: #eeedfe;
+  --warn:      #854f0b;
+  --warn-bg:   #faeeda;
+  --mal:       #a32d2d;
+  --mal-bg:    #fcebeb;
+
+  /* Plano: la curva tiene color fijo; el resto son capas y series. */
+  --curva:       #185fa5;
+  --iteraciones: #d85a30;
+  --raiz:        #3b6d11;
+  --datos:       #993556;
+  --area:        #1d9e75;
+  --serie-1: #185fa5;
+  --serie-2: #d85a30;
+  --serie-3: #0f6e56;
+  --serie-4: #534ab7;
+  --serie-5: #854f0b;
+  --serie-6: #993556;
 
   --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
   --sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+:root[data-tema="oscuro"] {
+  --paper:     #111318;
+  --surface:   #1a1d24;
+  --surface-2: #232731;
+  --ink:       #e6e8ef;
+  --ink-soft:  #b4b9c8;
+  --ink-faint: #8a90a6;
+  --rule:      #2c313c;
+  --rule-firm: #3a4050;
+  --accent:    #afa9ec;
+  --accent-bg: #26215c;
+  --warn:      #ef9f27;
+  --warn-bg:   #412402;
+  --mal:       #f09595;
+  --mal-bg:    #501313;
+  --curva:       #85b7eb;
+  --iteraciones: #f0997b;
+  --raiz:        #97c459;
+  --datos:       #ed93b1;
+  --area:        #5dcaa5;
+  --serie-1: #85b7eb;
+  --serie-2: #f0997b;
+  --serie-3: #5dcaa5;
+  --serie-4: #afa9ec;
+  --serie-5: #ef9f27;
+  --serie-6: #ed93b1;
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --paper:     #111614;
-    --surface:   #191f1d;
-    --surface-2: #222927;
-    --ink:       #e5eae7;
-    --ink-soft:  #a3aea9;
-    --ink-faint: #7d8985;
-    --rule:      #2b3431;
-    --rule-firm: #3c4744;
-    --accent:    #55c2b0;
-    --accent-bg: #15302c;
-    --warn:      #d9a15e;
-    --warn-bg:   #32261a;
-    --mal:       #e0806f;
-    --mal-bg:    #341f1b;
+  :root:not([data-tema="claro"]) {
+    --paper:     #111318;
+    --surface:   #1a1d24;
+    --surface-2: #232731;
+    --ink:       #e6e8ef;
+    --ink-soft:  #b4b9c8;
+    --ink-faint: #8a90a6;
+    --rule:      #2c313c;
+    --rule-firm: #3a4050;
+    --accent:    #afa9ec;
+    --accent-bg: #26215c;
+    --warn:      #ef9f27;
+    --warn-bg:   #412402;
+    --mal:       #f09595;
+    --mal-bg:    #501313;
+    --curva:       #85b7eb;
+    --iteraciones: #f0997b;
+    --raiz:        #97c459;
+    --datos:       #ed93b1;
+    --area:        #5dcaa5;
+    --serie-1: #85b7eb;
+    --serie-2: #f0997b;
+    --serie-3: #5dcaa5;
+    --serie-4: #afa9ec;
+    --serie-5: #ef9f27;
+    --serie-6: #ed93b1;
+    color-scheme: dark;
   }
 }
 
@@ -538,3 +596,24 @@ output { font-family: var(--mono); color: var(--accent); }
 .col-error { color: var(--warn); }
 
 .vacio { margin: 0; padding: 12px 0; color: var(--ink-faint); font-size: 13.5px; }
+
+/* ---------------------------------------------------------- iconos */
+
+[data-icono] { display: inline-flex; }
+[data-icono] svg { width: 1.25em; height: 1.25em; }
+
+.boton-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--rule-firm);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.boton-icono:hover { color: var(--ink); border-color: var(--ink-faint); }
+.boton-icono:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

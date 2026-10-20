@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Métodos Numéricos — UTA FISEI</title>
   <link rel="stylesheet" href="styles.css">
+  <script>
+    // El tema elegido se aplica antes de pintar, para que la pagina no nazca
+    // clara y salte a oscura. Sin eleccion guardada, manda el sistema.
+    try {
+      const tema = localStorage.getItem("tema");
+      if (tema === "claro" || tema === "oscuro") document.documentElement.dataset.tema = tema;
+    } catch { /* almacenamiento bloqueado: se sigue al sistema */ }
+  </script>
 </head>
 <body>
 
@@ -14,6 +22,9 @@
     <h1>Métodos Numéricos</h1>
   </div>
   <p class="subtitulo">Tabla completa de iteraciones, precisión ajustable y plano interactivo.</p>
+  <button id="tema" class="boton-icono" type="button" aria-label="Cambiar a tema oscuro">
+    <span data-icono="moon"></span>
+  </button>
 </header>
 
 <main class="disposicion">

@@ -129,7 +129,7 @@ function superponerConvergencia(plano, corridas) {
     for (const capa of plano.capas) {
       const item = document.createElement("span");
       item.className = "leyenda-item";
-      item.innerHTML = `<i style="background:${capa.color}"></i>${capa.nombre}`;
+      item.innerHTML = `<i style="background:var(${capa.color})"></i>${capa.nombre}`;
       leyenda.append(item);
     }
   }
