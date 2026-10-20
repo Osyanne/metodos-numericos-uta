@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { esperarDesplegable } from "./desplegable.js";
+import { esperarDesplegable, elegirMetodo } from "./desplegable.js";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("una coordenada incompleta se explica sin enviar un cero inventado", async ({ page }) => {
-  await page.locator("#metodo").selectOption("interpolacion-newton");
+  await elegirMetodo(page, "interpolacion-newton");
   await page.locator(".puntos-tabla tbody tr").first().locator("input").first().fill("");
   await page.locator("#formulario > .campo").nth(1).locator("input").fill("2");
   const envios = [];
@@ -20,7 +20,7 @@ test("una coordenada incompleta se explica sin enviar un cero inventado", async 
 });
 
 test("un numero de pasos fraccionario se rechaza sin redondearlo", async ({ page }) => {
-  await page.locator("#metodo").selectOption("runge-kutta");
+  await elegirMetodo(page, "runge-kutta");
   const campos = page.locator("#formulario > .campo");
   for (const [indice, valor] of [[0, "y"], [1, "0"], [2, "1"], [3, "0.1"], [4, "2.5"]]) {
     await campos.nth(indice).locator("input").fill(valor);

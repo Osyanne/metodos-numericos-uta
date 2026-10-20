@@ -4,6 +4,7 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { PRESETS } from "../../web/presets.js";
+import { elegirMetodo, SELECTOR_METODOS } from "../e2e/desplegable.js";
 
 test.describe.configure({ mode: "serial" });
 
@@ -16,7 +17,7 @@ test.beforeAll(async ({ browser }) => {
   page.on("console", m => { if (m.type() === "error") errores.push(m.text()); });
   await page.goto("./");
   await expect(page.locator("#puente-aviso")).toBeVisible();
-  await expect(page.locator("#metodo option")).toHaveCount(8, { timeout: 240_000 });
+  await expect(page.locator(SELECTOR_METODOS)).toHaveCount(8, { timeout: 240_000 });
   await expect(page.locator("#puente-aviso")).toHaveCount(0);
 });
 
@@ -42,7 +43,7 @@ function leerRuta(objeto, ruta) {
 test("cada ejercicio del desplegable se resuelve con Python en el navegador", async () => {
   for (const preset of PRESETS) {
     // Por la interfaz, como el usuario: si falla, aparece el aviso.
-    await page.locator("#metodo").selectOption(preset.metodo);
+    await elegirMetodo(page, preset.metodo);
     await page.locator("#preset").selectOption(preset.id);
     await page.locator("#resolver").click();
     await expect(page.locator("#resumen")).not.toBeEmpty();
@@ -88,7 +89,7 @@ test("los errores llegan con el mismo codigo y mensaje que en local", async () =
 });
 
 test("exporta CSV y PDF desde los botones", async () => {
-  await page.locator("#metodo").selectOption("von-mises");
+  await elegirMetodo(page, "von-mises");
   await page.locator("#preset").selectOption("von-mises-docente");
   for (const [formato, inicio] of [["csv", "i,xi,fxi,xi_sig,error"], ["pdf", "%PDF-"]]) {
     const descarga = page.waitForEvent("download");

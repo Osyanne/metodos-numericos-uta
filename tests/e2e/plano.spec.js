@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { elegirMetodo } from "./desplegable.js";
 
 const esMuestra = (response) => response.url().endsWith("/api/plot/sample") && response.request().method() === "POST";
 
 async function abrirPlano(page) {
   await page.goto("/");
-  await page.locator("#metodo").selectOption("newton-raphson");
+  await elegirMetodo(page, "newton-raphson");
   await page.locator("#resolver").click();
   await expect(page.locator("#resumen .estado")).toBeVisible();
 }
@@ -173,7 +174,7 @@ for (const ancho of [320, 360]) {
     await page.setViewportSize({ width: ancho, height: 740 });
     await page.goto("/");
     for (const metodo of ["newton-raphson", "von-mises", "interpolacion-newton", "interpolacion-lagrange", "punto-medio", "trapecio", "simpson", "runge-kutta"]) {
-      await page.locator("#metodo").selectOption(metodo);
+      await elegirMetodo(page, metodo);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(ancho);
       const medida = await page.locator("#plano").evaluate((canvas) => ({
         ancho: canvas.getBoundingClientRect().width,
@@ -183,7 +184,7 @@ for (const ancho of [320, 360]) {
       expect(medida.ancho).toBeLessThanOrEqual(medida.disponible);
       expect(medida.right).toBeLessThanOrEqual(ancho);
     }
-    await page.locator("#metodo").selectOption("newton-raphson");
+    await elegirMetodo(page, "newton-raphson");
     await page.locator("#resolver").click();
     await expect(page.locator("#resumen .estado")).toBeVisible();
     await page.locator("#ver-tabla").click();

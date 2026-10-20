@@ -9,7 +9,7 @@
 // En Windows (PowerShell):  $env:CAPTURAS=1; npx playwright test capturas
 import { test, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
-import { esperarDesplegable } from "./desplegable.js";
+import { esperarDesplegable, elegirMetodo } from "./desplegable.js";
 
 const DESTINO = fileURLToPath(new URL("../../docs/capturas/", import.meta.url));
 
@@ -34,7 +34,7 @@ test("capturas del manual", async ({ page }) => {
   await esperarDesplegable(page);
 
   // Un caso que se explica solo: el ejercicio resuelto del docente.
-  await page.locator("#metodo").selectOption("von-mises");
+  await elegirMetodo(page, "von-mises");
   await page.locator("#preset").selectOption("von-mises-docente");
   await page.locator("#resolver").click();
   await expect(page.locator("#resumen .estado")).toBeVisible();
@@ -50,7 +50,7 @@ test("capturas del manual", async ({ page }) => {
 
   // El plano con un sistema de dos EDO, que es donde se luce: dos series.
   await page.locator("#ver-plano").click();
-  await page.locator("#metodo").selectOption("runge-kutta");
+  await elegirMetodo(page, "runge-kutta");
   await page.locator("#preset").selectOption("runge-kutta-sistema");
   await page.locator("#resolver").click();
   await expect(page.locator("#leyenda .leyenda-item").first()).toBeVisible();
