@@ -197,3 +197,13 @@ test("un método sin fórmula oculta la tarjeta", async ({ page }) => {
   await page.locator('#familia input[value="otros"]').check();
   await expect(page.locator("#tarjeta-formula")).toBeHidden();
 });
+
+test("a 375 px ninguna fórmula desborda su tarjeta", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  const metodos = await esperarDesplegable(page);
+  for (const m of metodos) {
+    await elegirMetodo(page, m.slug);
+    const sobra = await page.locator("#formula").evaluate((f) => f.scrollWidth - f.clientWidth);
+    expect(sobra, m.slug).toBeLessThanOrEqual(0);
+  }
+});

@@ -11,14 +11,13 @@ const fila = (...partes) => `<mrow>${partes.join("")}</mrow>`;
 const sub = (base, indice) => `<msub>${base}${indice}</msub>`;
 const frac = (arriba, abajo) => `<mfrac>${arriba}${abajo}</mfrac>`;
 const paren = (...partes) => fila(mo("("), ...partes, mo(")"));
-const corchete = (...partes) => fila(mo("["), ...partes, mo("]"));
 const f = (...args) => fila(mi("f"), paren(...args.flatMap((a, i) => (i ? [mo(","), a] : [a]))));
 const separa = '<mspace width="1em"></mspace>';
 const suma = (desde, hasta) =>
   `<munderover>${mo("∑")}${desde}${hasta}</munderover>`;
 
 // Una sola linea, o varias alineadas a la izquierda para que entren en la
-// tarjeta de un celular.
+// tarjeta de un celular: las largas se parten como en el pizarron.
 function math(id, ...renglones) {
   const cuerpo = renglones.length === 1
     ? renglones[0]
@@ -63,15 +62,9 @@ export const FORMULAS = {
 
   "interpolacion-newton": math(
     "interpolacion-newton",
-    fila(
-      mi("P"), paren(x), mo("="), sub(mi("a"), mn("0")),
-      mo("+"), sub(mi("a"), uno), paren(resta(x, x0)),
-      mo("+"), sub(mi("a"), dos), paren(resta(x, x0)), paren(resta(x, x1)),
-    ),
-    fila(
-      mo("+"), mo("⋯"), mo("+"), sub(mi("a"), n),
-      paren(resta(x, x0)), mo("⋯"), paren(resta(x, xnAnt)),
-    ),
+    fila(mi("P"), paren(x), mo("="), sub(mi("a"), mn("0")), mo("+"), sub(mi("a"), uno), paren(resta(x, x0))),
+    fila(mo("+"), sub(mi("a"), dos), paren(resta(x, x0)), paren(resta(x, x1)), mo("+"), mo("⋯")),
+    fila(mo("+"), sub(mi("a"), n), paren(resta(x, x0)), mo("⋯"), paren(resta(x, xnAnt))),
   ),
 
   "interpolacion-lagrange": math(
@@ -95,20 +88,13 @@ export const FORMULAS = {
 
   trapecio: math(
     "trapecio",
-    fila(
-      mi("I"), mo("≈"), frac(h, dos),
-      corchete(
-        f(x0), mo("+"), dos, f(x1), mo("+"), mo("⋯"),
-        mo("+"), dos, f(xnAnt), mo("+"), f(xn),
-      ),
-    ),
+    fila(mi("I"), mo("≈"), frac(h, dos), mo("["), f(x0), mo("+"), dos, f(x1), mo("+"), mo("⋯")),
+    fila(mo("+"), dos, f(xnAnt), mo("+"), f(xn), mo("]")),
     fila(h, mo("="), ancho),
   ),
 
   simpson: math(
     "simpson",
-    // El corchete en dos renglones, como en el pizarron: entero no cabe en
-    // la tarjeta.
     fila(
       mi("I"), mo("≈"), frac(resta(mi("b"), mi("a")), fila(mn("6"), n)),
       mo("["), f(x0), mo("+"), mn("4"), suma(iDesde1, n), f(sub(mi("m"), i)),
