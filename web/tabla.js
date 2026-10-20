@@ -6,6 +6,8 @@
 // `decimals` es formato: los datos llegan sin redondear y se redondean aca, al
 // mostrar. Cambiar la precision no vuelve a pedir nada al servidor.
 
+import { ICONOS } from "./iconos.js";
+
 export function formatear(valor, decimales) {
   if (valor === null || valor === undefined) return "—";
   if (typeof valor !== "number" || !Number.isFinite(valor)) return "—";
@@ -79,7 +81,16 @@ const MOTIVO = {
   fallo: ["mal", "Falló"],
 };
 
-export function dibujarResumen(contenedor, resultado, decimales) {
+// El numero que la persona vino a buscar, segun la familia del metodo. Va
+// primero y en grande; el resto del resumen queda chico al lado.
+export const PRINCIPAL = {
+  raices: "raiz",
+  interpolacion: "polinomio",
+  integracion: "integral",
+  edo: "y",
+};
+
+export function dibujarResumen(contenedor, resultado, decimales, familia) {
   contenedor.innerHTML = "";
   if (!resultado) return;
 
@@ -87,14 +98,21 @@ export function dibujarResumen(contenedor, resultado, decimales) {
   const estado = document.createElement("div");
   estado.className = `estado estado-${clase}`;
   estado.textContent = texto;
+  if (clase === "ok") estado.insertAdjacentHTML("afterbegin", ICONOS["circle-check"]);
   contenedor.append(estado);
+
+  // Sin clave principal (familia desconocida), manda la primera.
+  const pares = Object.entries(resultado.result ?? {});
+  const indice = Math.max(0, pares.findIndex(([clave]) => clave === PRINCIPAL[familia]));
+  pares.unshift(...pares.splice(indice, 1));
 
   const lista = document.createElement("dl");
   lista.className = "resultado";
-  for (const [clave, valor] of Object.entries(resultado.result ?? {})) {
+  for (const [i, [clave, valor]] of pares.entries()) {
     const dt = document.createElement("dt");
     dt.textContent = clave;
     const dd = document.createElement("dd");
+    if (i === 0) dt.className = dd.className = "principal";
     dd.textContent = typeof valor === "number"
       ? (CONTEOS.has(clave) ? String(valor) : formatear(valor, decimales))
       : Array.isArray(valor)

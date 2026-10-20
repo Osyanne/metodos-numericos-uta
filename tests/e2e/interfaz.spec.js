@@ -139,3 +139,32 @@ test("en un celular no hay scroll horizontal y Datos va antes que Resultado", as
   const resultado = await page.locator("#tarjeta-resultado").boundingBox();
   expect(datos.y).toBeLessThan(resultado.y);
 });
+
+// ------------------------------------------------------------------ resultado
+
+for (const [metodo, preset, clave] of [
+  ["von-mises", "von-mises-docente", "raiz"],
+  ["interpolacion-lagrange", "lagrange-docente", "polinomio"],
+  ["simpson", "simpson-docente", "integral"],
+  ["runge-kutta", "runge-kutta-escalar", "y"],
+]) {
+  test(`${metodo}: el valor principal es ${clave}`, async ({ page }) => {
+    await elegirMetodo(page, metodo);
+    await page.locator("#preset").selectOption(preset);
+    await page.locator("#resolver").click();
+    await expect(page.locator("#resumen dl.resultado dt").first()).toHaveText(clave);
+    await expect(page.locator("#resumen dt.principal")).toHaveText(clave);
+  });
+}
+
+test("un polinomio largo no desborda a 375 px", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  await esperarDesplegable(page);
+  await elegirMetodo(page, "interpolacion-newton");
+  await page.locator("#preset").selectOption("interpolacion-logaritmo");
+  await page.locator("#resolver").click();
+  await expect(page.locator("#resumen dd.principal")).toBeVisible();
+  expect(await page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});

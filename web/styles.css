@@ -795,3 +795,17 @@ body { --accent-tinta: #ffffff; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="claro"]) body { --accent-tinta: var(--accent-bg); }
 }
+
+/* ---------------------------------------------------------- valor principal */
+
+/* El primer par del resumen ocupa su propio renglon y se lee de lejos. */
+.resultado dt.principal { flex-basis: 100%; }
+.resultado dd.principal {
+  flex-basis: 100%;
+  margin: -2px 0 6px;
+  font-size: 24px;
+  line-height: 1.25;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.estado svg { width: 14px; height: 14px; }

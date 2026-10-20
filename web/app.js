@@ -273,7 +273,7 @@ function llevarLaVistaAlPlano() {
 
 function pintarResultado() {
   const decimales = Number($("#decimales").value);
-  dibujarResumen($("#resumen"), estado.resultado, decimales);
+  dibujarResumen($("#resumen"), estado.resultado, decimales, estado.metodo.family);
   dibujarTabla($("#tabla"), estado.resultado, decimales);
   const { capas, resample } = capasDesdePlot(estado.resultado.plot);
   plano.mostrar(capas, resample);
