@@ -135,6 +135,14 @@ export class Plano {
         if (Number.isFinite(t.y1)) ys.push(t.y1);
         ys.push(0);
       }
+      // shortcut: encuadra por los tres puntos de cada arco; el vertice de un
+      // arco muy curvo puede quedar un poco afuera. Si molesta, sumar el vertice.
+      for (const p of capa.parabolas ?? []) {
+        if (Number.isFinite(p.x0)) xs.push(p.x0);
+        if (Number.isFinite(p.x1)) xs.push(p.x1);
+        for (const y of [p.y0, p.ym, p.y1]) if (Number.isFinite(y)) ys.push(y);
+        ys.push(0);
+      }
     }
     if (!xs.length || !ys.length) {
       this.vista = { x0: -5, x1: 5, y0: -5, y1: 5 };
@@ -372,6 +380,7 @@ export class Plano {
     for (const capa of this.capas) {
       if (capa.tipo === "rectangulos") this._rectangulos(capa);
       else if (capa.tipo === "trapecios") this._trapecios(capa);
+      else if (capa.tipo === "parabolas") this._parabolas(capa);
     }
     for (const capa of this.capas) {
       if (capa.tipo === "curva") this._curva(capa);
@@ -671,6 +680,68 @@ export class Plano {
     ctx.restore();
   }
 
+  _parabolas(capa) {
+    // Simpson aproxima f por la parabola que pasa por los extremos y el punto
+    // medio de cada subintervalo. Se sombrea el area entre ese arco y el eje,
+    // apareciendo de izquierda a derecha como los trapecios.
+    const { ctx } = this;
+    const a = this._area;
+    if (!capa.parabolas?.length) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
+    ctx.clip();
+    ctx.strokeStyle = capa.color;
+    ctx.fillStyle = capa.color;
+    ctx.lineWidth = 1;
+
+    const total = capa.parabolas.length;
+    const posicion = total * this.animacion.progreso;
+    const enteros = Math.floor(posicion);
+    const fraccion = posicion - enteros;
+    const [, pyBase] = this._aPantalla(0, 0);
+
+    for (let i = 0; i < total; i++) {
+      if (i > enteros) break;
+      const factor = i < enteros ? 1 : fraccion;
+      if (factor <= 0) continue;
+      const p = capa.parabolas[i];
+      if (![p.x0, p.y0, p.xm, p.ym, p.x1, p.y1].every(Number.isFinite)) continue;
+      const [px0, py0] = this._aPantalla(p.x0, p.y0 * factor);
+      const [pxm, pym] = this._aPantalla(p.xm, p.ym * factor);
+      const [px1, py1] = this._aPantalla(p.x1, p.y1 * factor);
+
+      // El arco es exactamente una Bezier cuadratica: con xm en el medio, el
+      // control 2*m - (inicio + fin)/2 la hace pasar por los tres puntos. El
+      // navegador la traza nitida a cualquier zoom, sin muestrearla.
+      const region = new Path2D();
+      region.moveTo(px0, pyBase);
+      region.lineTo(px0, py0);
+      region.quadraticCurveTo(2 * pxm - (px0 + px1) / 2, 2 * pym - (py0 + py1) / 2, px1, py1);
+      region.lineTo(px1, pyBase);
+      region.closePath();
+
+      // Arriba del eje el relleno es mas intenso que abajo, como en los
+      // trapecios. Recortar por semiplano evita partir la region a mano
+      // cuando el arco cruza el eje.
+      for (const [y, alto, alfa] of [
+        [a.arriba, pyBase - a.arriba, 0.16],
+        [pyBase, a.abajo - pyBase, 0.10],
+      ]) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(a.izq, y, a.der - a.izq, alto);
+        ctx.clip();
+        ctx.globalAlpha = alfa;
+        ctx.fill(region);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+      ctx.stroke(region);
+    }
+    ctx.restore();
+  }
+
   _rellenarTrapecio(puntos, altura) {
     const { ctx } = this;
     ctx.beginPath();
@@ -789,8 +860,8 @@ export function capasDesdePlot(plot) {
   }
 
   if (plot.kind === "integracion") {
-    // Punto Medio pinta rectangulos y Trapecio pinta las rectas entre puntos
-    // de particion. La curva real se superpone a ambas aproximaciones.
+    // Punto Medio pinta rectangulos, Trapecio las rectas entre puntos de
+    // particion y Simpson los arcos de parabola. La curva real va encima.
     const capas = [];
     if ((s.rectangles ?? []).length) {
       capas.push({
@@ -806,6 +877,14 @@ export function capasDesdePlot(plot) {
         nombre: "trapecios",
         color: "#0e6e63",
         trapecios: s.trapezoids ?? [],
+      });
+    }
+    if ((s.parabolas ?? []).length) {
+      capas.push({
+        tipo: "parabolas",
+        nombre: "parabolas",
+        color: "#0e6e63",
+        parabolas: s.parabolas,
       });
     }
     capas.push({
@@ -841,6 +920,21 @@ export function capasDesdePlot(plot) {
         nombre: "puntos de particion",
         color: "#b4531a",
         puntos: puntosParticion,
+      });
+    }
+    const parabolas = s.parabolas ?? [];
+    if (parabolas.length) {
+      // Mismos nombres que la columna "punto" de la tabla: x0, m1, x1, ...
+      const puntos = [{ x: parabolas[0].x0, y: parabolas[0].y0, etiqueta: "x0" }];
+      parabolas.forEach((p, i) => {
+        puntos.push({ x: p.xm, y: p.ym, etiqueta: `m${i + 1}` });
+        puntos.push({ x: p.x1, y: p.y1, etiqueta: `x${i + 1}` });
+      });
+      capas.push({
+        tipo: "marcas",
+        nombre: "puntos de Simpson",
+        color: "#b4531a",
+        puntos,
       });
     }
     return { capas, resample: plot.resample ?? null };

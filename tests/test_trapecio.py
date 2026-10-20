@@ -166,8 +166,11 @@ def test_grafica_muestra_trapecios_y_la_curva(metodo):
     assert resultado.plot is not None
     assert resultado.plot.kind is PlotKind.INTEGRATION
     series = resultado.plot.series
-    assert set(series) == {"curve", "rectangles", "trapezoids", "interval", "integral"}
+    assert set(series) == {
+        "curve", "rectangles", "trapezoids", "parabolas", "interval", "integral"
+    }
     assert series["rectangles"] == []
+    assert series["parabolas"] == []
     assert series["interval"] == {"a": 0.0, "b": 1.0}
     assert series["trapezoids"] == [
         {"x0": 0.0, "y0": 0.0, "x1": 0.25, "y1": 0.0625},

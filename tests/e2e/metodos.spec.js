@@ -6,6 +6,7 @@ const casos = [
   ["interpolacion-newton", "interpolacion-logaritmo", ["i", "x", "f(x)", "Diferencia dividida 1", "Diferencia dividida 2", "error"]],
   ["interpolacion-lagrange", "lagrange-docente", ["i", "x_i", "f(x_i)", "Numerador", "Denominador", "L_i(x)", "f(x_i) L_i(x)", "L_i evaluado", "error"]],
   ["trapecio", "trapecio-docente", ["i", "xi", "f(xi)", "peso", "peso * f(xi) * dx / 2", "suma acumulada", "error"]],
+  ["simpson", "simpson-docente", ["i", "punto", "x", "f(x)", "peso", "peso * f(x)", "suma del corchete", "error"]],
   ["runge-kutta", "runge-kutta-escalar", ["i", "x", "y", "error"]],
 ];
 
@@ -38,8 +39,11 @@ for (const [metodo, preset, columnas] of casos) {
       if (request.url().endsWith("/solve")) peticiones.push(request);
     });
     await page.locator("#decimales").fill("3");
-    await expect(page.locator("#tabla tbody tr").first().locator("td").nth(1))
-      .toHaveText(Object.values(resultado.iterations[0].values)[0].toFixed(3));
+    // La primera columna numerica: en Simpson la primera es el nombre del punto.
+    const valores = Object.values(resultado.iterations[0].values);
+    const columna = valores.findIndex(v => typeof v === "number");
+    await expect(page.locator("#tabla tbody tr").first().locator("td").nth(columna + 1))
+      .toHaveText(valores[columna].toFixed(3));
     expect(peticiones).toHaveLength(0);
   });
 }

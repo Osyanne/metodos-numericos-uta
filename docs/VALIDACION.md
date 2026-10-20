@@ -7,13 +7,13 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual: **301 pruebas de Python**, **98 de navegador** y
+Verificacion local actual: **331 pruebas de Python**, **109 de navegador** y
 **5 del sitio de GitHub Pages**, todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
 tenia 275 y 39 respectivamente.
 
 ```bash
-pytest --ignore=tests/e2e     # 301
-npx playwright test           # 98
+pytest --ignore=tests/e2e     # 331
+npx playwright test           # 109
 npx playwright test --config playwright.pages.config.js   # 5, necesita internet
 ```
 
@@ -23,7 +23,7 @@ Esta es la distincion que mas importa, porque cambia el peso de cada prueba.
 
 | Origen | Que significa | Donde |
 |---|---|---|
-| **Material del docente** | Tablas y ejercicios resueltos de `VON MISES.pdf`, las diapositivas de interpolacion y los materiales de integracion. El aplicativo los reproduce digito por digito. Si estos numeros no dan, el metodo esta mal. | `tests/casos_referencia.py`, `tests/casos_referencia_lagrange.py`, `tests/test_punto_medio.py` y `tests/test_trapecio.py` |
+| **Material del docente** | Tablas y ejercicios resueltos de `VON MISES.pdf`, las diapositivas de interpolacion y los materiales de integracion. El aplicativo los reproduce digito por digito. Si estos numeros no dan, el metodo esta mal. | `tests/casos_referencia.py`, `tests/casos_referencia_lagrange.py`, `tests/test_punto_medio.py`, `tests/test_trapecio.py` y `tests/test_simpson.py` |
 | **Solucion analitica** | El resultado exacto se conoce por matematica, no por haberlo corrido. Se compara contra el, con una tolerancia declarada. | `test_rk4_aproxima_una_solucion_analitica_conocida`, `test_el_oscilador_no_muestra_errores_absurdos_al_cruzar_el_cero` |
 | **Resuelto a mano** | Ejercicio calculado a mano en papel antes de escribir el codigo. | `test_caso_resuelto_a_mano_devuelve_polinomio_expandido` |
 | **Propiedad** | No fija un numero: fija una relacion que tiene que cumplirse siempre. | `test_las_cuatro_variantes_dan_el_mismo_polinomio`, `test_la_forma_de_newton_es_el_mismo_polinomio_que_el_expandido` |
@@ -58,16 +58,17 @@ Cada requisito de `ESPECIFICACION.md`, con la prueba que lo respalda.
 
 | # | Requisito | Como se comprueba | Evidencia |
 |---|---|---|---|
-| R1 | Alrededor de 10 metodos en el semestre | Los seis del parcial, mas Trapecio como extension de U1, con la arquitectura ejercitada para seguir creciendo | `test_los_cuatro_metodos_del_parcial_siguen_estando` |
+| R1 | Alrededor de 10 metodos en el semestre | Los seis del parcial, mas Trapecio y Simpson como extension de U1, con la arquitectura ejercitada para seguir creciendo | `test_los_cuatro_metodos_del_parcial_siguen_estando` |
 | R2 | Los seis del primer parcial | Cada uno con su archivo de pruebas | `test_newton_raphson.py`, `test_von_mises.py`, `test_newton_interpolation.py`, `test_lagrange_interpolation.py`, `test_punto_medio.py`, `test_runge_kutta.py` |
 | R3 | La arquitectura se expande | Se escribe un metodo nuevo en disco y aparece en el registro, en la API y con sus campos, **sin tocar ningun archivo existente** | `test_extensibilidad.py` (3 pruebas) |
 | R4 | 6 decimales por defecto, ajustable | Rango 2..12, recorte de valores invalidos, y que cambiar decimales **no cambie el calculo** | `test_decimales_por_defecto_son_seis`, `test_decimales_se_recortan_al_rango_permitido`, `test_los_decimales_no_cambian_los_valores_calculados` |
 | R5 | Calculo hasta cualquier iteracion n | Con `stop_on_tolerance=False` corren las n iteraciones, **incluso si cae sobre una raiz exacta** | `test_config_permite_correr_n_exacto_sin_parar_por_tolerancia`, `test_una_raiz_exacta_no_recorta_las_n_iteraciones_pedidas` |
 | R6 | Tabla con todas las iteraciones | Cada metodo declara sus columnas; el CSV baja la tabla completa y sin redondear | `test_las_columnas_son_las_de_la_tabla_del_docente`, `test_csv_descarga_la_tabla_real_completa_y_sin_redondear` |
-| R7 | Graficacion | Las cinco clases de grafica, con sus claves de contrato, y el remuestreo al hacer zoom; integracion dibuja rectangulos o trapecios segun corresponda | `test_grafica_de_raiz_...`, `test_grafica_de_interpolacion_...`, `test_grafica_de_edo_...`, `test_grafica_de_convergencia_...`, `test_grafica_es_de_tipo_integracion_con_rectangulos_y_curva`, `test_grafica_muestra_trapecios_y_la_curva` |
+| R7 | Graficacion | Las cinco clases de grafica, con sus claves de contrato, y el remuestreo al hacer zoom; integracion dibuja rectangulos, trapecios o arcos de parabola segun corresponda | `test_grafica_de_raiz_...`, `test_grafica_de_interpolacion_...`, `test_grafica_de_edo_...`, `test_grafica_de_convergencia_...`, `test_grafica_es_de_tipo_integracion_con_rectangulos_y_curva`, `test_grafica_muestra_trapecios_y_la_curva`, `test_grafica_muestra_una_parabola_por_subintervalo` |
 | R8 | Polinomio expandido | El ejercicio resuelto de las diapositivas de Newton (tabla celda por celda, `a_i`, forma de Newton y `P(-4) = -8`), un caso resuelto a mano, y la propiedad de que las cuatro variantes dan el mismo polinomio | `test_la_tabla_del_docente_lleva_cada_dividida_en_la_fila_de_su_ultimo_punto`, `test_la_forma_de_newton_y_los_a_i_son_los_del_docente`, `test_el_polinomio_expandido_y_el_valor_son_los_del_docente`, `test_caso_resuelto_a_mano_devuelve_polinomio_expandido`, `test_las_cuatro_variantes_dan_el_mismo_polinomio` |
 | R12 | Interpolacion de Lagrange | Los tres ejercicios de las diapositivas, cada `L_i` por separado, y que coincida con Newton sobre los mismos puntos | `test_lagrange_interpolation.py` (25 pruebas), `test_coincide_con_la_interpolacion_de_newton` |
 | R13 | Metodo del Trapecio (U1) | El ejemplo del material con `exp(x^4)`, `[-1, 1]`, `n = 5`; puntos, pesos, suma y trapecios de la grafica | `test_trapecio.py` |
+| R14 | Metodo de Simpson (U1) | Los dos casos del material con `sqrt(5 + x^3)` en `[0, 1]` (`n = 2` y `n = 4`), corchete e integral; puntos, pesos y parabolas de la grafica; y que coincida con `(Trapecio + 2 * Punto Medio) / 3` sobre la misma malla | `test_simpson.py`, `test_coincide_con_trapecio_y_punto_medio_combinados` |
 | R9 | Runge-Kutta con sistemas, y h o n | Sistema de dos EDO contra la solucion analitica; las formas de definir la malla | `test_resuelve_un_sistema_evaluando_las_componentes_simultaneamente`, `test_acepta_las_formas_del_contrato_para_h_n_y_xf` |
 | R10 | La app deriva sola o acepta la derivada | Las dos vias dan el mismo resultado, y el aplicativo dice cual derivada uso | `test_deriva_sola_y_lo_dice`, `test_la_derivada_a_mano_da_el_mismo_resultado` |
 | R11 | Los tres criterios de error, configurables | Los tres implementados; el porcentual reproduce la columna del docente | `test_error_absoluto_y_relativo`, `test_error_relativo_porcentual_reproduce_la_tabla_del_docente` |
@@ -158,7 +159,7 @@ entrega. La columna va vacia y una nota lo explica en pantalla.
 
 ## Comprobado desde el navegador
 
-Las 98 pruebas de Playwright manejan la interfaz de verdad contra el servidor
+Las 109 pruebas de Playwright manejan la interfaz de verdad contra el servidor
 real. Cubren lo que romperia la demostracion:
 
 - Resolver los siete metodos y ver la tabla con sus columnas.

@@ -22,6 +22,7 @@ aparece una linea que explica que hace cada uno.
 | Interpolacion de Lagrange | lo mismo, por polinomios base en vez de diferencias divididas |
 | Punto Medio | aproximar una integral definida con rectangulos centrados |
 | Método del Trapecio | aproximar una integral definida con segmentos rectos y trapecios |
+| Método de Simpson | aproximar una integral definida con arcos de parabola |
 | Runge-Kutta | resolver una EDO o un sistema de EDO |
 
 **Cambiar de metodo borra lo que haya en pantalla.** Es a proposito: una tabla
@@ -81,10 +82,16 @@ programa.
 - **Runge-Kutta** acepta un sistema. El boton agrega ecuaciones, y las
   incognitas se llaman `y1`, `y2`, ... Con una sola ecuacion la incognita se
   llama `y`. La malla se define con `h` y `n`, con `h` y `xf`, o con `n` y `xf`.
-- **Punto Medio y Método del Trapecio** piden `f(x)`, los extremos `a`, `b` y
-  el numero de subintervalos `n`. En ambos aparece arriba la integral que se
-  va a resolver. Punto Medio evalua el centro de cada intervalo; Trapecio
-  muestra sus extremos con peso 1 o 2 y los une con segmentos rectos.
+- **Punto Medio, Método del Trapecio y Método de Simpson** piden `f(x)`, los
+  extremos `a`, `b` y el numero de subintervalos `n`. En los tres aparece
+  arriba la integral que se va a resolver. Punto Medio evalua el centro de cada
+  intervalo; Trapecio muestra sus extremos con peso 1 o 2 y los une con
+  segmentos rectos.
+- **Método de Simpson** pide `n` par, como el material. Con `n = 2` usa una
+  sola parabola por `a`, el punto medio y `b`; con `n` mayor, `n` subintervalos
+  y el punto medio de cada uno. La tabla nombra cada punto (`x0`, `m1`, `x1`,
+  ...; `m` es la x con barra del material) y termina con la suma del corchete,
+  que se multiplica por `(b − a)/(6n)`.
 - **Newton-Raphson** deriva solo. Si se escribe la derivada en su casilla, usa
   esa. En las dos formas dice abajo cual uso.
 

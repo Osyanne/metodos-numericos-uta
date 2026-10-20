@@ -203,6 +203,46 @@ Su grafica de tipo `integracion` lleva una curva y un `trapezoids` por
 subintervalo. Cada trapecio incluye los extremos `{x0, y0, x1, y1}` para que
 la interfaz trace exactamente la recta aproximante, no un rectangulo.
 
+### simpson
+
+```json
+{ "fx": "sqrt(5 + x^3)", "a": 0.0, "b": 1.0, "n": 4 }
+```
+
+El Metodo de Simpson sustituye la curva por arcos de parabola que pasan por los
+extremos y el punto medio de cada subintervalo. `n` **tiene que ser par**, y el
+material `Método de Simpson.pdf` distingue dos casos:
+
+```
+n = 2:  integral(f, a, b) ~= (b - a) / 6 * [f(a) + 4 f((a + b)/2) + f(b)]
+
+n > 2:  h = (b - a) / n,  x_i = a + i*h,  m_i = (x_(i-1) + x_i) / 2
+        integral(f, a, b) ~= (b - a) / (6n) *
+          [f(x_0) + 4*sum(f(m_i), i=1..n) + 2*sum(f(x_i), i=1..n-1) + f(x_n)]
+```
+
+El caso `n = 2` es el caso `n > 2` con un solo subintervalo de ancho `b - a`.
+**Ojo con la convencion:** con `n = 2` se evaluan 3 puntos y con `n = 4` se
+evaluan 9 (cuatro subintervalos y sus cuatro puntos medios), no 5. Es lo que
+hace el material, y el aplicativo lo sigue.
+
+La tabla tiene una fila por punto, en el orden en que se leen en el corchete:
+`x0, m1, x1, m2, ..., xn`. La columna `punto` lleva ese nombre (texto,
+`numeric: false`; `m_i` es la x con barra del material). Los extremos tienen
+`peso = 1`, los puntos medios `peso = 4` y los interiores `peso = 2`.
+`ponderado` es `peso * f(x)` y `suma` acumula el corchete. `result` trae
+`corchete`, `factor = (b - a) / (6n)` (o `(b - a) / 6` con `n = 2`), `h` e
+`integral = factor * corchete`.
+
+Los casos del material, con `f(x) = sqrt(5 + x^3)` en `[0, 1]`: con `n = 2`,
+corchete `13.74094286` e integral `2.29015714`; con `n = 4`, corchete
+`54.97136101` e integral `2.290473375`. Con los mismos subintervalos, Simpson
+es `(Trapecio + 2 * Punto Medio) / 3`, y hay una prueba que lo exige.
+
+Su grafica de tipo `integracion` lleva una curva y un `parabolas` por
+subintervalo, con `{x0, y0, xm, ym, x1, y1}`: la interfaz reconstruye con esos
+tres puntos la parabola aproximante y sombrea el area bajo ella.
+
 ### runge-kutta
 
 Una sola ecuacion:
@@ -284,12 +324,12 @@ Reglas duras:
 - `stop_reason` es uno de: `tolerancia_alcanzada`, `n_iteraciones_completadas`,
   `solucion_exacta`, `integracion_completada`, `divergio`, `fallo`.
 - **`integracion_completada`** es el final normal de un metodo de malla fija
-  (Runge-Kutta, Punto Medio o Trapecio): recorrio sus pasos y ninguno perdio la finitud. No es un
+  (Runge-Kutta, Punto Medio, Trapecio o Simpson): recorrio sus pasos y ninguno perdio la finitud. No es un
   aviso: la interfaz lo muestra en verde, igual que `tolerancia_alcanzada`.
   `n_iteraciones_completadas` queda para los metodos iterativos que si
   persiguen una tolerancia y se quedaron sin iteraciones antes de alcanzarla.
 - **Un metodo de malla fija no reporta error por iteracion.** Runge-Kutta,
-  Punto Medio y Trapecio mandan `error: null` en todas las filas y explican por
+  Punto Medio, Trapecio y Simpson mandan `error: null` en todas las filas y explican por
   que en `notes`. La diferencia
   entre `y(i+1)` e `y(i)` mide cuanto cambio la solucion, no cuanto se equivoca,
   y con una solucion que cruza el cero llega a valores absurdos.
@@ -336,7 +376,7 @@ Lo construye `core/plots.py`. La interfaz no lee otras claves que estas.
 | `interpolacion` | `{"points": [[x, y]], "curve": {"x": [], "y": []}, "evaluated": {"x", "y"} \| null}` | si |
 | `convergencia` | `{"n": [], "error": []}` (misma longitud; error admite null) | no |
 | `solucion_edo` | `{"solution": {"x": [], "components": [{"name", "y": []}]}, "exact": igual \| null}` | no |
-| `integracion` | `{"curve": {"x": [], "y": []}, "rectangles": [{"x0", "x1", "y"}], "trapezoids": [{"x0", "y0", "x1", "y1"}], "interval": {"a", "b"}, "integral"}` | si |
+| `integracion` | `{"curve": {"x": [], "y": []}, "rectangles": [{"x0", "x1", "y"}], "trapezoids": [{"x0", "y0", "x1", "y1"}], "parabolas": [{"x0", "y0", "xm", "ym", "x1", "y1"}], "interval": {"a", "b"}, "integral"}` | si |
 
 `convergencia` y `solucion_edo` no remuestrean porque son **puntos discretos**:
 salieron de correr el metodo con un paso y un numero de iteraciones dados. No hay
