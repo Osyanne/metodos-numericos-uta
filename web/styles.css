@@ -20,6 +20,7 @@
   --warn-bg:   #faeeda;
   --mal:       #a32d2d;
   --mal-bg:    #fcebeb;
+  --ok: #3b6d11;            --ok-bg: #eaf3de;
   --raices: #534ab7;        --raices-bg: #eeedfe;
   --interpolacion: #0f6e56; --interpolacion-bg: #e1f5ee;
   --integracion: #854f0b;   --integracion-bg: #faeeda;
@@ -58,6 +59,7 @@
   --warn-bg:   #412402;
   --mal:       #f09595;
   --mal-bg:    #501313;
+  --ok: #97c459;            --ok-bg: #173404;
   --raices: #afa9ec;        --raices-bg: #26215c;
   --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
   --integracion: #ef9f27;   --integracion-bg: #412402;
@@ -93,6 +95,7 @@
     --warn-bg:   #412402;
     --mal:       #f09595;
     --mal-bg:    #501313;
+    --ok: #97c459;            --ok-bg: #173404;
     --raices: #afa9ec;        --raices-bg: #26215c;
     --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
     --integracion: #ef9f27;   --integracion-bg: #412402;
@@ -133,69 +136,147 @@ body {
 
 .cabecera {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px 24px;
-  padding: 20px 24px 16px;
-  border-bottom: 2px solid var(--ink);
+  gap: 12px;
+  padding: 16px 24px 12px;
 }
 
-.eyebrow {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
+.marca { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.logo {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-tinta);
 }
+.logo svg { width: 22px; height: 22px; }
 
-h1 { margin: 2px 0 0; font-size: 26px; letter-spacing: -0.02em; }
+h1 { margin: 0; font-size: 19px; line-height: 1.2; letter-spacing: -0.01em; }
 
-.subtitulo { margin: 0; color: var(--ink-soft); font-size: 14px; }
+.subtitulo { margin: 0; color: var(--ink-faint); font-size: 12.5px; }
+
+/* ---------------------------------------------------------- selector */
+
+.selector { padding: 0 24px 14px; }
+.selector .campo-ayuda { margin-top: 8px; max-width: 75ch; }
 
 /* ---------------------------------------------------------- disposicion */
 
 .disposicion {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
-  gap: 0;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
   align-items: start;
-  min-height: calc(100vh - 76px);
+  padding: 0 24px 40px;
 }
 
 @media (max-width: 900px) {
   .disposicion { grid-template-columns: minmax(0, 1fr); }
 }
 
-.panel-lateral {
-  min-width: 0;
-  border-right: 1px solid var(--rule);
-  padding: 18px 20px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
+@media (max-width: 600px) {
+  .cabecera, .selector { padding-left: 16px; padding-right: 16px; }
+  .disposicion { padding: 0 16px 32px; }
 }
 
-.panel-principal {
-  padding: 18px 24px 40px;
+.panel-lateral, .panel-principal {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-width: 0;
+  gap: 12px;
 }
 
-.bloque { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+/* ---------------------------------------------------------- tarjetas */
 
-.bloque > h2 {
+.tarjeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+}
+
+.tarjeta h2 {
+  display: flex;
+  align-items: center;
   margin: 0;
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
 }
+
+.paso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.tarjeta-cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.fila-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* Ajustes plegados: el renglon muestra lo vigente sin abrirlos. */
+#ajustes { gap: 0; padding: 0; }
+#ajustes summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+#ajustes summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 12px; }
+#ajustes-resumen { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--ink-faint); }
+
+.ajustes-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 16px 14px;
+}
+.campo-ancho { grid-column: 1 / -1; }
+
+.decimales { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
+.decimales .control { width: 110px; }
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+#resumen:not(:empty) + #resumen-vacio { display: none; }
 
 /* ---------------------------------------------------------- controles */
 
@@ -230,7 +311,7 @@ h1 { margin: 2px 0 0; font-size: 26px; letter-spacing: -0.02em; }
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--rule-firm);
-  border-radius: 3px;
+  border-radius: 8px;
 }
 
 .control:focus-visible {
@@ -281,7 +362,7 @@ output { font-family: var(--mono); color: var(--accent); }
   padding: 10px 12px 12px;
   background: var(--accent-bg);
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -367,7 +448,7 @@ output { font-family: var(--mono); color: var(--accent); }
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--rule-firm);
-  border-radius: 3px;
+  border-radius: 8px;
   cursor: pointer;
   line-height: 1.2;
 }
@@ -406,6 +487,10 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .boton {
   flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 9px 14px;
   font-family: inherit;
   font-size: 13.5px;
@@ -413,7 +498,7 @@ output { font-family: var(--mono); color: var(--accent); }
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--rule-firm);
-  border-radius: 3px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
@@ -421,7 +506,7 @@ output { font-family: var(--mono); color: var(--accent); }
 .boton:disabled { opacity: 0.5; cursor: default; }
 
 .boton-primario {
-  color: var(--paper);
+  color: var(--accent-tinta);
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -433,7 +518,7 @@ output { font-family: var(--mono); color: var(--accent); }
   color: var(--ink-soft);
   background: var(--surface-2);
   border: 1px solid var(--rule);
-  border-radius: 3px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
@@ -460,16 +545,16 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .estado {
   align-self: flex-start;
-  padding: 3px 9px;
-  font-family: var(--mono);
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-radius: 2px;
+  border-radius: 999px;
 }
 
-.estado-ok    { background: var(--accent-bg); color: var(--accent); }
+.estado-ok    { background: var(--ok-bg);   color: var(--ok); }
 .estado-aviso { background: var(--warn-bg);   color: var(--warn); }
 .estado-mal   { background: var(--mal-bg);    color: var(--mal); }
 
@@ -512,21 +597,28 @@ output { font-family: var(--mono); color: var(--accent); }
 
 /* ---------------------------------------------------------- pestanas */
 
-.pestanas { display: flex; gap: 2px; border-bottom: 1px solid var(--rule); }
+/* Selector segmentado Plano / Iteraciones. */
+.pestanas {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
 
 .pestana {
-  padding: 7px 15px;
+  padding: 4px 14px;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-faint);
   background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-.pestana.activa { color: var(--accent); border-bottom-color: var(--accent); }
+.pestana.activa { color: var(--ink); background: var(--surface); border-color: var(--rule); }
 
 .panel { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
@@ -559,7 +651,7 @@ output { font-family: var(--mono); color: var(--accent); }
   height: min(58vh, 520px);
   background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 3px;
+  border-radius: 8px;
   overflow: hidden;
 }
 

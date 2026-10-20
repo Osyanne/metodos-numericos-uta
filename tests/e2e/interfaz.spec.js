@@ -107,3 +107,35 @@ test("una familia desconocida va a Otros", async ({ page }) => {
   await page.locator('#familia input[value="otros"]').check();
   await expect(page.locator("#metodo label:visible")).toHaveText(["Metodo X"]);
 });
+
+// ------------------------------------------------------------------ tarjetas
+
+test("la invitación se ve sin resultado y se va al resolver", async ({ page }) => {
+  await expect(page.locator("#resumen-vacio")).toBeVisible();
+  await elegirMetodo(page, "von-mises");
+  await page.locator("#preset").selectOption("von-mises-docente");
+  await page.locator("#resolver").click();
+  await expect(page.locator("#resumen-vacio")).toBeHidden();
+  await elegirMetodo(page, "trapecio");
+  await expect(page.locator("#resumen")).toBeEmpty();
+  await expect(page.locator("#resumen-vacio")).toBeVisible();
+});
+
+test("los ajustes están plegados y su renglón sigue al ejercicio", async ({ page }) => {
+  await expect(page.locator("#ajustes")).not.toHaveAttribute("open", "");
+  await expect(page.locator("#ajustes-resumen")).toHaveText("tol 0.000001 · máx 50 · relativo %");
+  await elegirMetodo(page, "runge-kutta");
+  await page.locator("#preset").selectOption("runge-kutta-escalar");
+  await expect(page.locator("#ajustes-resumen")).toContainText("sin parar");
+});
+
+test("en un celular no hay scroll horizontal y Datos va antes que Resultado", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  await esperarDesplegable(page);
+  expect(await page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  const datos = await page.locator("#tarjeta-datos").boundingBox();
+  const resultado = await page.locator("#tarjeta-resultado").boundingBox();
+  expect(datos.y).toBeLessThan(resultado.y);
+});

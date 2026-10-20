@@ -189,6 +189,7 @@ function aplicarPreset(id) {
 
   $("#preset-descripcion").textContent =
     `${preset.descripcion} Fuente: ${preset.fuente}.`;
+  actualizarResumenAjustes();
 
   estado.resultado = null;
   estado.corrida += 1;
@@ -368,6 +369,32 @@ async function iniciar() {
 
   montarComparador({ api, estado, plano, configuracion, formulario });
 }
+
+// ------------------------------------------------------------ ajustes
+
+const CRITERIO_CORTO = {
+  relativo_porcentual: "relativo %",
+  relativo: "relativo",
+  absoluto: "absoluto",
+};
+
+// Los ajustes van plegados; este renglon dice lo vigente sin abrirlos. La
+// tolerancia va tal como esta escrita: es lo que la persona tecleo.
+function actualizarResumenAjustes() {
+  const partes = [
+    `tol ${$("#tolerancia").value}`,
+    `máx ${$("#iteraciones").value}`,
+    CRITERIO_CORTO[$("#criterio").value] ?? $("#criterio").value,
+  ];
+  if (!$("#parar").checked) partes.push("sin parar");
+  $("#ajustes-resumen").textContent = partes.join(" · ");
+}
+
+for (const id of ["iteraciones", "tolerancia", "criterio", "parar"]) {
+  $(`#${id}`).addEventListener("input", actualizarResumenAjustes);
+  $(`#${id}`).addEventListener("change", actualizarResumenAjustes);
+}
+actualizarResumenAjustes();
 
 // ------------------------------------------------------------ tema e iconos
 

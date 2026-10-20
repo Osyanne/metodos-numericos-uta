@@ -17,28 +17,29 @@
 <body>
 
 <header class="cabecera">
-  <div>
-    <p class="eyebrow">UTA · FISEI · Software · Nivel 3</p>
-    <h1>Métodos Numéricos</h1>
+  <div class="marca">
+    <span class="logo" data-icono="funcion"></span>
+    <div>
+      <h1>Métodos numéricos</h1>
+      <p class="subtitulo">UTA · FISEI · Software · Nivel 3</p>
+    </div>
   </div>
-  <p class="subtitulo">Tabla completa de iteraciones, precisión ajustable y plano interactivo.</p>
   <button id="tema" class="boton-icono" type="button" aria-label="Cambiar a tema oscuro">
     <span data-icono="moon"></span>
   </button>
 </header>
 
+<nav class="selector" aria-label="Elegir método">
+  <div id="familia" class="familias" role="radiogroup" aria-label="Familia de métodos"></div>
+  <div id="metodo" class="chips" role="radiogroup" aria-label="Método"></div>
+  <p id="descripcion" class="campo-ayuda"></p>
+</nav>
+
 <main class="disposicion">
 
   <aside class="panel-lateral">
-    <section class="bloque">
-      <h2>Método</h2>
-      <div id="familia" class="familias" role="radiogroup" aria-label="Familia de métodos"></div>
-      <div id="metodo" class="chips" role="radiogroup" aria-label="Método"></div>
-      <p id="descripcion" class="campo-ayuda"></p>
-    </section>
-
-    <section class="bloque">
-      <h2>Datos</h2>
+    <section id="tarjeta-datos" class="tarjeta">
+      <h2><span class="paso">1</span>Datos</h2>
       <div class="campo">
         <label class="campo-etiqueta" for="preset">Ejercicio de ejemplo</label>
         <select id="preset" class="control" aria-describedby="preset-descripcion"></select>
@@ -48,47 +49,48 @@
       <div id="formulario"></div>
     </section>
 
-    <section class="bloque">
-      <h2>Cálculo</h2>
+    <!-- Plegado: lo que esta vigente se lee en el renglon sin abrirlo. -->
+    <details id="ajustes" class="tarjeta">
+      <summary>
+        <span class="ajustes-titulo">Ajustes de cálculo</span>
+        <span id="ajustes-resumen"></span>
+      </summary>
+      <div class="ajustes-campos">
+        <div class="campo">
+          <label class="campo-etiqueta" for="iteraciones">Iteraciones máximas (n)</label>
+          <input id="iteraciones" class="control" type="number" min="1" max="10000" value="50">
+        </div>
 
-      <div class="campo">
-        <label class="campo-etiqueta" for="decimales">
-          Decimales <output id="decimales-valor">6</output>
-        </label>
-        <input id="decimales" class="control" type="range" min="2" max="12" value="6" step="1">
-        <p class="campo-ayuda">Sólo cambia cómo se muestra. No se recalcula nada.</p>
+        <div class="campo">
+          <label class="campo-etiqueta" for="tolerancia">Tolerancia</label>
+          <input id="tolerancia" class="control" type="number" step="any" value="0.000001">
+        </div>
+
+        <div class="campo campo-ancho">
+          <label class="campo-etiqueta" for="criterio">Criterio de error</label>
+          <select id="criterio" class="control">
+            <option value="relativo_porcentual">Relativo porcentual</option>
+            <option value="relativo">Relativo</option>
+            <option value="absoluto">Absoluto</option>
+          </select>
+        </div>
+
+        <div class="campo-ancho">
+          <label class="casilla">
+            <input id="parar" type="checkbox" checked>
+            <span>Parar al alcanzar la tolerancia</span>
+          </label>
+          <p class="campo-ayuda">
+            Destildado, corre exactamente n iteraciones aunque ya haya convergido.
+          </p>
+        </div>
       </div>
-
-      <div class="campo">
-        <label class="campo-etiqueta" for="iteraciones">Iteraciones máximas (n)</label>
-        <input id="iteraciones" class="control" type="number" min="1" max="10000" value="50">
-      </div>
-
-      <div class="campo">
-        <label class="campo-etiqueta" for="tolerancia">Tolerancia</label>
-        <input id="tolerancia" class="control" type="number" step="any" value="0.000001">
-      </div>
-
-      <div class="campo">
-        <label class="campo-etiqueta" for="criterio">Criterio de error</label>
-        <select id="criterio" class="control">
-          <option value="relativo_porcentual">Relativo porcentual</option>
-          <option value="relativo">Relativo</option>
-          <option value="absoluto">Absoluto</option>
-        </select>
-      </div>
-
-      <label class="casilla">
-        <input id="parar" type="checkbox" checked>
-        <span>Parar al alcanzar la tolerancia</span>
-      </label>
-      <p class="campo-ayuda">
-        Destildado, corre exactamente n iteraciones aunque ya haya convergido.
-      </p>
-    </section>
+    </details>
 
     <div class="acciones">
-      <button id="resolver" class="boton boton-primario">Resolver</button>
+      <button id="resolver" class="boton boton-primario">
+        <span data-icono="player-play"></span>Resolver
+      </button>
       <button id="comparar" class="boton">Comparar métodos</button>
     </div>
 
@@ -100,35 +102,61 @@
 
   <section class="panel-principal">
     <p id="aviso" class="aviso" role="alert" hidden></p>
-    <div id="resumen" class="resumen-caja"></div>
 
-    <nav class="pestanas">
-      <button id="ver-plano" class="pestana activa">Plano</button>
-      <button id="ver-tabla" class="pestana">Iteraciones</button>
-    </nav>
-
-    <div id="panel-plano" class="panel">
-      <div class="plano-barra">
-        <div id="leyenda" class="leyenda"></div>
-        <div class="plano-botones">
-          <button id="encuadrar" class="boton-tenue">Ajustar</button>
-          <button id="reiniciar-vista" class="boton-tenue">Vista inicial</button>
+    <div class="fila-tarjetas">
+      <section id="tarjeta-resultado" class="tarjeta">
+        <div class="tarjeta-cabeza">
+          <h2><span class="paso">2</span>Resultado</h2>
+          <div class="decimales">
+            <label for="decimales">Decimales <output id="decimales-valor">6</output></label>
+            <input id="decimales" class="control" type="range" min="2" max="12" value="6" step="1"
+                   aria-describedby="decimales-ayuda">
+            <span id="decimales-ayuda" class="solo-lector">Solo cambia cómo se muestra. No se recalcula nada.</span>
+          </div>
         </div>
-      </div>
-      <div class="plano-caja">
-        <canvas id="plano" role="img" aria-label="Plano cartesiano interactivo" aria-describedby="plano-ayuda"></canvas>
-      </div>
-      <p id="plano-ayuda" class="campo-ayuda">
-        Rueda para acercar, arrastrar para mover, doble clic para volver al inicio.
-        Con el plano enfocado: flechas para mover, +/− para zoom y Home para vista inicial.
-        Al acercarte la curva se recalcula.
-      </p>
-      <div id="comparacion"></div>
+        <div id="resumen" class="resumen-caja"></div>
+        <p id="resumen-vacio" class="vacio">
+          Elige un ejercicio o escribe tus datos, y pulsa Resolver.
+        </p>
+      </section>
+
+      <section id="tarjeta-formula" class="tarjeta" hidden>
+        <h2>Fórmula</h2>
+      </section>
     </div>
 
-    <div id="panel-tabla" class="panel" hidden>
-      <div id="tabla" class="tabla-caja"></div>
-    </div>
+    <section id="tarjeta-plano" class="tarjeta">
+      <div class="tarjeta-cabeza">
+        <h2><span class="paso">3</span>Gráfica y tabla</h2>
+        <nav class="pestanas">
+          <button id="ver-plano" class="pestana activa">Plano</button>
+          <button id="ver-tabla" class="pestana">Iteraciones</button>
+        </nav>
+      </div>
+
+      <div id="panel-plano" class="panel">
+        <div class="plano-barra">
+          <div id="leyenda" class="leyenda"></div>
+          <div class="plano-botones">
+            <button id="encuadrar" class="boton-tenue">Ajustar</button>
+            <button id="reiniciar-vista" class="boton-tenue">Vista inicial</button>
+          </div>
+        </div>
+        <div class="plano-caja">
+          <canvas id="plano" role="img" aria-label="Plano cartesiano interactivo" aria-describedby="plano-ayuda"></canvas>
+        </div>
+        <p id="plano-ayuda" class="campo-ayuda">
+          Rueda para acercar, arrastrar para mover, doble clic para volver al inicio.
+          Con el plano enfocado: flechas para mover, +/− para zoom y Home para vista inicial.
+          Al acercarte la curva se recalcula.
+        </p>
+        <div id="comparacion"></div>
+      </div>
+
+      <div id="panel-tabla" class="panel" hidden>
+        <div id="tabla" class="tabla-caja"></div>
+      </div>
+    </section>
   </section>
 
 </main>
