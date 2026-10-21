@@ -3,7 +3,8 @@
 
 import { Formulario } from "./forms.js";
 import { Plano, capasDesdePlot } from "./plano.js";
-import { dibujarResumen, dibujarTabla } from "./tabla.js";
+import { dibujarFilaActual, dibujarResumen, dibujarTabla, marcarFila } from "./tabla.js";
+import { montarRecorrido } from "./recorrido.js";
 import { montarComparador } from "./comparador.js";
 import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
@@ -84,6 +85,7 @@ function configuracion() {
 const formulario = new Formulario($("#formulario"));
 
 const plano = new Plano($("#plano"), {
+  alElegir: (k) => recorrido.ir(k),
   alMuestrear: async (peticion) => {
     try {
       return await api.muestrear(peticion);
@@ -94,7 +96,61 @@ const plano = new Plano($("#plano"), {
   },
 });
 
+// Rotulo del recorrido segun lo que es una fila en cada metodo.
+function nombrePaso(metodo) {
+  if (metodo.family === "raices") return "iteración";
+  if (metodo.family === "edo") return "paso";
+  return metodo.slug === "punto-medio" ? "subintervalo" : "punto";
+}
+
+// La tabla y la franja muestran la fila k (null: ninguna).
+function mostrarFila(k) {
+  marcarFila($("#tabla"), k);
+  dibujarFilaActual($("#fila-actual"), estado.resultado, k, Number($("#decimales").value));
+}
+
+// Cada vez que cambia la fila k (null: no hay recorrido) se enteran el plano,
+// la tabla y la franja. `porUsuario` es false al cargar un resultado: ahi la
+// animacion de entrada del plano tiene que seguir.
+let terminoVigente = 0;
+function alCambiar(k, porUsuario) {
+  terminoVigente += 1;
+  if (porUsuario) plano.cortarAnimacion();
+  plano.marcarPaso(k);
+  mostrarFila(k);
+  pedirTermino(k);
+}
+
+const recorrido = montarRecorrido({ raiz: $("#recorrido"), alCambiar });
+
+// En Lagrange el plano muestra tambien el termino f(x_i) L_i(x) de la fila k.
+// Lo muestrea el nucleo (la interfaz no evalua nada); una respuesta tardia, de
+// otra fila o de otra corrida, se descarta.
+async function pedirTermino(k) {
+  const resultado = estado.resultado;
+  const expresion = resultado?.iterations?.[k]?.values?.termino;
+  if (estado.metodo?.slug !== "interpolacion-lagrange" || typeof expresion !== "string") {
+    plano.ponerTermino(null);
+    return;
+  }
+  const { x } = resultado.plot.series.curve;
+  const marca = terminoVigente;
+  const corrida = estado.corrida;
+  let muestra = null;
+  try {
+    muestra = await api.muestrear({
+      expression: expresion, variables: ["x"], x_min: x[0], x_max: x.at(-1), points: 200,
+    });
+  } catch { /* sin el termino la grafica sigue siendo valida */ }
+  if (marca !== terminoVigente || corrida !== estado.corrida) return;
+  plano.ponerTermino(muestra && {
+    tipo: "curva", nombre: "término", color: "--iteraciones", xs: muestra.x, ys: muestra.y,
+  });
+}
+
 function limpiarPantalla() {
+  recorrido.ocultar();
+  $("#fila-actual").innerHTML = "";
   $("#resumen").innerHTML = "";
   $("#tabla").innerHTML = "";
   $("#leyenda").innerHTML = "";
@@ -289,10 +345,8 @@ function llevarLaVistaAlPlano() {
 }
 
 function pintarResultado() {
-  const decimales = Number($("#decimales").value);
-  dibujarResumen($("#resumen"), estado.resultado, decimales, estado.metodo.family);
-  dibujarTabla($("#tabla"), estado.resultado, decimales);
-  const { capas, resample } = capasDesdePlot(estado.resultado.plot);
+  formatearResultado();
+  const { capas, resample } = capasDesdePlot(estado.resultado.plot, estado.resultado.iterations);
   plano.mostrar(capas, resample);
   $("#leyenda").innerHTML = "";
   for (const capa of plano.capas) {
@@ -303,6 +357,15 @@ function pintarResultado() {
       `<i style="background:var(${capa.color})"></i>${capa.nombre}`;
     $("#leyenda").append(item);
   }
+  // Despues de mostrar: mostrar() suelta el paso y cargar() lo vuelve a poner.
+  recorrido.cargar(estado.resultado.iterations, nombrePaso(estado.metodo));
+}
+
+// Los datos llegan sin redondear: la precision solo cambia como se escriben.
+function formatearResultado() {
+  const decimales = Number($("#decimales").value);
+  dibujarResumen($("#resumen"), estado.resultado, decimales, estado.metodo.family);
+  dibujarTabla($("#tabla"), estado.resultado, decimales);
 }
 
 // ------------------------------------------------------------ familias y chips
@@ -384,7 +447,7 @@ async function iniciar() {
   armarSelector(estado.metodos);
   if (estado.metodos.length) marcarMetodo(estado.metodos[0].slug);
 
-  montarComparador({ api, estado, plano, configuracion, formulario });
+  montarComparador({ api, estado, plano, configuracion, formulario, recorrido });
 }
 
 // ------------------------------------------------------------ ajustes
@@ -458,7 +521,16 @@ rotularTema();
 // Cambiar la precision solo re-formatea: no se vuelve a pedir nada.
 $("#decimales").addEventListener("input", () => {
   $("#decimales-valor").textContent = $("#decimales").value;
-  if (estado.resultado) pintarResultado();
+  if (!estado.resultado) return;
+  formatearResultado();
+  // El recorrido sigue donde estaba: solo se reescriben la tabla y la franja.
+  if (recorrido.activo) mostrarFila(recorrido.k);
+});
+
+// Un clic en una fila de la tabla lleva el recorrido a esa fila.
+$("#tabla").addEventListener("click", (e) => {
+  const fila = e.target.closest("tr[data-indice]");
+  if (fila) recorrido.ir(Number(fila.dataset.indice));
 });
 
 $("#preset").addEventListener("change", () => aplicarPreset($("#preset").value));
