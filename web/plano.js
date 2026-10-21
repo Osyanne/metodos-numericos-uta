@@ -62,6 +62,7 @@ export class Plano {
   //           dibujo viene de un remuestreo (ahi ya se vio la animacion).
   mostrar(capas, resample = null, etiquetas = {}, opciones = {}) {
     this._invalidarRemuestreo();
+    this.paso = null;
     this.capas = capas.map((c, i) => ({ color: COLORES[i % COLORES.length], ...c }));
     this.resample = resample;
     this.etiquetas = { x: "x", y: "y", ...etiquetas };
@@ -84,15 +85,16 @@ export class Plano {
     return fila === this.paso ? "actual" : fila > this.paso ? "tenue" : "normal";
   }
 
-  // Anillo que rodea el punto de la fila actual.
-  _anillo(px, py) {
+  // Halo que rodea el punto de la fila actual sin tocarlo: 4 px mas que el
+  // radio del punto.
+  _anillo(px, py, radio) {
     const { ctx } = this;
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.strokeStyle = this._color("--iteraciones");
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.arc(px, py, radio + 4, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
@@ -130,6 +132,7 @@ export class Plano {
 
   limpiar() {
     this._invalidarRemuestreo();
+    this.paso = null;
     this.capas = [];
     this.resample = null;
     this.cursor = null;
@@ -608,7 +611,7 @@ export class Plano {
     const actual = capa.aparece?.indexOf(this.paso) ?? -1;
     if (this.paso != null && actual >= 0 && actual <= ultimoCompleto
         && Number.isFinite(capa.xs[actual]) && Number.isFinite(capa.ys[actual])) {
-      this._anillo(...this._aPantalla(capa.xs[actual], capa.ys[actual]));
+      this._anillo(...this._aPantalla(capa.xs[actual], capa.ys[actual]), 4);
     }
     ctx.restore();
   }
@@ -635,7 +638,7 @@ export class Plano {
       ctx.beginPath();
       ctx.arc(px, py, (capa.radio ?? 4) * factor, 0, Math.PI * 2);
       ctx.fill();
-      if (estado === "actual") this._anillo(px, py);
+      if (estado === "actual") this._anillo(px, py, capa.radio ?? 4);
     });
     ctx.restore();
   }
@@ -859,7 +862,7 @@ export class Plano {
       if (p.etiqueta !== undefined) {
         ctx.fillText(p.etiqueta, px + 6, py - 6);
       }
-      if (estado === "actual") this._anillo(px, py);
+      if (estado === "actual") this._anillo(px, py, 3);
     }
     ctx.restore();
   }

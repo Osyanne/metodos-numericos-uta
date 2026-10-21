@@ -271,3 +271,30 @@ test("marcarPaso dibuja sin errores cada familia de gráfica", async ({ page }) 
   expect(r).toBe(24);
   expect(errores).toEqual([]);
 });
+
+test("mostrar y limpiar descartan el paso elegido", async ({ page }) => {
+  await page.goto("/");
+  const r = await page.evaluate(async () => {
+    const { Plano, capasDesdePlot } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    caja.append(canvas);
+    document.body.append(caja);
+    const raiz = { kind: "funcion_raiz", series: { curve: { x: [0, 1, 2, 3], y: [-1, 0, 3, 8] },
+      iterates: [{ n: 0, x: 2, y: 3 }, { n: 1, x: 1.5, y: 0.5 }], root: { x: 1.4, y: 0 } } };
+    const filas = [{ n: 0, values: { xi: 2, fxi: 3, xi_sig: 1.5 } },
+                   { n: 1, values: { xi: 1.5, fxi: 0.5, xi_sig: 1.4 } }];
+    const plano = new Plano(canvas);
+    const mostrar = () => plano.mostrar(capasDesdePlot(raiz, filas).capas, null, {}, { animar: false });
+    mostrar();
+    const completo = canvas.toDataURL();
+    plano.marcarPaso(0);
+    mostrar();
+    const trasMostrar = { igual: canvas.toDataURL() === completo, paso: plano.paso };
+    plano.marcarPaso(0);
+    plano.limpiar();
+    return { trasMostrar, trasLimpiar: plano.paso };
+  });
+  expect(r).toEqual({ trasMostrar: { igual: true, paso: null }, trasLimpiar: null });
+});
