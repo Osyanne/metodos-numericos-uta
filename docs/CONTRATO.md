@@ -286,8 +286,8 @@ no confirmo cual quiere, asi que estan los dos. **Abierto.**
     {"key": "fxi", "label": "f(xi)", "numeric": true}
   ],
   "iterations": [
-    {"n": 0, "values": {"xi": 2.0, "fxi": -1.0}, "error": null},
-    {"n": 1, "values": {"xi": 2.1, "fxi": 0.061}, "error": 4.761905}
+    {"n": 0, "values": {"xi": 2.0, "fxi": -1.0}, "error": null, "detalle": {"dfxi": 10.0}},
+    {"n": 1, "values": {"xi": 2.1, "fxi": 0.061}, "error": 4.761905, "detalle": {"dfxi": 11.23}}
   ],
   "result": {"raiz": 2.094551},
   "converged": true,
@@ -321,6 +321,23 @@ Reglas duras:
   `cell_value`, que es otra cosa.
 - **`error` siempre es una medicion.** Nunca lleva texto, aunque la fila tenga
   columnas simbolicas.
+- **`detalle` explica la fila sin ser columna.** Cada fila lleva siempre
+  `detalle`, un objeto `{clave: numero}` que es `{}` cuando el metodo no tiene
+  nada que agregar. Son los numeros intermedios que la interfaz usa para el
+  recorrido paso a paso: no estan en `columns`, no se muestran en la tabla y ni
+  el CSV ni el PDF los exportan. Pasan por `core.serialization.finite_or_none`
+  valor por valor (un no finito viaja como `null`) y
+  `IterationSchema.detalle` es `dict[str, float | None]`. Hoy lo llenan:
+
+  | Metodo | Claves | Filas |
+  |---|---|---|
+  | `newton-raphson` | `dfxi` = f'(x_i) | todas, salvo las de raiz exacta (`f(xi) = 0`) |
+  | `von-mises` | `dfx0` = f'(x0), el mismo en todas | todas, salvo las de raiz exacta |
+  | `runge-kutta`, orden 4 | `h`, `k1`..`k4` | la fila que esos k produjeron (desde la 1; la 0 es la condicion inicial y va con `{}`) |
+  | `runge-kutta`, orden 2 | `h`, `k1`, `k2` | igual |
+
+  En un sistema de Runge-Kutta cada k lleva el nombre de la componente:
+  `k1_y1`, `k1_y2`, `k2_y1`, ... Los demas metodos mandan `{}`.
 - `stop_reason` es uno de: `tolerancia_alcanzada`, `n_iteraciones_completadas`,
   `solucion_exacta`, `integracion_completada`, `divergio`, `fallo`.
 - **`integracion_completada`** es el final normal de un metodo de malla fija

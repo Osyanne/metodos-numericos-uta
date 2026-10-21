@@ -234,3 +234,15 @@ def test_la_curva_admite_huecos_donde_la_funcion_no_existe():
     plot = resolver(CASO, max_iterations=5).plot
 
     assert any(y is None for y in plot.series["curve"]["y"])
+
+
+# ---------- detalle ----------
+
+def test_todas_las_filas_llevan_la_derivada_congelada():
+    resultado = resolver(CASO, max_iterations=12, stop_on_tolerance=False)
+
+    assert len(resultado.iterations) == 12
+    assert all(
+        it.detalle["dfx0"] == pytest.approx(-1.36787944, abs=1e-8)
+        for it in resultado.iterations
+    )

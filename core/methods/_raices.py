@@ -78,14 +78,15 @@ def resolver(
     metodo: str,
     f: Expression,
     x0: float,
-    siguiente: Callable[[float, float], float],
+    siguiente: Callable[[float, float], tuple[float, dict[str, float]]],
     cfg: SolveConfig,
     notas: list[str],
     titulo: str,
 ) -> MethodResult:
     """Corre el bucle comun de los dos metodos.
 
-    `siguiente(xi, fxi)` devuelve x(i+1). Es lo unico que distingue a
+    `siguiente(xi, fxi)` devuelve x(i+1) y el `detalle` de la fila (la
+    derivada que uso). Es lo unico que distingue a
     Newton-Raphson de Von Mises.
 
     Sobre la tabla: el error de la fila i compara el x(i+1) de esa fila contra
@@ -138,7 +139,7 @@ def resolver(
                 break
             continue
 
-        x_sig = siguiente(xi, fxi)
+        x_sig, detalle = siguiente(xi, fxi)
 
         if not math.isfinite(x_sig):
             razon, x_sig = StopReason.DIVERGED, xi
@@ -150,7 +151,12 @@ def resolver(
 
         error = None if n == 0 else approx_error(x_sig, xi, cfg.error_criterion)
         iteraciones.append(
-            Iteration(n=n, values={"xi": xi, "fxi": fxi, "xi_sig": x_sig}, error=error)
+            Iteration(
+                n=n,
+                values={"xi": xi, "fxi": fxi, "xi_sig": x_sig},
+                error=error,
+                detalle=detalle,
+            )
         )
 
         if cfg.stop_on_tolerance:

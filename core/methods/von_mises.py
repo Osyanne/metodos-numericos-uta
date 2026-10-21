@@ -41,8 +41,8 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
             f"ahi; hay que elegir otro x0."
         )
 
-    def siguiente(xi: float, fxi: float) -> float:
-        return xi - fxi / pendiente
+    def siguiente(xi: float, fxi: float) -> tuple[float, dict[str, float]]:
+        return xi - fxi / pendiente, {"dfx0": pendiente}
 
     notas = [
         nota,

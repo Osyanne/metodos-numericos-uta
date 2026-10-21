@@ -240,6 +240,7 @@ def test_solve_convierte_infinity_y_nan_a_null_en_toda_la_respuesta(
         "n": 0,
         "values": {"x": None},
         "error": None,
+        "detalle": {},
     }
     assert body["result"] == {
         "positivo": None,

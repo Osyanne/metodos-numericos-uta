@@ -48,6 +48,7 @@ class IterationSchema(BaseModel):
     values: dict[str, float | str | None]
     # El error siempre es una medicion.
     error: float | None = None
+    detalle: dict[str, float | None] = {}
 
 
 class ColumnSchema(BaseModel):

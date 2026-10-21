@@ -351,3 +351,36 @@ def test_grafica_del_sistema_incluye_todas_las_componentes(metodo):
         "y1", "y2"
     ]
     assert all(len(componente["y"]) == 3 for componente in solucion["components"])
+
+
+# ---------- detalle ----------
+
+def test_rk4_guarda_los_k_del_paso_en_la_fila_que_producen(metodo):
+    resultado = resolver(metodo, {"fxy": "x + y", "x0": 0, "y0": 1, "h": 0.1, "n": 1})
+
+    assert resultado.iterations[0].detalle == {}
+    assert resultado.iterations[1].detalle == pytest.approx(
+        {"h": 0.1, "k1": 1.0, "k2": 1.1, "k3": 1.105, "k4": 1.2105}
+    )
+
+
+def test_heun_guarda_k1_y_k2(metodo):
+    resultado = resolver(
+        metodo, {"fxy": "x + y", "x0": 0, "y0": 1, "h": 0.1, "n": 1, "orden": 2}
+    )
+
+    assert resultado.iterations[1].detalle == pytest.approx(
+        {"h": 0.1, "k1": 1.0, "k2": 1.2}
+    )
+
+
+def test_un_sistema_nombra_los_k_por_componente(metodo):
+    resultado = resolver(
+        metodo, {"fxy": ["y2", "-y1"], "x0": 0, "y0": [1, 0], "h": 0.1, "n": 1}
+    )
+
+    assert set(resultado.iterations[1].detalle) == {
+        "h",
+        "k1_y1", "k1_y2", "k2_y1", "k2_y2",
+        "k3_y1", "k3_y2", "k4_y1", "k4_y2",
+    }

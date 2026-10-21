@@ -254,7 +254,12 @@ def test_una_fila_con_error_infinito_sale_serializable():
         Iteration(n=3, values={"xi": 1.0, "fxi": float("nan")}, error=float("inf"))
     )
 
-    assert fila == {"n": 3, "values": {"xi": 1.0, "fxi": None}, "error": None}
+    assert fila == {
+        "n": 3,
+        "values": {"xi": 1.0, "fxi": None},
+        "error": None,
+        "detalle": {},
+    }
     # allow_nan=False es lo que hace el navegador al parsear
     assert json.dumps(fila, allow_nan=False)
 
@@ -512,3 +517,17 @@ def test_los_decimales_no_cambian_los_valores_calculados(slug, params, registro_
         it.values for it in muchos.iterations
     ]
     assert pocos.result == muchos.result
+
+
+def test_el_detalle_de_una_fila_sale_serializable_sin_valores_no_finitos():
+    import json
+
+    from core.serialization import jsonable_iteration
+    from core.types import Iteration
+
+    fila = jsonable_iteration(
+        Iteration(n=1, values={"xi": 1.0}, detalle={"dfxi": 2.0, "k1": float("inf")})
+    )
+
+    assert fila["detalle"] == {"dfxi": 2.0, "k1": None}
+    assert json.dumps(fila, allow_nan=False)

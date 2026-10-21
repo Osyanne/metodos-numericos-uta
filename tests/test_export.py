@@ -160,3 +160,14 @@ def test_method_error_al_exportar_conserva_el_mensaje(client: TestClient):
     assert response.status_code == 422
     assert "La derivada se anula" in response.json()["detail"]
 
+
+
+def test_la_api_devuelve_detalle_y_el_csv_no_lo_exporta(client: TestClient):
+    respuesta = client.post("/api/methods/von-mises/solve", json=VON_MISES_REQUEST)
+
+    assert respuesta.status_code == 200
+    filas = respuesta.json()["iterations"]
+    assert all(fila["detalle"]["dfx0"] == pytest.approx(-1.36787944, abs=1e-8) for fila in filas)
+
+    csv_ = client.post("/api/methods/von-mises/export/csv", json=VON_MISES_REQUEST)
+    assert "dfx0" not in csv_.content.decode("utf-8")
