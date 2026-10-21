@@ -69,9 +69,10 @@ export function dibujarTabla(contenedor, resultado, decimales) {
   contenedor.append(tabla);
 }
 
-// Resalta la fila k del recorrido (null: ninguna) y la trae a la vista. Si la
-// pestana de la tabla esta cerrada la fila no tiene caja y no hay nada que mover.
-export function marcarFila(contenedor, k) {
+// Resalta la fila k del recorrido (null: ninguna). Con `desplazar` la trae a la
+// vista; solo lo pide quien movio el paso: resolver o cambiar Decimales no
+// tienen que mover la pagina. Con la pestana cerrada la fila no tiene caja.
+export function marcarFila(contenedor, k, desplazar = false) {
   for (const tr of contenedor.querySelectorAll("tr.actual")) {
     tr.classList.remove("actual");
     tr.removeAttribute("aria-current");
@@ -80,7 +81,7 @@ export function marcarFila(contenedor, k) {
   if (!tr) return;
   tr.classList.add("actual");
   tr.setAttribute("aria-current", "true");
-  tr.scrollIntoView({ block: "nearest" });
+  if (desplazar) tr.scrollIntoView({ block: "nearest" });
 }
 
 // La fila k como pares columna/valor, con los mismos numeros y decimales que la

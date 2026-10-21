@@ -103,9 +103,10 @@ function nombrePaso(metodo) {
   return metodo.slug === "punto-medio" ? "subintervalo" : "punto";
 }
 
-// La tabla y la franja muestran la fila k (null: ninguna).
-function mostrarFila(k) {
-  marcarFila($("#tabla"), k);
+// La tabla y la franja muestran la fila k (null: ninguna). `desplazar`: la
+// tabla sigue la fila con la pagina, solo cuando el usuario movio el paso.
+function mostrarFila(k, desplazar = false) {
+  marcarFila($("#tabla"), k, desplazar);
   dibujarFilaActual($("#fila-actual"), estado.resultado, k, Number($("#decimales").value));
 }
 
@@ -117,7 +118,7 @@ function alCambiar(k, porUsuario) {
   terminoVigente += 1;
   if (porUsuario) plano.cortarAnimacion();
   plano.marcarPaso(k);
-  mostrarFila(k);
+  mostrarFila(k, porUsuario);
   pedirTermino(k);
 }
 
@@ -130,7 +131,8 @@ async function pedirTermino(k) {
   const resultado = estado.resultado;
   const expresion = resultado?.iterations?.[k]?.values?.termino;
   if (estado.metodo?.slug !== "interpolacion-lagrange" || typeof expresion !== "string") {
-    plano.ponerTermino(null);
+    // Solo repinta si hay un termino que quitar: cada paso ya repinta una vez.
+    if (plano.termino) plano.ponerTermino(null);
     return;
   }
   const { x } = resultado.plot.series.curve;
@@ -272,6 +274,8 @@ function aplicarPreset(id) {
 
 async function resolver() {
   avisar("");
+  // La reproduccion vieja no sigue mientras llega el resultado nuevo.
+  recorrido.pausar();
   let params;
   try {
     params = formulario.valores();

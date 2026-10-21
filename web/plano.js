@@ -139,6 +139,7 @@ export class Plano {
 
   // Corta la animacion de entrada: la llama quien mueve el paso a mano.
   cortarAnimacion() {
+    if (this.animacion.progreso >= 1) return;
     this._cancelarAnimacion();
     this._pintar();
   }

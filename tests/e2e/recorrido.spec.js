@@ -11,6 +11,13 @@ async function resolver(page, slug = "von-mises", preset = "von-mises-docente") 
   await expect(page.locator("#resumen .estado")).toBeVisible();
 }
 
+// Reloj falso detenido: sin esto sigue corriendo a velocidad real y una
+// reproduccion vieja termina sola mientras la prueba espera.
+async function relojDetenido(page) {
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00") });
+  await page.clock.pauseAt(new Date("2026-01-01T00:00:01"));
+}
+
 test.describe("recorrido", () => {
   test("al resolver queda en la última iteración", async ({ page }) => {
     await resolver(page);
@@ -178,16 +185,105 @@ test.describe("recorrido", () => {
   // ---- puntos de revision
 
   test("resolver de nuevo mientras reproduce detiene y vuelve a la última", async ({ page }) => {
-    await page.clock.install();
+    await relojDetenido(page);
     await resolver(page);
     await page.locator("#paso-primero").click();
     await page.locator("#paso-reproducir").click();
     await page.clock.runFor(1_300);
     await page.locator("#resolver").click();
     await expect(page.locator("#resolver")).toBeEnabled();
+    // Antes de seguir el reloj: la reproduccion vieja ya no puede estar viva.
+    await expect(page.locator("#paso-reproducir")).toHaveAttribute("aria-label", "Reproducir");
+    await expect(page.locator("#paso")).toHaveValue("12");
     await page.clock.runFor(20_000);
     await expect(page.locator("#paso")).toHaveValue("12");
     await expect(page.locator("#paso-reproducir")).toHaveAttribute("aria-label", "Reproducir");
+  });
+
+  test("Resolver pausa la reproducción sin esperar la respuesta", async ({ page }) => {
+    await relojDetenido(page);
+    await resolver(page);
+    await page.locator("#paso-primero").click();
+    await page.locator("#paso-reproducir").click();
+    await page.clock.runFor(1_300);
+    let soltar;
+    const retenida = new Promise((r) => { soltar = r; });
+    await page.route("**/solve", async (ruta) => { await retenida; await ruta.continue(); });
+    await page.locator("#resolver").click();
+    await expect(page.locator("#resolver")).toBeDisabled();
+    await expect(page.locator("#paso-reproducir")).toHaveAttribute("aria-label", "Reproducir");
+    const k = await page.locator("#paso").inputValue();
+    await page.clock.runFor(5_000);
+    await expect(page.locator("#paso")).toHaveValue(k);
+    soltar();
+    await expect(page.locator("#resolver")).toBeEnabled();
+    await expect(page.locator("#paso")).toHaveValue("12");
+  });
+
+  test("un paso repinta el plano una sola vez", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.limpiados = 0;
+      const original = CanvasRenderingContext2D.prototype.clearRect;
+      CanvasRenderingContext2D.prototype.clearRect = function (...a) {
+        window.limpiados += 1;
+        return original.apply(this, a);
+      };
+    });
+    await page.clock.install();
+    await resolver(page);
+    await page.clock.runFor(2_500); // termina la animacion de entrada
+    const antes = await page.evaluate(() => window.limpiados);
+    await page.locator("#paso-anterior").click();
+    await expect(page.locator("#paso")).toHaveValue("11");
+    expect(await page.evaluate(() => window.limpiados) - antes).toBe(1);
+  });
+
+  test("solo los movimientos del usuario desplazan la tabla", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.desplazos = 0;
+      const original = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = function (...a) {
+        window.desplazos += 1;
+        return original.apply(this, a);
+      };
+    });
+    await page.goto("/");
+    await esperarDesplegable(page);
+    await elegirMetodo(page, "punto-medio");
+    await page.locator("#campo-fx").fill("x^2");
+    await page.locator("#campo-a").fill("0");
+    await page.locator("#campo-b").fill("2");
+    await page.locator("#campo-n").fill("40");
+    await page.locator("#ver-tabla").click();
+    await page.locator("#resolver").click();
+    await expect(page.locator("#resumen .estado")).toBeVisible();
+    // Resolver y mover Decimales no son pasos del usuario.
+    await page.locator("#decimales").scrollIntoViewIfNeeded();
+    const y = await page.evaluate(() => window.scrollY);
+    await page.locator("#decimales").focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("#decimales-valor")).toHaveText("7");
+    expect(await page.evaluate(() => window.scrollY)).toBe(y);
+    expect(await page.evaluate(() => window.desplazos)).toBe(0);
+    // Un clic en una fila si lo es: la fila sigue a la vista.
+    await page.locator('#tabla tr[data-indice="5"]').click();
+    await expect(page.locator("#paso")).toHaveValue("5");
+    expect(await page.evaluate(() => window.desplazos)).toBe(1);
+  });
+
+  test("cargar sin filas avisa que no hay paso", async ({ page }) => {
+    await page.goto("/");
+    const avisos = await page.evaluate(async () => {
+      const { montarRecorrido } = await import("/recorrido.js");
+      const avisos = [];
+      const r = montarRecorrido({
+        raiz: document.querySelector("#recorrido"),
+        alCambiar: (k, porUsuario) => avisos.push([k, porUsuario]),
+      });
+      r.cargar([], "iteración");
+      return avisos;
+    });
+    expect(avisos).toEqual([[null, false]]);
   });
 
   test("comparar mientras reproduce oculta la barra", async ({ page }) => {

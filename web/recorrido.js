@@ -89,7 +89,10 @@ export function montarRecorrido({ raiz, alCambiar }) {
       deslizador.max = Math.max(0, filas.length - 1);
       raiz.hidden = filas.length < 2;
       if (filas.length) mover(filas.length - 1, false);
+      else alCambiar(null, false);
     },
+    // Pausa la reproduccion sin tocar k: la usa quien va a reemplazar el resultado.
+    pausar: detener,
     ir,
     ocultar() {
       detener();
