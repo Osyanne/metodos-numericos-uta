@@ -3,13 +3,13 @@
 
 import { Formulario } from "./forms.js";
 import { Plano, capasDesdePlot } from "./plano.js";
-import { dibujarFilaActual, dibujarResumen, dibujarTabla, marcarFila } from "./tabla.js";
+import { dibujarFilaActual, dibujarResumen, dibujarTabla, formatear, marcarFila } from "./tabla.js";
 import { montarRecorrido } from "./recorrido.js";
 import { montarComparador } from "./comparador.js";
 import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
 import { ICONOS } from "./iconos.js";
-import { formulaPara } from "./formulas.js";
+import { formulaPara, sustitucionPara } from "./formulas.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -103,11 +103,32 @@ function nombrePaso(metodo) {
   return metodo.slug === "punto-medio" ? "subintervalo" : "punto";
 }
 
-// La tabla y la franja muestran la fila k (null: ninguna). `desplazar`: la
-// tabla sigue la fila con la pagina, solo cuando el usuario movio el paso.
+// La tabla, la franja y la formula sustituida muestran la fila k (null:
+// ninguna). `desplazar`: la tabla sigue la fila con la pagina, solo cuando el
+// usuario movio el paso.
 function mostrarFila(k, desplazar = false) {
   marcarFila($("#tabla"), k, desplazar);
   dibujarFilaActual($("#fila-actual"), estado.resultado, k, Number($("#decimales").value));
+  mostrarSustitucion(k);
+}
+
+// Bajo la formula general, la misma con los numeros de la fila k.
+function mostrarSustitucion(k) {
+  const caja = $("#formula-datos");
+  const resultado = estado.resultado;
+  const decimales = Number($("#decimales").value);
+  const sustitucion = resultado && k !== null
+    ? sustitucionPara(estado.metodo.slug, resultado.iterations, k, resultado,
+      (v) => formatear(v, decimales))
+    : null;
+  if (sustitucion === null) {
+    caja.innerHTML = "";
+  } else {
+    const paso = nombrePaso(estado.metodo);
+    caja.innerHTML = `<p class="campo-ayuda">En ${paso === "iteración" ? "la" : "el"} ${paso} `
+      + `${resultado.iterations[k].n}:</p>${sustitucion}`;
+  }
+  caja.hidden = sustitucion === null;
 }
 
 // Cada vez que cambia la fila k (null: no hay recorrido) se enteran el plano,

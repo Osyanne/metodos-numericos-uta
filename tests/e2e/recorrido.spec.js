@@ -18,6 +18,18 @@ async function relojDetenido(page) {
   await page.clock.pauseAt(new Date("2026-01-01T00:00:01"));
 }
 
+// Un ejercicio por método; k = 1, salvo en Interpolación y Punto Medio (k = 0).
+const EJERCICIOS = [
+  ["newton-raphson", "newton-clasico", 1],
+  ["von-mises", "von-mises-docente", 1],
+  ["interpolacion-newton", "interpolacion-newton-docente", 0],
+  ["interpolacion-lagrange", "lagrange-docente", 1],
+  ["punto-medio", "punto-medio-docente", 0],
+  ["trapecio", "trapecio-docente", 1],
+  ["simpson", "simpson-docente", 1],
+  ["runge-kutta", "runge-kutta-escalar", 1],
+];
+
 test.describe("recorrido", () => {
   test("al resolver queda en la última iteración", async ({ page }) => {
     await resolver(page);
@@ -326,5 +338,92 @@ test.describe("recorrido", () => {
     const ultimo = await page.locator("#paso").getAttribute("max");
     await expect(page.locator("#paso")).toHaveValue(ultimo);
     expect(errores).toEqual([]);
+  });
+
+  // ---- fórmula con los números de la iteración elegida
+
+  test("Von Mises sustituye f′(x₀) en la iteración elegida", async ({ page }) => {
+    await resolver(page);
+    await page.locator("#paso-primero").click();
+    const s = page.locator('#formula-datos math[data-sustitucion="von-mises"]');
+    await expect(page.locator("#formula-datos")).toContainText("En la iteración 0:");
+    await expect(s).toContainText("(−1.36787944)");
+    await expect(s).toContainText("0.36787944");
+    await page.locator("#paso-siguiente").click();
+    await expect(page.locator("#formula-datos")).toContainText("En la iteración 1:");
+    await expect(s).toContainText("1.26894142");
+  });
+
+  test("cada método muestra su sustitución con resultado", async ({ page }) => {
+    for (const [slug, preset, k] of EJERCICIOS) {
+      await resolver(page, slug, preset);
+      await page.locator("#paso-primero").click();
+      if (k === 1) await page.locator("#paso-siguiente").click();
+      await expect(
+        page.locator(`#formula-datos math[data-sustitucion="${slug}"]`), slug,
+      ).toBeVisible();
+    }
+  });
+
+  test("Runge-Kutta muestra la condición inicial en la fila 0 y los k después", async ({ page }) => {
+    await resolver(page, "runge-kutta", "runge-kutta-escalar");
+    const s = page.locator('#formula-datos math[data-sustitucion="runge-kutta"]');
+    await page.locator("#paso-primero").click();
+    await expect(s).toContainText("condición inicial");
+    await page.locator("#paso-siguiente").click();
+    await expect(s).not.toContainText("condición inicial");
+    await expect(s).toContainText("0.100000"); // h
+    await expect(s).toContainText("1.100000"); // k2
+    await expect(s).toContainText("1.210500"); // k4
+    await expect(page.locator("#formula-datos")).toContainText("En el paso 1:");
+  });
+
+  test("mover Decimales parado en k reescribe la franja y la sustitución", async ({ page }) => {
+    await resolver(page);
+    await page.locator("#paso-primero").click();
+    await page.locator("#paso-siguiente").click();
+    const s = page.locator('#formula-datos math[data-sustitucion="von-mises"]');
+    await expect(s).toContainText("1.26894142");
+    await page.locator("#decimales").fill("3");
+    await expect(s).toContainText("1.269");
+    await expect(s).not.toContainText("1.26894");
+    await expect(page.locator("#fila-actual")).toContainText("1.269");
+    await expect(page.locator("#paso")).toHaveValue("1");
+  });
+
+  test("sin recorrido no hay sustitución", async ({ page }) => {
+    await resolver(page);
+    await expect(page.locator("#formula-datos")).toBeVisible();
+    await elegirMetodo(page, "newton-raphson");
+    await expect(page.locator("#formula-datos")).toBeHidden();
+    await expect(page.locator("#formula-datos")).toBeEmpty();
+  });
+
+  test("un método que diverge sustituye sin errores en la primera y la última fila", async ({ page }) => {
+    const errores = [];
+    page.on("pageerror", (e) => errores.push(e.message));
+    page.on("console", (m) => { if (m.type() === "error") errores.push(m.text()); });
+    await resolver(page, "von-mises", "von-mises-divergente");
+    const s = page.locator('#formula-datos math[data-sustitucion="von-mises"]');
+    await page.locator("#paso-primero").click();
+    await expect(s).toBeVisible();
+    await page.locator("#paso-ultimo").click();
+    await expect(s).toBeVisible();
+    expect(errores).toEqual([]);
+  });
+
+  test("a 375 px ninguna sustitución desborda su tarjeta", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const [slug, preset, k] of EJERCICIOS) {
+      await resolver(page, slug, preset);
+      await page.locator("#paso-primero").click();
+      if (k === 1) await page.locator("#paso-siguiente").click();
+      const caja = page.locator("#formula-datos");
+      await expect(caja.locator("math"), slug).toBeVisible();
+      const sobra = await caja.evaluate((c) => c.scrollWidth - c.clientWidth);
+      expect(sobra, slug).toBeLessThanOrEqual(0);
+      const pagina = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(pagina, slug).toBeLessThanOrEqual(0);
+    }
   });
 });

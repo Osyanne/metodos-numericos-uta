@@ -865,14 +865,16 @@ body { --accent-tinta: #ffffff; }
 
 /* ---------------------------------------------------------- formula */
 
-#formula { overflow-x: auto; }
-#formula math {
+#formula, #formula-datos { overflow-x: auto; }
+#formula math, #formula-datos math {
   margin: 0;
   text-align: left;
   font-size: 1.15em;
   color: var(--ink);
 }
-#formula mtd { padding: 3px 0; text-align: left; math-style: normal; }
+#formula mtd, #formula-datos mtd { padding: 3px 0; text-align: left; math-style: normal; }
+/* La sustitucion va debajo de la general, separada por una linea fina. */
+#formula-datos { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); }
 
 /* ---------------------------------------------------------- senales */
 
