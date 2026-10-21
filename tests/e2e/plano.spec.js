@@ -192,3 +192,82 @@ for (const ancho of [320, 360]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(ancho);
   });
 }
+
+test("capasDesdePlot dice en qué fila aparece cada elemento", async ({ page }) => {
+  await page.goto("/");
+  const r = await page.evaluate(async () => {
+    const { capasDesdePlot } = await import("/plano.js");
+    const trap = { kind: "integracion", series: { curve: { x: [0, 1], y: [0, 1] },
+      trapezoids: [{ x0: 0, y0: 0, x1: 1, y1: 1 }, { x0: 1, y0: 1, x1: 2, y1: 4 }] } };
+    const filasTrap = [{ n: 0 }, { n: 1 }, { n: 2 }];
+    const raiz = { kind: "funcion_raiz", series: { curve: { x: [0, 1], y: [0, 1] },
+      iterates: [{ n: 0, x: 2, y: 3 }, { n: 1, x: 1.5, y: 0.5 }], root: { x: 1.4, y: 0 } } };
+    const filasRaiz = [{ n: 0, values: { xi: 2, fxi: 3, xi_sig: 1.5 } },
+                       { n: 1, values: { xi: 1.5, fxi: 0.5, xi_sig: 1.4 } }];
+    const t = capasDesdePlot(trap, filasTrap).capas.find((c) => c.tipo === "trapecios");
+    const s = capasDesdePlot(raiz, filasRaiz).capas;
+    return {
+      trapecios: t.aparece,
+      segmentos: s.find((c) => c.tipo === "segmentos").aparece,
+      raiz: s.find((c) => c.nombre === "raiz").aparece,
+      sinFilas: capasDesdePlot(trap).capas.some((c) => c.aparece),
+    };
+  });
+  expect(r).toEqual({ trapecios: [1, 2], segmentos: [0, 1], raiz: [1], sinFilas: false });
+});
+
+test("marcarPaso cambia el dibujo y null lo devuelve al completo", async ({ page }) => {
+  await page.goto("/");
+  const r = await page.evaluate(async () => {
+    const { Plano, capasDesdePlot } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    caja.append(canvas);
+    document.body.append(caja);
+    const raiz = { kind: "funcion_raiz", series: { curve: { x: [0, 1, 2, 3], y: [-1, 0, 3, 8] },
+      iterates: [{ n: 0, x: 2, y: 3 }, { n: 1, x: 1.5, y: 0.5 }], root: { x: 1.4, y: 0 } } };
+    const filas = [{ n: 0, values: { xi: 2, fxi: 3, xi_sig: 1.5 } },
+                   { n: 1, values: { xi: 1.5, fxi: 0.5, xi_sig: 1.4 } }];
+    const plano = new Plano(canvas);
+    plano.mostrar(capasDesdePlot(raiz, filas).capas, null, {}, { animar: false });
+    const completo = canvas.toDataURL();
+    plano.marcarPaso(0);
+    const enPaso0 = canvas.toDataURL();
+    plano.marcarPaso(null);
+    return { distinto: enPaso0 !== completo, igual: canvas.toDataURL() === completo, paso: plano.paso };
+  });
+  expect(r).toEqual({ distinto: true, igual: true, paso: null });
+});
+
+test("marcarPaso dibuja sin errores cada familia de gráfica", async ({ page }) => {
+  const errores = [];
+  page.on("pageerror", (e) => errores.push(e.message));
+  await page.goto("/");
+  const r = await page.evaluate(async () => {
+    const { Plano, capasDesdePlot } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    caja.append(canvas); document.body.append(caja);
+    const plano = new Plano(canvas);
+    const curve = { x: [0, 1, 2, 3], y: [0, 1, 4, 9] };
+    const casos = [
+      [{ kind: "integracion", series: { curve, rectangles: [{ x0: 0, x1: 1, y: 1 }, { x0: 1, x1: 2, y: 4 }] } }, 2],
+      [{ kind: "integracion", series: { curve, trapezoids: [{ x0: 0, y0: -1, x1: 1, y1: 1 }, { x0: 1, y0: 1, x1: 2, y1: 4 }] } }, 3],
+      [{ kind: "integracion", series: { curve, parabolas: [{ x0: 0, y0: 0, xm: 1, ym: 1, x1: 2, y1: 4 }] } }, 3],
+      [{ kind: "interpolacion", series: { curve, points: [[0, 0], [1, 1]], evaluated: { x: 1, y: 1 } } }, 2],
+      [{ kind: "solucion_edo", series: { solution: { x: [0, 1, 2], components: [{ name: "y", y: [1, 2, 3] }] } } }, 3],
+      [{ kind: "funcion_raiz", series: { curve, iterates: [{ n: 0, x: 2, y: 3 }, { n: 1, x: NaN, y: NaN }], root: { x: 1, y: 0 } } }, 2],
+    ];
+    let n = 0;
+    for (const [plot, N] of casos) {
+      const filas = Array.from({ length: N }, (_, i) => ({ n: i, values: { xi: 2, fxi: 3, xi_sig: i ? NaN : 1.5 } }));
+      plano.mostrar(capasDesdePlot(plot, filas).capas, null, {}, { animar: false });
+      for (const k of [0, 1, N - 1, null]) { plano.marcarPaso(k); n++; }
+    }
+    return n;
+  });
+  expect(r).toBe(24);
+  expect(errores).toEqual([]);
+});

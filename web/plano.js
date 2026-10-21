@@ -40,6 +40,8 @@ export class Plano {
     this.vista = { x0: -5, x1: 5, y0: -5, y1: 5 };
     this.vistaInicial = { ...this.vista };
     this.cursor = null;
+    // Fila elegida del recorrido (o null: se dibuja todo). Ver marcarPaso.
+    this.paso = null;
     this.temporizador = null;
     this.versionMuestreo = 0;
     // Estado de la animacion en curso. `progreso` va de 0 a 1: al llegar a 1
@@ -65,6 +67,34 @@ export class Plano {
     this.etiquetas = { x: "x", y: "y", ...etiquetas };
     this.encuadrar();
     if (opciones.animar !== false) this._iniciarAnimacion();
+  }
+
+  // Dibuja hasta la fila k: lo que aparece antes va normal, lo de la fila k
+  // resaltado y lo posterior tenue. null vuelve a dibujar todo como siempre.
+  marcarPaso(k) {
+    this.paso = k;
+    this._pintar();
+  }
+
+  // Estado de dibujo del elemento i de una capa segun el paso. Una capa sin
+  // `aparece` (o sin paso elegido) se dibuja siempre normal.
+  _estado(capa, i) {
+    const fila = capa.aparece?.[i];
+    if (this.paso == null || fila == null) return "normal";
+    return fila === this.paso ? "actual" : fila > this.paso ? "tenue" : "normal";
+  }
+
+  // Anillo que rodea el punto de la fila actual.
+  _anillo(px, py) {
+    const { ctx } = this;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = this._color("--iteraciones");
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // Arranca la animacion de entrada: `progreso` sube de 0 a 1 a lo largo de
@@ -390,6 +420,7 @@ export class Plano {
     }
     for (const capa of this.capas) {
       if (capa.tipo === "curva") this._curva(capa);
+      else if (capa.tipo === "segmentos") this._segmentos(capa);
       else if (capa.tipo === "puntos") this._puntos(capa);
       else if (capa.tipo === "marcas") this._marcas(capa);
     }
@@ -493,7 +524,6 @@ export class Plano {
     ctx.strokeStyle = this._color(capa.color);
     ctx.lineWidth = 2;
     ctx.lineJoin = "round";
-    ctx.beginPath();
 
     // La curva se revela por SEGMENTO, no por punto entero. Es especialmente
     // importante para Runge-Kutta: una EDO solo tiene un punto por paso y con
@@ -508,6 +538,14 @@ export class Plano {
     );
     const ultimoCompleto = Math.floor(posicion);
     const fraccion = posicion - ultimoCompleto;
+
+    // Con paso elegido la polilinea se parte en `corte`, el ultimo punto que ya
+    // aparecio: hasta ahi va normal, de ahi en adelante tenue.
+    let corte = total - 1;
+    if (capa.aparece && this.paso != null) {
+      corte = -1;
+      for (let i = 0; i < total; i++) if (capa.aparece[i] <= this.paso) corte = i;
+    }
 
     let dibujando = false;
     let ultimoY = null;
@@ -533,13 +571,10 @@ export class Plano {
       ultimoY = py;
     };
 
-    for (let i = 0; i <= ultimoCompleto; i++) {
-      trazar(capa.xs[i], capa.ys[i]);
-    }
-
     // El ultimo tramo crece de forma continua entre dos pasos. No se dibuja
     // si cruza una discontinuidad: en ese caso, como antes, queda un hueco.
-    if (fraccion > 0 && ultimoCompleto < total - 1) {
+    const crecer = () => {
+      if (!(fraccion > 0 && ultimoCompleto < total - 1)) return;
       const x0 = capa.xs[ultimoCompleto];
       const y0 = capa.ys[ultimoCompleto];
       const x1 = capa.xs[ultimoCompleto + 1];
@@ -551,8 +586,30 @@ export class Plano {
           trazar(x0 + (x1 - x0) * fraccion, y0 + (y1 - y0) * fraccion);
         }
       }
+    };
+
+    // Un trazo con los puntos desde..hasta (incluidos). Si llega al ultimo
+    // punto revelado, agrega el tramo que sigue creciendo.
+    const trazo = (desde, hasta, alfa) => {
+      dibujando = false;
+      ultimoY = null;
+      ctx.globalAlpha = alfa;
+      ctx.beginPath();
+      for (let i = Math.max(0, desde); i <= Math.min(hasta, ultimoCompleto); i++) {
+        trazar(capa.xs[i], capa.ys[i]);
+      }
+      if (desde <= ultimoCompleto && hasta >= ultimoCompleto) crecer();
+      ctx.stroke();
+    };
+
+    trazo(0, corte, 1);
+    if (corte < total - 1) trazo(corte, total, 0.25);
+    // Punto de la fila actual en curvas con un punto por fila (EDO).
+    const actual = capa.aparece?.indexOf(this.paso) ?? -1;
+    if (this.paso != null && actual >= 0 && actual <= ultimoCompleto
+        && Number.isFinite(capa.xs[actual]) && Number.isFinite(capa.ys[actual])) {
+      this._anillo(...this._aPantalla(capa.xs[actual], capa.ys[actual]));
     }
-    ctx.stroke();
     ctx.restore();
   }
 
@@ -570,13 +627,16 @@ export class Plano {
     const t = Math.max(0, (this.animacion.progreso - 0.5) * 2);
     if (t <= 0) { ctx.restore(); return; }
     const factor = 1 - Math.pow(1 - t, 2);
-    for (const p of capa.puntos) {
-      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+    capa.puntos.forEach((p, i) => {
+      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+      const estado = this._estado(capa, i);
       const [px, py] = this._aPantalla(p.x, p.y);
+      ctx.globalAlpha = estado === "tenue" ? 0.25 : 1;
       ctx.beginPath();
       ctx.arc(px, py, (capa.radio ?? 4) * factor, 0, Math.PI * 2);
       ctx.fill();
-    }
+      if (estado === "actual") this._anillo(px, py);
+    });
     ctx.restore();
   }
 
@@ -610,6 +670,8 @@ export class Plano {
       if (i > enteros) break;
       const factor = i < enteros ? 1 : fraccion;
       if (factor <= 0) continue;
+      const estado = this._estado(capa, i);
+      const alfa = estado === "tenue" ? 0.25 : 1;
       const alturaEfectiva = r.y * factor;
       const [px0, py0] = this._aPantalla(r.x0, 0);
       const [px1, py1] = this._aPantalla(r.x1, alturaEfectiva);
@@ -618,9 +680,10 @@ export class Plano {
       const y = Math.min(py0, py1);
       const h = Math.abs(py1 - py0);
       ctx.fillStyle = this._color(capa.color);
-      ctx.globalAlpha = r.y >= 0 ? 0.16 : 0.10;
+      ctx.globalAlpha = (r.y >= 0 ? 0.16 : 0.10) * alfa;
       ctx.fillRect(x, y, w, h);
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = alfa;
+      ctx.lineWidth = estado === "actual" ? 2 : 1;
       ctx.strokeRect(x, y, w, h);
     }
     ctx.restore();
@@ -651,6 +714,8 @@ export class Plano {
       if (i > enteros) break;
       const factor = i < enteros ? 1 : fraccion;
       if (factor <= 0) continue;
+      const estado = this._estado(capa, i);
+      const alfa = estado === "tenue" ? 0.25 : 1;
       const y0 = t.y0 * factor;
       const y1 = t.y1 * factor;
       const [px0, pyBase] = this._aPantalla(t.x0, 0);
@@ -664,17 +729,19 @@ export class Plano {
       if (cruzaCero) {
         const proporcion = Math.abs(y0) / (Math.abs(y0) + Math.abs(y1));
         const pxCero = px0 + (px1 - px0) * proporcion;
-        this._rellenarTrapecio([[px0, pyBase], [px0, py0], [pxCero, pyBase]], y0);
-        this._rellenarTrapecio([[pxCero, pyBase], [px1, py1], [px1, pyBase]], y1);
+        this._rellenarTrapecio([[px0, pyBase], [px0, py0], [pxCero, pyBase]], y0, alfa);
+        this._rellenarTrapecio([[pxCero, pyBase], [px1, py1], [px1, pyBase]], y1, alfa);
       } else {
         this._rellenarTrapecio(
           [[px0, pyBase], [px0, py0], [px1, py1], [px1, pyBase]],
           y0 || y1,
+          alfa,
         );
       }
 
       // El borde superior es la recta aproximante que define la regla.
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = alfa;
+      ctx.lineWidth = estado === "actual" ? 2 : 1;
       ctx.beginPath();
       ctx.moveTo(px0, pyBase);
       ctx.lineTo(px0, py0);
@@ -712,6 +779,8 @@ export class Plano {
       const factor = i < enteros ? 1 : fraccion;
       if (factor <= 0) continue;
       const p = capa.parabolas[i];
+      const estado = this._estado(capa, i);
+      const alfa = estado === "tenue" ? 0.25 : 1;
       if (![p.x0, p.y0, p.xm, p.ym, p.x1, p.y1].every(Number.isFinite)) continue;
       const [px0, py0] = this._aPantalla(p.x0, p.y0 * factor);
       const [pxm, pym] = this._aPantalla(p.xm, p.ym * factor);
@@ -730,32 +799,33 @@ export class Plano {
       // Arriba del eje el relleno es mas intenso que abajo, como en los
       // trapecios. Recortar por semiplano evita partir la region a mano
       // cuando el arco cruza el eje.
-      for (const [y, alto, alfa] of [
-        [a.arriba, pyBase - a.arriba, 0.16],
-        [pyBase, a.abajo - pyBase, 0.10],
+      for (const [y, alto, relleno] of [
+        [a.arriba, pyBase - a.arriba, 0.16 * alfa],
+        [pyBase, a.abajo - pyBase, 0.10 * alfa],
       ]) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(a.izq, y, a.der - a.izq, alto);
         ctx.clip();
-        ctx.globalAlpha = alfa;
+        ctx.globalAlpha = relleno;
         ctx.fill(region);
         ctx.restore();
       }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = alfa;
+      ctx.lineWidth = estado === "actual" ? 2 : 1;
       ctx.stroke(region);
     }
     ctx.restore();
   }
 
-  _rellenarTrapecio(puntos, altura) {
+  _rellenarTrapecio(puntos, altura, alfa = 1) {
     const { ctx } = this;
     ctx.beginPath();
     ctx.moveTo(...puntos[0]);
     for (const punto of puntos.slice(1)) ctx.lineTo(...punto);
     ctx.closePath();
     ctx.fillStyle = ctx.strokeStyle;
-    ctx.globalAlpha = altura >= 0 ? 0.16 : 0.10;
+    ctx.globalAlpha = (altura >= 0 ? 0.16 : 0.10) * alfa;
     ctx.fill();
   }
 
@@ -777,7 +847,9 @@ export class Plano {
     for (let i = 0; i < Math.min(total, hasta); i++) {
       const p = capa.puntos[i];
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+      const estado = this._estado(capa, i);
       const [px, py] = this._aPantalla(p.x, p.y);
+      ctx.globalAlpha = estado === "tenue" ? 0.25 : 1;
       ctx.strokeStyle = this._color(capa.color);
       ctx.fillStyle = this._color(capa.color);
       ctx.lineWidth = 1;
@@ -787,6 +859,33 @@ export class Plano {
       if (p.etiqueta !== undefined) {
         ctx.fillText(p.etiqueta, px + 6, py - 6);
       }
+      if (estado === "actual") this._anillo(px, py);
+    }
+    ctx.restore();
+  }
+
+  // Segmentos sueltos (la tangente de cada iteracion): de (x0, y0) a (x1, y1).
+  _segmentos(capa) {
+    const { ctx } = this;
+    const a = this._area;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
+    ctx.clip();
+    ctx.strokeStyle = this._color(capa.color);
+    // Aparecen uno por uno durante la animacion inicial, como las marcas.
+    const total = capa.segmentos.length;
+    const hasta = Math.ceil(total * this.animacion.progreso);
+    for (let i = 0; i < Math.min(total, hasta); i++) {
+      const s = capa.segmentos[i];
+      if (![s.x0, s.y0, s.x1, s.y1].every(Number.isFinite)) continue;
+      const estado = this._estado(capa, i);
+      ctx.globalAlpha = estado === "tenue" ? 0.25 : 1;
+      ctx.lineWidth = estado === "actual" ? 3 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(...this._aPantalla(s.x0, s.y0));
+      ctx.lineTo(...this._aPantalla(s.x1, s.y1));
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -810,24 +909,48 @@ export class Plano {
 }
 
 // Traduce un plot del contrato a las capas que este plano sabe dibujar.
-export function capasDesdePlot(plot) {
+// Con `filas` (las iteraciones del resultado) cada capa dice en que fila
+// aparece cada uno de sus elementos (`aparece`); sin ellas se dibuja todo.
+export function capasDesdePlot(plot, filas = []) {
   if (!plot) return { capas: [], resample: null };
   const s = plot.series ?? {};
+  const N = filas.length;
+  // aparece(cantidad, fila): fila(i) = fila en que aparece el elemento i.
+  const aparece = (cantidad, fila = (i) => i) =>
+    (N ? { aparece: Array.from({ length: cantidad }, (_, i) => fila(i)) } : {});
 
   if (plot.kind === "funcion_raiz") {
     const capas = [{ tipo: "curva", nombre: "f(x)", color: "--curva", xs: s.curve.x, ys: s.curve.y }];
     if (s.iterates?.length) {
+      // Un segmento por fila, de (xi, f(xi)) a (xi_sig, 0): la tangente en
+      // Newton-Raphson, la paralela a la primera en Von Mises.
+      const segmentos = [];
+      const filaDe = [];
+      filas.forEach((f, i) => {
+        const { xi, fxi, xi_sig: sig } = f.values ?? {};
+        if (!Number.isFinite(sig)) return;
+        segmentos.push({ x0: xi, y0: fxi, x1: sig, y1: 0 });
+        filaDe.push(i);
+      });
+      if (segmentos.length) {
+        capas.push({
+          tipo: "segmentos", nombre: "tangentes", color: "--iteraciones",
+          segmentos, ...aparece(segmentos.length, (i) => filaDe[i]),
+        });
+      }
       capas.push({
         tipo: "marcas",
         nombre: "iteraciones",
         color: "--iteraciones",
         puntos: s.iterates.map((it) => ({ x: it.x, y: it.y, etiqueta: it.n })),
+        ...aparece(s.iterates.length),
       });
     }
     if (s.root) {
       capas.push({
         tipo: "puntos", nombre: "raiz", color: "--raiz",
         radio: 5, puntos: [{ x: s.root.x, y: s.root.y }],
+        ...aparece(1, () => N - 1),
       });
     }
     return { capas, resample: plot.resample ?? null };
@@ -838,11 +961,13 @@ export function capasDesdePlot(plot) {
     capas.push({
       tipo: "puntos", nombre: "datos", color: "--datos",
       puntos: (s.points ?? []).map(([x, y]) => ({ x, y })),
+      ...aparece((s.points ?? []).length),
     });
     if (s.evaluated) {
       capas.push({
         tipo: "puntos", nombre: "evaluado", color: "--raiz",
         radio: 5, puntos: [s.evaluated],
+        ...aparece(1, () => N - 1),
       });
     }
     return { capas, resample: plot.resample ?? null };
@@ -858,6 +983,7 @@ export function capasDesdePlot(plot) {
   if (plot.kind === "solucion_edo") {
     const capas = (s.solution?.components ?? []).map((c) => ({
       tipo: "curva", nombre: c.name, xs: s.solution.x, ys: c.y,
+      ...aparece(s.solution.x.length),
     }));
     for (const c of s.exact?.components ?? []) {
       capas.push({ tipo: "curva", nombre: `${c.name} exacta`, xs: s.exact.x, ys: c.y });
@@ -875,6 +1001,7 @@ export function capasDesdePlot(plot) {
         nombre: "rectangulos",
         color: "--area",
         rectangulos: s.rectangles ?? [],
+        ...aparece(s.rectangles.length),
       });
     }
     if ((s.trapezoids ?? []).length) {
@@ -883,6 +1010,8 @@ export function capasDesdePlot(plot) {
         nombre: "trapecios",
         color: "--area",
         trapecios: s.trapezoids ?? [],
+        // el trapecio j termina en la fila j+1
+        ...aparece(s.trapezoids.length, (i) => i + 1),
       });
     }
     if ((s.parabolas ?? []).length) {
@@ -891,6 +1020,8 @@ export function capasDesdePlot(plot) {
         nombre: "parabolas",
         color: "--area",
         parabolas: s.parabolas,
+        // la parabola j termina en la fila 2j+2
+        ...aparece(s.parabolas.length, (i) => 2 * i + 2),
       });
     }
     capas.push({
@@ -911,6 +1042,7 @@ export function capasDesdePlot(plot) {
         nombre: "puntos medios",
         color: "--iteraciones",
         puntos: marcas,
+        ...aparece(marcas.length),
       });
     }
     const trapecios = s.trapezoids ?? [];
@@ -927,6 +1059,7 @@ export function capasDesdePlot(plot) {
         nombre: "puntos de particion",
         color: "--iteraciones",
         puntos: puntosParticion,
+        ...aparece(puntosParticion.length),
       });
     }
     const parabolas = s.parabolas ?? [];
@@ -942,6 +1075,7 @@ export function capasDesdePlot(plot) {
         nombre: "puntos de Simpson",
         color: "--iteraciones",
         puntos,
+        ...aparece(puntos.length),
       });
     }
     return { capas, resample: plot.resample ?? null };
