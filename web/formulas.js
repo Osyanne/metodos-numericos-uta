@@ -209,6 +209,7 @@ function interpolacionNewton({ filas, it, k, res, num }) {
   if (k === 0) return [igual(a, sub(mi("y"), mn("0")), num(filas[0].values.y))];
 
   const adelante = variante === "adelante";
+  // Δ y ∇ van rectas: un <mi> de una sola letra se dibuja en cursiva.
   const diferencia = adelante ? "Δ" : "∇";
   const clave = adelante ? `delta${k}` : `nabla${k}`;
   const fuente = adelante ? filas[0] : it;
@@ -217,7 +218,7 @@ function interpolacionNewton({ filas, it, k, res, num }) {
   const factorial = fila(mn(k), mo("!"));
   const hHecha = paren(num(filas[1]?.values.x), mo("−"), num(filas[0]?.values.x));
   return [
-    igual(a, frac(fila(potencia(mi(diferencia)), y), fila(factorial, por, potencia(h)))),
+    igual(a, frac(fila(potencia(`<mi mathvariant="normal">${diferencia}</mi>`), y), fila(factorial, por, potencia(h)))),
     fila(mo("="), frac(num(fuente.values[clave]), fila(factorial, por, potencia(hHecha)))),
   ];
 }

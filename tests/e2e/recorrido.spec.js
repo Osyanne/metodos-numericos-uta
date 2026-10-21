@@ -431,6 +431,7 @@ test.describe("recorrido", () => {
     // Δ²y₀ sale de la fila 0 (2), no el coeficiente ya dividido (1).
     expect(texto).not.toMatch(/^a2=[\d.]+$/);
     expect(texto).not.toContain("=1.00000000");
+    expect(texto).toContain("=2.00000000"); // el numerador Δ²y₀ de la fila 0
   });
 
   test("Interpolación de Newton hacia atrás usa ∇ᵏ de la fila elegida", async ({ page }) => {
