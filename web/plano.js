@@ -29,11 +29,17 @@ const ANCHO_MAXIMO = 1e12;
 // tener que pestanear, y sigue siendo cancelable con cualquier interaccion.
 const DURACION_ANIMACION = 2000;
 
+// Un clic mueve menos de UMBRAL_CLIC px entre bajar y soltar; un punto es
+// elegible a menos de RADIO_ELEGIR px del puntero.
+const UMBRAL_CLIC = 4;
+const RADIO_ELEGIR = 12;
+
 export class Plano {
-  constructor(canvas, { alMuestrear } = {}) {
+  constructor(canvas, { alMuestrear, alElegir } = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.alMuestrear = alMuestrear;
+    this.alElegir = alElegir;
 
     this.capas = [];
     this.resample = null;
@@ -227,6 +233,31 @@ export class Plano {
 
   // ---------------------------------------------------- interaccion
 
+  // Fila del recorrido a la que pertenece lo que hay bajo (px, py), en pixeles
+  // CSS del lienzo: primero el punto mas cercano a menos de RADIO_ELEGIR; si no
+  // hay, el rectangulo, trapecio o parabola cuya franja [x0, x1] contiene el x.
+  indiceEn(px, py) {
+    let mejor = null;
+    let distMejor = RADIO_ELEGIR;
+    for (const capa of this.capas) {
+      if (!capa.aparece || (capa.tipo !== "puntos" && capa.tipo !== "marcas")) continue;
+      capa.puntos.forEach((p, i) => {
+        const [qx, qy] = this._aPantalla(p.x, p.y);
+        const d = Math.hypot(qx - px, qy - py);
+        if (d < distMejor) { distMejor = d; mejor = capa.aparece[i]; }
+      });
+    }
+    if (mejor !== null) return mejor;
+    const [wx] = this._aMundo(px, py);
+    for (const capa of this.capas) {
+      if (!capa.aparece) continue;
+      const franjas = capa.rectangulos ?? capa.trapecios ?? capa.parabolas;
+      const i = franjas?.findIndex((f) => wx >= Math.min(f.x0, f.x1) && wx <= Math.max(f.x0, f.x1));
+      if (i >= 0) return capa.aparece[i];
+    }
+    return null;
+  }
+
   _conectar() {
     const c = this.canvas;
     c.tabIndex = 0;
@@ -296,9 +327,16 @@ export class Plano {
 
     const soltar = (e) => {
       if (!arrastrando) return;
+      const inicio = arrastrando;
       arrastrando = null;
       c.classList.remove("arrastrando");
       this._pedirRemuestreo();
+      // Un clic (casi sin mover) con un paso elegido pasa a ese elemento.
+      if (e.type !== "pointerup" || this.paso === null || !this.alElegir) return;
+      const [px, py] = this._posicion(e);
+      if (Math.hypot(px - inicio.x, py - inicio.y) >= UMBRAL_CLIC) return;
+      const k = this.indiceEn(px, py);
+      if (k !== null) this.alElegir(k);
     };
     c.addEventListener("pointerup", soltar);
     c.addEventListener("pointercancel", soltar);

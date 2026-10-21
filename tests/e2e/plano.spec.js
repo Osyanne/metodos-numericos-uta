@@ -298,3 +298,44 @@ test("mostrar y limpiar descartan el paso elegido", async ({ page }) => {
   });
   expect(r).toEqual({ trasMostrar: { igual: true, paso: null }, trasLimpiar: null });
 });
+
+test("indiceEn y el clic eligen la fila del elemento bajo el puntero", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { Plano } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    canvas.id = "lienzoClic";
+    caja.append(canvas);
+    document.body.append(caja);
+    window.elegidos = [];
+    window.planoPrueba = new Plano(canvas, { alElegir: (k) => window.elegidos.push(k) });
+    window.planoPrueba.mostrar([
+      { tipo: "rectangulos", nombre: "r", rectangulos: [{ x0: 0, x1: 1, y: 1 }, { x0: 1, x1: 2, y: 2 }], aparece: [0, 1] },
+      { tipo: "marcas", nombre: "m", puntos: [{ x: 0.5, y: 1 }, { x: 1.5, y: 2 }], aparece: [0, 1] },
+    ], null, {}, { animar: false });
+  });
+  const indice = (p) => page.evaluate(([px, py]) => window.planoPrueba.indiceEn(px, py), p);
+  const pantalla = (x, y) => page.evaluate(([x, y]) => window.planoPrueba._aPantalla(x, y), [x, y]);
+  expect(await indice(await pantalla(1.5, 2))).toBe(1);   // sobre la marca
+  expect(await indice(await pantalla(0.2, 0.1))).toBe(0); // dentro del rectangulo 0
+  expect(await indice(await pantalla(5, 5))).toBeNull();  // lejos de todo
+
+  const [px, py] = await pantalla(1.5, 2);
+  await page.locator("#lienzoClic").scrollIntoViewIfNeeded();
+  const caja = await page.locator("#lienzoClic").boundingBox();
+  const x = caja.x + px, y = caja.y + py;
+  // sin paso elegido el clic no elige nada
+  await page.mouse.click(x, y);
+  expect(await page.evaluate(() => window.elegidos)).toEqual([]);
+  await page.evaluate(() => window.planoPrueba.marcarPaso(0));
+  await page.mouse.click(x, y);
+  expect(await page.evaluate(() => window.elegidos)).toEqual([1]);
+  // un arrastre de 40 px no elige
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 40, y, { steps: 5 });
+  await page.mouse.up();
+  expect(await page.evaluate(() => window.elegidos)).toEqual([1]);
+});
