@@ -18,17 +18,28 @@ async function relojDetenido(page) {
   await page.clock.pauseAt(new Date("2026-01-01T00:00:01"));
 }
 
-// Un ejercicio por método; k = 1, salvo en Interpolación y Punto Medio (k = 0).
+// Un ejercicio por método más las variantes con su propia sustitución; `k` es
+// cuántos pasos se avanza desde la fila 0 (Interpolación de Newton adelante y
+// atrás se miran en k = 2, donde la diferencia no está en la fila elegida).
 const EJERCICIOS = [
   ["newton-raphson", "newton-clasico", 1],
   ["von-mises", "von-mises-docente", 1],
   ["interpolacion-newton", "interpolacion-newton-docente", 0],
+  ["interpolacion-newton", "interpolacion-newton-adelante", 2],
+  ["interpolacion-newton", "interpolacion-newton-atras", 2],
   ["interpolacion-lagrange", "lagrange-docente", 1],
   ["punto-medio", "punto-medio-docente", 0],
   ["trapecio", "trapecio-docente", 1],
   ["simpson", "simpson-docente", 1],
   ["runge-kutta", "runge-kutta-escalar", 1],
+  ["runge-kutta", "runge-kutta-heun", 1],
+  ["runge-kutta", "runge-kutta-sistema", 1],
 ];
+
+async function irAlPaso(page, k) {
+  await page.locator("#paso-primero").click();
+  for (let i = 0; i < k; i++) await page.locator("#paso-siguiente").click();
+}
 
 test.describe("recorrido", () => {
   test("al resolver queda en la última iteración", async ({ page }) => {
@@ -357,11 +368,11 @@ test.describe("recorrido", () => {
   test("cada método muestra su sustitución con resultado", async ({ page }) => {
     for (const [slug, preset, k] of EJERCICIOS) {
       await resolver(page, slug, preset);
-      await page.locator("#paso-primero").click();
-      if (k === 1) await page.locator("#paso-siguiente").click();
-      await expect(
-        page.locator(`#formula-datos math[data-sustitucion="${slug}"]`), slug,
-      ).toBeVisible();
+      await irAlPaso(page, k);
+      const s = page.locator(`#formula-datos math[data-sustitucion="${slug}"]`);
+      await expect(s, preset).toBeVisible();
+      // Una clave mal escrita deja "—" en lugar del número.
+      await expect(s, preset).not.toContainText("—");
     }
   });
 
@@ -375,7 +386,69 @@ test.describe("recorrido", () => {
     await expect(s).toContainText("0.100000"); // h
     await expect(s).toContainText("1.100000"); // k2
     await expect(s).toContainText("1.210500"); // k4
+    // La y es la de la fila 0 (1.000000); la de la fila 1 es el resultado.
+    await expect(s).not.toContainText("1.110342");
     await expect(page.locator("#formula-datos")).toContainText("En el paso 1:");
+  });
+
+  test("Runge-Kutta de orden 2 usa h/2 y solo k₁ y k₂", async ({ page }) => {
+    await resolver(page, "runge-kutta", "runge-kutta-heun");
+    await irAlPaso(page, 1);
+    const s = page.locator('#formula-datos math[data-sustitucion="runge-kutta"]');
+    await expect(s).toContainText("0.1000002"); // h/2
+    await expect(s).toContainText("1.100000"); // k2
+    await expect(s).not.toContainText("1.105000"); // la y de la fila 1
+    await expect(s.locator("mtr")).toHaveCount(2);
+  });
+
+  test("en un sistema cada componente lleva su índice y el paso", async ({ page }) => {
+    await resolver(page, "runge-kutta", "runge-kutta-sistema");
+    await irAlPaso(page, 1);
+    const s = page.locator('#formula-datos math[data-sustitucion="runge-kutta"]');
+    await expect(s).toContainText("y1,1=");
+    await expect(s).toContainText("y2,1=");
+  });
+
+  test("un número negativo va entre paréntesis con el signo pegado", async ({ page }) => {
+    await resolver(page);
+    await page.locator("#paso-primero").click();
+    // El signo y la cifra forman su propio grupo, no una resta entre paréntesis.
+    const signo = page.locator(
+      '#formula-datos math[data-sustitucion="von-mises"] mrow',
+      { hasText: /^−1\.36787944$/ },
+    );
+    await expect(signo.first()).toBeVisible();
+  });
+
+  test("Interpolación de Newton hacia adelante explica a₂ desde la fila 0", async ({ page }) => {
+    await resolver(page, "interpolacion-newton", "interpolacion-newton-adelante");
+    await irAlPaso(page, 2);
+    const s = page.locator('#formula-datos math[data-sustitucion="interpolacion-newton"]');
+    const texto = (await s.textContent()).replace(/\s+/g, "");
+    expect(texto).toContain("Δ");
+    expect(texto).toContain("2!");
+    expect(texto).toContain("(2.00000000−1.00000000)"); // x de las filas 1 y 0
+    // Δ²y₀ sale de la fila 0 (2), no el coeficiente ya dividido (1).
+    expect(texto).not.toMatch(/^a2=[\d.]+$/);
+    expect(texto).not.toContain("=1.00000000");
+  });
+
+  test("Interpolación de Newton hacia atrás usa ∇ᵏ de la fila elegida", async ({ page }) => {
+    await resolver(page, "interpolacion-newton", "interpolacion-newton-atras");
+    await irAlPaso(page, 2);
+    const s = page.locator('#formula-datos math[data-sustitucion="interpolacion-newton"]');
+    const texto = (await s.textContent()).replace(/\s+/g, "");
+    expect(texto).toContain("∇");
+    expect(texto).toContain("4.00000000"); // ∇²y de la fila 2
+    expect(texto).toContain("(1.00000000−0.00000000)");
+  });
+
+  test("Interpolación de Newton con divididas sigue mostrando a_k", async ({ page }) => {
+    await resolver(page, "interpolacion-newton", "interpolacion-newton-docente");
+    await irAlPaso(page, 1);
+    const s = page.locator('#formula-datos math[data-sustitucion="interpolacion-newton"]');
+    const texto = (await s.textContent()).replace(/\s+/g, "");
+    expect(texto).toBe("a1=(−2.00000000)");
   });
 
   test("mover Decimales parado en k reescribe la franja y la sustitución", async ({ page }) => {
@@ -416,14 +489,13 @@ test.describe("recorrido", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     for (const [slug, preset, k] of EJERCICIOS) {
       await resolver(page, slug, preset);
-      await page.locator("#paso-primero").click();
-      if (k === 1) await page.locator("#paso-siguiente").click();
+      await irAlPaso(page, k);
       const caja = page.locator("#formula-datos");
-      await expect(caja.locator("math"), slug).toBeVisible();
+      await expect(caja.locator("math"), preset).toBeVisible();
       const sobra = await caja.evaluate((c) => c.scrollWidth - c.clientWidth);
-      expect(sobra, slug).toBeLessThanOrEqual(0);
+      expect(sobra, preset).toBeLessThanOrEqual(0);
       const pagina = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-      expect(pagina, slug).toBeLessThanOrEqual(0);
+      expect(pagina, preset).toBeLessThanOrEqual(0);
     }
   });
 });

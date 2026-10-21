@@ -132,7 +132,7 @@ function mostrarSustitucion(k) {
 }
 
 // Cada vez que cambia la fila k (null: no hay recorrido) se enteran el plano,
-// la tabla y la franja. `porUsuario` es false al cargar un resultado: ahi la
+// la tabla, la franja y la formula sustituida. `porUsuario` es false al cargar un resultado: ahi la
 // animacion de entrada del plano tiene que seguir.
 let terminoVigente = 0;
 function alCambiar(k, porUsuario) {
@@ -548,7 +548,7 @@ $("#decimales").addEventListener("input", () => {
   $("#decimales-valor").textContent = $("#decimales").value;
   if (!estado.resultado) return;
   formatearResultado();
-  // El recorrido sigue donde estaba: solo se reescriben la tabla y la franja.
+  // El recorrido sigue donde estaba: se reescriben la tabla, la franja y la sustitucion.
   if (recorrido.activo) mostrarFila(recorrido.k);
 });
 

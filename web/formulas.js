@@ -152,7 +152,8 @@ export function formulaPara(slug, valorDe) {
 function numero(valor, fmt) {
   const texto = fmt(valor);
   if (texto === "—") return "<mtext>—</mtext>";
-  if (texto.startsWith("-")) return fila(mo("("), mo("−"), mn(texto.slice(1)), mo(")"));
+  // El signo y la cifra van en su propio grupo: sueltos se dibujan como resta.
+  if (texto.startsWith("-")) return fila(mo("("), fila(mo("−"), mn(texto.slice(1))), mo(")"));
   return mn(texto);
 }
 
@@ -182,13 +183,43 @@ function rungeKutta(orden) {
         ...js.flatMap((j, p) => (p ? [mo("+"), termino(j)] : [termino(j)])),
         ...(g === grupos.length - 1 ? [mo(")")] : []),
       ));
+      // "y1" es la componente 1 de y: se escribe y con subindice (1, paso).
+      const [, base, indice] = c.match(/^(.*?)(\d*)$/);
+      const subindice = indice ? fila(mn(indice), mo(","), mn(it.n)) : mn(it.n);
       return [
-        igual(sub(mi(c), mn(it.n)), num(ant.values[c]), mo("+"),
+        igual(sub(mi(base), subindice), num(ant.values[c]), mo("+"),
           frac(num(it.detalle?.h), mn(orden === 2 ? "2" : "6")), por),
         ...renglonesK,
       ];
     });
   };
+}
+
+// Con puntos equiespaciados el coeficiente sale de la tabla de diferencias:
+// a_k = Δᵏy₀ / (k!·hᵏ) hacia adelante (Δᵏy₀ esta en la fila 0) y
+// a_k = ∇ᵏy_k / (k!·hᵏ) hacia atras (en la fila k). El nucleo no da h: se
+// escribe (x₁ − x₀) con las x de las filas 1 y 0. Con divididas, a_k es el
+// coeficiente tal cual.
+function interpolacionNewton({ filas, it, k, res, num }) {
+  const a = sub(mi("a"), mn(k));
+  const variante = res.result?.variante_usada;
+  if (variante !== "adelante" && variante !== "atras") {
+    return [igual(a, num(res.result?.coeficientes?.[k]))];
+  }
+  if (k === 0) return [igual(a, sub(mi("y"), mn("0")), num(filas[0].values.y))];
+
+  const adelante = variante === "adelante";
+  const diferencia = adelante ? "Δ" : "∇";
+  const clave = adelante ? `delta${k}` : `nabla${k}`;
+  const fuente = adelante ? filas[0] : it;
+  const y = sub(mi("y"), mn(adelante ? "0" : k));
+  const potencia = (base) => `<msup>${base}${mn(k)}</msup>`;
+  const factorial = fila(mn(k), mo("!"));
+  const hHecha = paren(num(filas[1]?.values.x), mo("−"), num(filas[0]?.values.x));
+  return [
+    igual(a, frac(fila(potencia(mi(diferencia)), y), fila(factorial, por, potencia(h)))),
+    fila(mo("="), frac(num(fuente.values[clave]), fila(factorial, por, potencia(hHecha)))),
+  ];
 }
 
 const SUSTITUCIONES = {
@@ -199,9 +230,7 @@ const SUSTITUCIONES = {
     igual(fila(fPrima, paren(x0)), c.num(c.it.detalle?.dfx0)),
   ],
 
-  "interpolacion-newton": ({ it, k, res, num }) => [
-    igual(sub(mi("a"), mn(it.n)), num(res.result?.coeficientes?.[k])),
-  ],
+  "interpolacion-newton": interpolacionNewton,
 
   "interpolacion-lagrange": ({ it, num }) => [
     igual(
@@ -242,7 +271,7 @@ export function sustitucionPara(slug, filas, k, resultado, fmt) {
   const hacer = it && porMetodo(slug, resultado);
   if (!hacer) return null;
   const renglones = hacer({
-    it, ant: filas[k - 1], k, res: resultado, num: (v) => numero(v, fmt),
+    filas, it, ant: filas[k - 1], k, res: resultado, num: (v) => numero(v, fmt),
   });
   return `<math display="block" data-sustitucion="${slug}">${tabla(renglones)}</math>`;
 }
