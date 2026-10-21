@@ -339,3 +339,86 @@ test("indiceEn y el clic eligen la fila del elemento bajo el puntero", async ({ 
   await page.mouse.up();
   expect(await page.evaluate(() => window.elegidos)).toEqual([1]);
 });
+
+// Plano de prueba con un lienzo propio y los elegidos acumulados en window.
+async function planoDePrueba(page, capas) {
+  await page.goto("/");
+  await page.evaluate(async (capas) => {
+    const { Plano } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    canvas.id = "lienzoClic";
+    caja.append(canvas);
+    document.body.append(caja);
+    window.elegidos = [];
+    window.planoPrueba = new Plano(canvas, { alElegir: (k) => window.elegidos.push(k) });
+    window.planoPrueba.mostrar(capas, null, {}, { animar: false });
+    window.planoPrueba.vista = { x0: -2, x1: 2, y0: -2, y1: 2 };
+    window.planoPrueba.marcarPaso(0);
+  }, capas);
+}
+
+test("indiceEn ignora los puntos que no son finitos", async ({ page }) => {
+  // Las filas de un metodo que diverge llegan como null y no deben quedar
+  // elegibles en el origen.
+  await planoDePrueba(page, [
+    { tipo: "marcas", nombre: "m", puntos: [{ x: null, y: null }, { x: 1, y: 1 }], aparece: [0, 1] },
+  ]);
+  const k = await page.evaluate(() => {
+    const [px, py] = window.planoPrueba._aPantalla(0, 0);
+    return window.planoPrueba.indiceEn(px, py);
+  });
+  expect(k).toBeNull();
+});
+
+test("solo el boton principal elige al hacer clic", async ({ page }) => {
+  await planoDePrueba(page, [
+    { tipo: "marcas", nombre: "m", puntos: [{ x: 1, y: 1 }], aparece: [0] },
+  ]);
+  const [px, py] = await page.evaluate(() => window.planoPrueba._aPantalla(1, 1));
+  await page.locator("#lienzoClic").scrollIntoViewIfNeeded();
+  const caja = await page.locator("#lienzoClic").boundingBox();
+  await page.mouse.click(caja.x + px, caja.y + py, { button: "right" });
+  expect(await page.evaluate(() => window.elegidos)).toEqual([]);
+  await page.mouse.click(caja.x + px, caja.y + py);
+  expect(await page.evaluate(() => window.elegidos)).toEqual([0]);
+  // el del medio va al final: en Chromium deja el puntero en modo scroll
+  await page.mouse.click(caja.x + px, caja.y + py, { button: "middle" });
+  expect(await page.evaluate(() => window.elegidos)).toEqual([0]);
+});
+
+test("los vertices de una curva con aparece se pueden elegir", async ({ page }) => {
+  await planoDePrueba(page, [
+    { tipo: "curva", nombre: "y", xs: [-1, 0, 1], ys: [-1, 0, 1], aparece: [0, 1, 2] },
+  ]);
+  const r = await page.evaluate(() => {
+    const p = window.planoPrueba;
+    return [
+      p.indiceEn(...p._aPantalla(1, 1)),
+      p.indiceEn(...p._aPantalla(-1, -1)),
+      p.indiceEn(...p._aPantalla(-1.8, 1.8)),
+    ];
+  });
+  expect(r).toEqual([2, 0, null]);
+});
+
+test("cortarAnimacion termina la animacion y marcarPaso no la toca", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/");
+  const r = await page.evaluate(async () => {
+    const { Plano } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    caja.append(canvas);
+    document.body.append(caja);
+    const plano = new Plano(canvas);
+    plano.mostrar([{ tipo: "curva", nombre: "c", xs: [0, 1, 2], ys: [0, 1, 4], aparece: [0, 1, 2] }]);
+    plano.marcarPaso(2);
+    const sigue = plano.animacion.progreso < 1;
+    plano.cortarAnimacion();
+    return { sigue, corta: plano.animacion.progreso === 1 && plano.animacion.rafId === null };
+  });
+  expect(r).toEqual({ sigue: true, corta: true });
+});

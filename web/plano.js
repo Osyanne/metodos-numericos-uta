@@ -48,6 +48,8 @@ export class Plano {
     this.cursor = null;
     // Fila elegida del recorrido (o null: se dibuja todo). Ver marcarPaso.
     this.paso = null;
+    // Capa extra encima de todas, sin `aparece` (el termino de Lagrange). Ver ponerTermino.
+    this.termino = null;
     this.temporizador = null;
     this.versionMuestreo = 0;
     // Estado de la animacion en curso. `progreso` va de 0 a 1: al llegar a 1
@@ -69,6 +71,7 @@ export class Plano {
   mostrar(capas, resample = null, etiquetas = {}, opciones = {}) {
     this._invalidarRemuestreo();
     this.paso = null;
+    this.termino = null;
     this.capas = capas.map((c, i) => ({ color: COLORES[i % COLORES.length], ...c }));
     this.resample = resample;
     this.etiquetas = { x: "x", y: "y", ...etiquetas };
@@ -80,6 +83,12 @@ export class Plano {
   // resaltado y lo posterior tenue. null vuelve a dibujar todo como siempre.
   marcarPaso(k) {
     this.paso = k;
+    this._pintar();
+  }
+
+  // Capa extra que se dibuja encima de las demas; null la quita.
+  ponerTermino(capa) {
+    this.termino = capa ? { color: "--iteraciones", ...capa } : null;
     this._pintar();
   }
 
@@ -128,6 +137,12 @@ export class Plano {
     this.animacion.rafId = requestAnimationFrame(paso);
   }
 
+  // Corta la animacion de entrada: la llama quien mueve el paso a mano.
+  cortarAnimacion() {
+    this._cancelarAnimacion();
+    this._pintar();
+  }
+
   _cancelarAnimacion() {
     if (this.animacion.rafId != null) {
       cancelAnimationFrame(this.animacion.rafId);
@@ -139,6 +154,7 @@ export class Plano {
   limpiar() {
     this._invalidarRemuestreo();
     this.paso = null;
+    this.termino = null;
     this.capas = [];
     this.resample = null;
     this.cursor = null;
@@ -240,8 +256,14 @@ export class Plano {
     let mejor = null;
     let distMejor = RADIO_ELEGIR;
     for (const capa of this.capas) {
-      if (!capa.aparece || (capa.tipo !== "puntos" && capa.tipo !== "marcas")) continue;
-      capa.puntos.forEach((p, i) => {
+      if (!capa.aparece) continue;
+      // Puntos, marcas y los vertices de una curva con un punto por fila (EDO).
+      const puntos = capa.tipo === "curva"
+        ? capa.xs.map((x, i) => ({ x, y: capa.ys[i] }))
+        : capa.tipo === "puntos" || capa.tipo === "marcas" ? capa.puntos : [];
+      puntos.forEach((p, i) => {
+        // Un valor que no es finito (metodo que diverge) no tiene lugar en el plano.
+        if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
         const [qx, qy] = this._aPantalla(p.x, p.y);
         const d = Math.hypot(qx - px, qy - py);
         if (d < distMejor) { distMejor = d; mejor = capa.aparece[i]; }
@@ -331,8 +353,9 @@ export class Plano {
       arrastrando = null;
       c.classList.remove("arrastrando");
       this._pedirRemuestreo();
-      // Un clic (casi sin mover) con un paso elegido pasa a ese elemento.
-      if (e.type !== "pointerup" || this.paso === null || !this.alElegir) return;
+      // Un clic (casi sin mover) con un paso elegido pasa a ese elemento. Solo
+      // el boton principal: el derecho abre el menu y el del medio hace scroll.
+      if (e.type !== "pointerup" || e.button !== 0 || this.paso === null || !this.alElegir) return;
       const [px, py] = this._posicion(e);
       if (Math.hypot(px - inicio.x, py - inicio.y) >= UMBRAL_CLIC) return;
       const k = this.indiceEn(px, py);
@@ -465,6 +488,7 @@ export class Plano {
       else if (capa.tipo === "puntos") this._puntos(capa);
       else if (capa.tipo === "marcas") this._marcas(capa);
     }
+    if (this.termino) this._curva(this.termino);
     this._coordenadas();
   }
 
@@ -975,7 +999,8 @@ export function capasDesdePlot(plot, filas = []) {
       });
       if (segmentos.length) {
         capas.push({
-          tipo: "segmentos", nombre: "tangentes", color: "--iteraciones",
+          // Sin `nombre`: no entra en la leyenda, el punto de cada fila ya la explica.
+          tipo: "segmentos", color: "--iteraciones",
           segmentos, ...aparece(segmentos.length, (i) => filaDe[i]),
         });
       }
