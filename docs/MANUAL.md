@@ -185,20 +185,23 @@ que los de la tabla porque los calcula el mismo codigo.
 
 ## 5. Recorrer las iteraciones
 
-![Recorrido en la iteracion 3 de Von Mises](capturas/04-recorrido.png)
+![Recorrido en la iteracion 1 de Von Mises](capturas/04-recorrido.png)
+
+La captura esta acercada a la raiz para que se vea el elemento de la
+iteracion 1, resaltado, y los de las filas siguientes, tenues.
 
 Despues de resolver, el aplicativo no solo muestra el final: se puede ir paso a
 paso, como en el pizarron. Arriba del plano aparece una barra con cinco botones
 y un deslizador. Al resolver queda en la **ultima fila**; para volver a mirar
-desde el principio se pulsa **Inicio**.
+desde el principio se pulsa **Primera fila**.
 
 | Control | Que hace |
 |---|---|
-| **Inicio** (⏮) | Va a la primera fila. |
-| **←** (◀) | Va a la fila anterior. |
-| **Reproducir** (▶) | Avanza solo, fila por fila, hasta el final y se detiene. Si ya estaba en la ultima, empieza desde la primera. El mismo boton pasa a **Pausar** (⏸) mientras corre. |
-| **→** (▶|) | Va a la fila siguiente. |
-| **Fin** (⏭) | Va a la ultima fila. |
+| **Primera fila** (triangulo hacia la izquierda con una barra) | Va a la primera fila. |
+| **Fila anterior** (doble triangulo hacia la izquierda) | Va a la fila anterior. |
+| **Reproducir** (triangulo hacia la derecha) | Avanza solo, fila por fila, hasta el final y se detiene. Si ya estaba en la ultima, empieza desde la primera. El mismo boton pasa a **Pausar** (dos barras verticales) mientras corre. |
+| **Fila siguiente** (doble triangulo hacia la derecha) | Va a la fila siguiente. |
+| **Ultima fila** (triangulo hacia la derecha con una barra) | Va a la ultima fila. |
 | **Deslizador** | Se arrastra hasta la fila que se quiera. Con el teclado: ← y → de a una fila, `Inicio` y `Fin` a los extremos. |
 
 A la derecha del deslizador un rotulo dice donde se esta, con la misma palabra y

@@ -692,6 +692,12 @@ output { font-family: var(--mono); color: var(--accent); }
   border: 1px solid var(--rule);
   border-radius: 8px;
 }
+.fila-actual dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
 .fila-actual dt {
   font-family: var(--mono);
   font-size: 10.5px;
@@ -702,7 +708,7 @@ output { font-family: var(--mono); color: var(--accent); }
 .fila-actual dd {
   min-width: 0;
   overflow-wrap: anywhere;
-  margin: 0 8px 0 0;
+  margin: 0;
   font-family: var(--mono);
   font-size: 13px;
   font-variant-numeric: tabular-nums;

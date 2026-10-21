@@ -101,7 +101,10 @@ export function dibujarFilaActual(contenedor, resultado, k, decimales) {
     dt.textContent = etiqueta;
     const dd = document.createElement("dd");
     dd.textContent = valor;
-    lista.append(dt, dd);
+    // Cada par en su <div>: el renglon se parte entre pares, no entre etiqueta y valor.
+    const par = document.createElement("div");
+    par.append(dt, dd);
+    lista.append(par);
   }
   contenedor.append(lista);
 }

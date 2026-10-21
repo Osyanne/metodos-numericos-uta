@@ -1,6 +1,6 @@
 // Formula de cada metodo, en MathML: el navegador la dibuja solo, sin
-// librerias ni internet. Es texto fijo, con la notacion de clase
-// (docs/INFORME.md): aca no entra ningun dato del usuario ni se calcula nada.
+// librerias ni internet. Usa la notacion de clase (docs/INFORME.md) y solo
+// coloca numeros ya calculados por el nucleo: aca no se calcula nada.
 //
 // Un metodo nuevo suma aca su formula. Si no la tiene, la tarjeta se oculta.
 
@@ -161,9 +161,15 @@ const por = mo("·");
 const rotulo = (texto) => `<mtext>${texto}</mtext>`;
 const igual = (izquierda, ...derecha) => fila(izquierda, mo("="), ...derecha);
 
-// `dfx` es la clave de `detalle` con la derivada que uso esa fila.
-const raiz = (dfx) => ({ it: { values: v, detalle }, num }) =>
-  [igual(xSig, num(v.xi), mo("−"), frac(num(v.fxi), num(detalle?.[dfx])))];
+// `dfx` es la clave de `detalle` con la derivada que uso esa fila. En una raiz
+// exacta (f(x) = 0) el nucleo no la calcula: la fila no avanza, sin division.
+const raiz = (dfx) => ({ it, num }) => {
+  const { values: v, detalle } = it;
+  if (detalle?.[dfx] === undefined) {
+    return [igual(f(sub(x, mn(it.n))), num(v.fxi)), rotulo("raíz exacta: el método no avanza")];
+  }
+  return [igual(xSig, num(v.xi), mo("−"), frac(num(v.fxi), num(detalle[dfx])))];
+};
 
 // Una linea por componente (un sistema tiene varias) y el corchete partido en
 // dos para que entre en la tarjeta de un celular.
@@ -228,7 +234,7 @@ const SUSTITUCIONES = {
 
   "von-mises": (c) => [
     ...raiz("dfx0")(c),
-    igual(fila(fPrima, paren(x0)), c.num(c.it.detalle?.dfx0)),
+    ...(c.it.detalle?.dfx0 === undefined ? [] : [igual(fila(fPrima, paren(x0)), c.num(c.it.detalle.dfx0))]),
   ],
 
   "interpolacion-newton": interpolacionNewton,

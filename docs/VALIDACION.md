@@ -7,14 +7,14 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual: **339 pruebas de Python**, **170 de navegador** y
+Verificacion local actual: **339 pruebas de Python**, **172 de navegador** y
 **5 del sitio de GitHub Pages**, todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
 tenia 275 y 39 respectivamente. En el total de navegador no entra la prueba de
 las capturas del manual, que solo corre a pedido (`CAPTURAS=1`).
 
 ```bash
 pytest --ignore=tests/e2e     # 339
-npx playwright test           # 170
+npx playwright test           # 172
 npx playwright test --config playwright.pages.config.js   # 5, necesita internet
 ```
 
@@ -211,6 +211,13 @@ fondo de cada familia. Al medirlos, el texto tenue del tema oscuro no llegaba a
 4.41) y se aclaro de `#8a90a6` a `#9096ab`, con el mismo tono. Los dos bloques
 del tema oscuro (el del boton y el del sistema) son iguales, y la medicion lo
 comprueba.
+
+Una excepcion deliberada: lo tenue del recorrido (las filas que todavia no
+llegaron) se dibuja con el color de las iteraciones al 25% sobre el fondo del
+plano, y eso da solo 1.37:1 en el tema claro y 1.65:1 en el oscuro. Se midio y
+se acepta: son elementos de contexto, no texto ni datos que haya que leer, el
+elemento de la fila elegida va a plena intensidad (3.87:1 y 7.67:1) y el 25% lo
+fija el diseno del recorrido.
 
 | Tema | Texto (minimo 4.5:1) | Bordes de controles y curvas del plano (minimo 3:1) |
 |---|---|---|

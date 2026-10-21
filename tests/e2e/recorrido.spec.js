@@ -335,7 +335,30 @@ test.describe("recorrido", () => {
     await expect(page.locator("#resumen .estado")).toBeVisible();
     await expect(page.locator("#tabla tbody tr")).toHaveCount(1);
     await expect(page.locator("#recorrido")).toBeHidden();
+    // Raíz exacta: el núcleo no da f′, así que no hay división ni guion.
+    const datos = page.locator("#formula-datos");
+    await expect(datos).toBeVisible();
+    await expect(datos).toContainText("raíz exacta");
+    await expect(datos).not.toContainText("—");
     expect(errores).toEqual([]);
+  });
+
+  test("Von Mises que cae en la raíz exacta no muestra guiones", async ({ page }) => {
+    await page.goto("/");
+    await esperarDesplegable(page);
+    await elegirMetodo(page, "von-mises");
+    await page.locator("#campo-fx").fill("2*x - 4");
+    await page.locator("#campo-x0").fill("0");
+    await page.locator("#resolver").click();
+    await expect(page.locator("#resumen .estado")).toBeVisible();
+    const datos = page.locator("#formula-datos");
+    await expect(datos).toContainText("raíz exacta");
+    await expect(datos).not.toContainText("—");
+    // En la fila 0 la derivada sí se conoce: f′(x₀) = 2.
+    await page.locator("#paso-primero").click();
+    await expect(datos).toContainText("f′(x0)");
+    await expect(datos).toContainText("2.000000");
+    await expect(datos).not.toContainText("raíz exacta");
   });
 
   test("un método que diverge se recorre sin errores", async ({ page }) => {
@@ -497,6 +520,24 @@ test.describe("recorrido", () => {
       expect(sobra, preset).toBeLessThanOrEqual(0);
       const pagina = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(pagina, preset).toBeLessThanOrEqual(0);
+    }
+  });
+
+  test("a 375 px cada etiqueta de la franja queda junto a su valor", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const [slug, preset, k] of [
+      ["interpolacion-lagrange", "lagrange-docente", 3],
+      ["von-mises", "von-mises-docente", 1],
+    ]) {
+      await resolver(page, slug, preset);
+      await irAlPaso(page, k);
+      await expect(page.locator("#fila-actual dt").first(), preset).toBeVisible();
+      const sueltos = await page.evaluate(() =>
+        [...document.querySelectorAll("#fila-actual dt")].filter(
+          // Alineados por la linea base, los topes difieren un par de pixeles; un renglon aparte, mas de 12.
+          (dt) => Math.abs(dt.getBoundingClientRect().top - dt.nextElementSibling.getBoundingClientRect().top) > 4,
+        ).map((dt) => dt.textContent));
+      expect(sueltos, preset).toEqual([]);
     }
   });
 });
