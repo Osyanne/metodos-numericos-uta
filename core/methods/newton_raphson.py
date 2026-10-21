@@ -22,7 +22,7 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
     x0 = leer_numero(params, "x0", "el valor inicial x0")
     derivada, nota = derivada_de(f, params)
 
-    def siguiente(xi: float, fxi: float) -> float:
+    def siguiente(xi: float, fxi: float) -> tuple[float, dict[str, float]]:
         pendiente = derivada.evaluar(x=xi)
         if pendiente == 0.0:
             raise MethodError(
@@ -31,7 +31,7 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
                 f"continuar desde ahi; probar con otro valor inicial, o usar Von "
                 f"Mises, que congela la derivada en el punto inicial."
             )
-        return xi - fxi / pendiente
+        return xi - fxi / pendiente, {"dfxi": pendiente}
 
     return resolver(
         metodo=SLUG,

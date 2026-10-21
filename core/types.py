@@ -101,6 +101,9 @@ class Iteration:
     n: int
     values: dict[str, float]
     error: float | None = None
+    # Numeros que explican la fila sin ser columnas (la derivada usada, los k
+    # de Runge-Kutta). El recorrido paso a paso los dibuja; la tabla no.
+    detalle: dict[str, float] = field(default_factory=dict)
 
 
 class PlotKind(str, Enum):

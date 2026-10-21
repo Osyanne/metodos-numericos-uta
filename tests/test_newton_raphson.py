@@ -185,3 +185,17 @@ def test_entrega_la_grafica_con_datos_de_remuestreo():
     assert plot.resample is not None
     assert plot.resample.expression == "x**3 - 2*x - 5"
     assert plot.series["root"]["x"] == pytest.approx(RAIZ_CLASICA, abs=1e-6)
+
+
+# ---------- detalle ----------
+
+def test_cada_fila_lleva_la_derivada_que_uso():
+    resultado = resolver({"fx": "x^3 - 2x - 5", "x0": 2})
+
+    assert resultado.iterations[0].detalle == {"dfxi": pytest.approx(10.0)}
+
+
+def test_una_fila_de_raiz_exacta_no_lleva_detalle():
+    resultado = resolver({"fx": "x^2 - 4", "x0": 2.0})
+
+    assert resultado.iterations[0].detalle == {}

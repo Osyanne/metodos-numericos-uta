@@ -14,6 +14,13 @@ export function formatear(valor, decimales) {
   return valor.toFixed(decimales);
 }
 
+// Texto de una columna de la fila: las de texto tal cual, las numericas
+// redondeadas al mostrar. La usan la tabla y la franja de la fila actual.
+const textoDe = (columna, it, decimales) => {
+  const valor = it.values[columna.key];
+  return columna.numeric === false ? (valor ?? "—") : formatear(valor, decimales);
+};
+
 export function dibujarTabla(contenedor, resultado, decimales) {
   contenedor.innerHTML = "";
   if (!resultado?.iterations?.length) {
@@ -34,8 +41,10 @@ export function dibujarTabla(contenedor, resultado, decimales) {
   thead.append(filaCab);
 
   const tbody = document.createElement("tbody");
-  for (const it of resultado.iterations) {
+  for (const [indice, it] of resultado.iterations.entries()) {
     const tr = document.createElement("tr");
+    // Posicion de la fila: con ella un clic le dice al recorrido a donde ir.
+    tr.dataset.indice = indice;
 
     const tdN = document.createElement("td");
     tdN.className = "col-n";
@@ -44,10 +53,7 @@ export function dibujarTabla(contenedor, resultado, decimales) {
 
     for (const columna of resultado.columns) {
       const td = document.createElement("td");
-      const valor = it.values[columna.key];
-      td.textContent = columna.numeric === false
-        ? (valor ?? "—")
-        : formatear(valor, decimales);
+      td.textContent = textoDe(columna, it, decimales);
       tr.append(td);
     }
 
@@ -61,6 +67,46 @@ export function dibujarTabla(contenedor, resultado, decimales) {
 
   tabla.append(thead, tbody);
   contenedor.append(tabla);
+}
+
+// Resalta la fila k del recorrido (null: ninguna). Con `desplazar` la trae a la
+// vista; solo lo pide quien movio el paso: resolver o cambiar Decimales no
+// tienen que mover la pagina. Con la pestana cerrada la fila no tiene caja.
+export function marcarFila(contenedor, k, desplazar = false) {
+  for (const tr of contenedor.querySelectorAll("tr.actual")) {
+    tr.classList.remove("actual");
+    tr.removeAttribute("aria-current");
+  }
+  const tr = k === null ? null : contenedor.querySelector(`tr[data-indice="${k}"]`);
+  if (!tr) return;
+  tr.classList.add("actual");
+  tr.setAttribute("aria-current", "true");
+  if (desplazar) tr.scrollIntoView({ block: "nearest" });
+}
+
+// La fila k como pares columna/valor, con los mismos numeros y decimales que la
+// tabla. Va debajo del plano para leer la fila sin abrir la pestana.
+export function dibujarFilaActual(contenedor, resultado, k, decimales) {
+  contenedor.innerHTML = "";
+  const it = resultado?.iterations?.[k];
+  if (!it) return;
+  const lista = document.createElement("dl");
+  const pares = [
+    ["i", it.n],
+    ...resultado.columns.map((c) => [c.label, textoDe(c, it, decimales)]),
+    ["error", formatear(it.error, decimales)],
+  ];
+  for (const [etiqueta, valor] of pares) {
+    const dt = document.createElement("dt");
+    dt.textContent = etiqueta;
+    const dd = document.createElement("dd");
+    dd.textContent = valor;
+    // Cada par en su <div>: el renglon se parte entre pares, no entre etiqueta y valor.
+    const par = document.createElement("div");
+    par.append(dt, dd);
+    lista.append(par);
+  }
+  contenedor.append(lista);
 }
 
 // Claves que son conteos o etiquetas, no mediciones: mostrarlas con seis

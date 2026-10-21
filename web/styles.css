@@ -50,7 +50,7 @@
   --surface-2: #232731;
   --ink:       #e6e8ef;
   --ink-soft:  #b4b9c8;
-  --ink-faint: #8a90a6;
+  --ink-faint: #9096ab;
   --rule:      #2c313c;
   --rule-firm: #636a7e;
   --accent:    #afa9ec;
@@ -86,7 +86,7 @@
     --surface-2: #232731;
     --ink:       #e6e8ef;
     --ink-soft:  #b4b9c8;
-    --ink-faint: #8a90a6;
+    --ink-faint: #9096ab;
     --rule:      #2c313c;
     --rule-firm: #636a7e;
     --accent:    #afa9ec;
@@ -659,6 +659,62 @@ output { font-family: var(--mono); color: var(--accent); }
 #plano:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 #plano.arrastrando { cursor: grabbing; }
 
+/* ---------------------------------------------------------- recorrido */
+
+/* Barra para recorrer las filas: botones, deslizador y rotulo. En pantallas
+   angostas el deslizador pasa a su propio renglon. */
+.recorrido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.recorrido[hidden] { display: none; }
+.recorrido-botones { display: flex; gap: 6px; }
+.recorrido #paso { flex: 1 1 160px; min-width: 0; accent-color: var(--accent); }
+.recorrido-rotulo {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* La fila k fuera de la tabla: pares columna/valor en un renglon que se parte. */
+.fila-actual:empty { display: none; }
+.fila-actual dl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 18px;
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+.fila-actual dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.fila-actual dt {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.fila-actual dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
 /* ---------------------------------------------------------- tablas */
 
 .tabla-caja, #comparacion { overflow-x: auto; }
@@ -698,6 +754,9 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .iteraciones tbody tr:last-child td { border-bottom: none; }
 .iteraciones tbody tr:hover { background: var(--surface-2); }
+.iteraciones tbody tr[data-indice] { cursor: pointer; }
+.iteraciones tbody tr.actual td { background: var(--accent-bg); }
+.iteraciones tbody tr.actual td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 
 .col-n { text-align: left !important; color: var(--ink-faint); }
 .col-error { color: var(--warn); }
@@ -812,14 +871,16 @@ body { --accent-tinta: #ffffff; }
 
 /* ---------------------------------------------------------- formula */
 
-#formula { overflow-x: auto; }
-#formula math {
+#formula, #formula-datos { overflow-x: auto; }
+#formula math, #formula-datos math {
   margin: 0;
   text-align: left;
   font-size: 1.15em;
   color: var(--ink);
 }
-#formula mtd { padding: 3px 0; text-align: left; math-style: normal; }
+#formula mtd, #formula-datos mtd { padding: 3px 0; text-align: left; math-style: normal; }
+/* La sustitucion va debajo de la general, separada por una linea fina. */
+#formula-datos { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); }
 
 /* ---------------------------------------------------------- senales */
 
@@ -833,6 +894,11 @@ body { --accent-tinta: #ffffff; }
 /* Con colores forzados (contraste alto) el fondo y el borde los pone el
    sistema: sin esto la familia y el metodo marcados se ven iguales al resto. */
 @media (forced-colors: active) {
+  .iteraciones tbody tr.actual td {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
   .familia input:checked + .cara,
   .chip input:checked + .cara {
     forced-color-adjust: none;

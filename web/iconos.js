@@ -41,6 +41,14 @@ export const ICONOS = {
     '<path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/>',
   ),
   "player-play": svg('<path d="M7 4v16l13 -8z"/>'),
+  "player-skip-back": svg('<path d="M20 5v14l-12 -7z"/><path d="M4 5l0 14"/>'),
+  "player-track-prev": svg('<path d="M21 5v14l-8 -7z"/><path d="M10 5v14l-8 -7z"/>'),
+  "player-pause": svg(
+    '<path d="M6 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z"/>' +
+    '<path d="M14 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z"/>',
+  ),
+  "player-track-next": svg('<path d="M3 5v14l8 -7z"/><path d="M14 5v14l8 -7z"/>'),
+  "player-skip-forward": svg('<path d="M4 5v14l12 -7z"/><path d="M20 5l0 14"/>'),
   "circle-check": svg(
     '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 12l2 2l4 -4"/>',
   ),

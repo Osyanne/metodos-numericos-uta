@@ -83,7 +83,7 @@ Y abrir <http://127.0.0.1:8000>.
 pytest
 ```
 
-Tienen que dar **331 pruebas en verde**. Entre ellas hay cuatro que verifican
+Tienen que dar **339 pruebas en verde**. Entre ellas hay cuatro que verifican
 justamente la instalacion: que todo lo que el codigo importa este declarado en
 `pyproject.toml`, y que ningun archivo referenciado desde la interfaz falte en
 el repositorio. Las dos cosas pasan desapercibidas en la maquina donde se
@@ -91,7 +91,7 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **109 pruebas de interfaz** con Playwright, que
+Aparte de las de Python hay **172 pruebas de interfaz** con Playwright, que
 levantan el servidor de verdad y manejan la pantalla:
 
 ```bash

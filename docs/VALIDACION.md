@@ -7,13 +7,14 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual: **331 pruebas de Python**, **109 de navegador** y
+Verificacion local actual: **339 pruebas de Python**, **172 de navegador** y
 **5 del sitio de GitHub Pages**, todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
-tenia 275 y 39 respectivamente.
+tenia 275 y 39 respectivamente. En el total de navegador no entra la prueba de
+las capturas del manual, que solo corre a pedido (`CAPTURAS=1`).
 
 ```bash
-pytest --ignore=tests/e2e     # 331
-npx playwright test           # 109
+pytest --ignore=tests/e2e     # 339
+npx playwright test           # 172
 npx playwright test --config playwright.pages.config.js   # 5, necesita internet
 ```
 
@@ -202,15 +203,33 @@ la pantalla nueva:
   resultado, y ni un polinomio largo ni una formula desbordan su tarjeta.
 
 El contraste de cada par de colores se midio con la formula de WCAG 2.x, en los
-dos temas: 90 pares, todos por encima del minimo.
+dos temas: 106 pares, todos por encima del minimo. Entran los de la barra del
+recorrido: el texto de la fila marcada de la tabla sobre su fondo, la barra de
+esa fila, el anillo del elemento actual sobre el plano y el texto tenue sobre el
+fondo de cada familia. Al medirlos, el texto tenue del tema oscuro no llegaba a
+4.5:1 sobre los fondos de Interpolacion, Integracion y Otros (4.32, 4.48 y
+4.41) y se aclaro de `#8a90a6` a `#9096ab`, con el mismo tono. Los dos bloques
+del tema oscuro (el del boton y el del sistema) son iguales, y la medicion lo
+comprueba.
+
+Una excepcion deliberada: lo tenue del recorrido (las filas que todavia no
+llegaron) se dibuja con el color de las iteraciones al 25% sobre el fondo del
+plano, y eso da solo 1.37:1 en el tema claro y 1.65:1 en el oscuro. Se midio y
+se acepta: son elementos de contexto, no texto ni datos que haya que leer, el
+elemento de la fila elegida va a plena intensidad (3.87:1 y 7.67:1) y el 25% lo
+fija el diseno del recorrido.
 
 | Tema | Texto (minimo 4.5:1) | Bordes de controles y curvas del plano (minimo 3:1) |
 |---|---|---|
-| Claro | el mas bajo, 4.69:1 (texto tenue sobre gris claro) | el mas bajo, 3.13:1 (borde de los campos) |
-| Oscuro | el mas bajo, 4.71:1 (texto tenue sobre gris oscuro) | el mas bajo, 3.13:1 (borde de los campos) |
+| Claro | el mas bajo, 4.58:1 (texto tenue sobre el fondo de Raices) | el mas bajo, 3.13:1 (borde de los campos) |
+| Oscuro | el mas bajo, 4.66:1 (texto tenue sobre el fondo de Interpolacion) | el mas bajo, 3.13:1 (borde de los campos) |
 
 Tambien se recorrio la pagina solo con teclado: el foco sigue el orden de
-lectura y siempre se ve.
+lectura y siempre se ve. En la barra del recorrido, Tab llega a los cinco
+botones y al deslizador en ese orden; Enter y Espacio activan cada boton (y
+Reproducir pasa a Pausar sin perder el foco); en el deslizador, las flechas
+mueven una fila, `Inicio` y `Fin` van a los extremos, y el contorno de foco se
+ve en los dos temas.
 
 ## Comprobado en la version en linea
 

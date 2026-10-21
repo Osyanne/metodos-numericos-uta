@@ -175,6 +175,7 @@ Es un plano de verdad, no una imagen:
 - **Doble clic** vuelve a la vista inicial.
 - Con el plano **enfocado** (haciendo clic o con Tab): flechas para mover, `+`
   y `−` para el zoom, `Home` para volver al inicio.
+- **Un clic** sobre un punto elige esa fila del recorrido (ver la seccion 5).
 - **Ajustar** encuadra todo lo dibujado; **Vista inicial** vuelve al encuadre
   original.
 
@@ -182,7 +183,77 @@ Al acercarse, la curva **se recalcula**: se le piden puntos nuevos al nucleo en
 el rango visible. No se ve quebrada al hacer zoom, y los valores son los mismos
 que los de la tabla porque los calcula el mismo codigo.
 
-## 5. Comparar metodos
+## 5. Recorrer las iteraciones
+
+![Recorrido en la iteracion 1 de Von Mises](capturas/04-recorrido.png)
+
+La captura esta acercada a la raiz para que se vea el elemento de la
+iteracion 1, resaltado, y los de las filas siguientes, tenues.
+
+Despues de resolver, el aplicativo no solo muestra el final: se puede ir paso a
+paso, como en el pizarron. Arriba del plano aparece una barra con cinco botones
+y un deslizador. Al resolver queda en la **ultima fila**; para volver a mirar
+desde el principio se pulsa **Primera fila**.
+
+| Control | Que hace |
+|---|---|
+| **Primera fila** (triangulo hacia la izquierda con una barra) | Va a la primera fila. |
+| **Fila anterior** (doble triangulo hacia la izquierda) | Va a la fila anterior. |
+| **Reproducir** (triangulo hacia la derecha) | Avanza solo, fila por fila, hasta el final y se detiene. Si ya estaba en la ultima, empieza desde la primera. El mismo boton pasa a **Pausar** (dos barras verticales) mientras corre. |
+| **Fila siguiente** (doble triangulo hacia la derecha) | Va a la fila siguiente. |
+| **Ultima fila** (triangulo hacia la derecha con una barra) | Va a la ultima fila. |
+| **Deslizador** | Se arrastra hasta la fila que se quiera. Con el teclado: ← y → de a una fila, `Inicio` y `Fin` a los extremos. |
+
+A la derecha del deslizador un rotulo dice donde se esta, con la misma palabra y
+el mismo numero que la tabla: "iteracion 3 de 12" en las raices, "punto 2 de 4"
+en interpolacion, Trapecio y Simpson, "subintervalo 5 de 10" en Punto Medio y
+"paso 3 de 10" en Runge-Kutta. Von Mises con el ejercicio del docente va de la
+iteracion 0 a la 12 y termina en "iteracion 12 de 12".
+
+Tambien se puede elegir la fila sin la barra:
+
+- **En la tabla**, con un clic en la fila (pestana **Iteraciones**).
+- **En el plano**, con un clic sobre un punto, o sobre el rectangulo, el
+  trapecio o la parabola de esa fila. Un clic es un toque corto: si se arrastra
+  para mover la vista, no elige nada. Si no hay ningun elemento cerca, el clic
+  no cambia la fila.
+
+Una vez elegida la fila, todo se mueve junto:
+
+- **En el plano** lo que ya paso (hasta la fila elegida) se ve normal; lo que
+  viene despues se ve **tenue**, y el elemento de la fila elegida va
+  **resaltado** con un anillo y un trazo mas grueso. Las curvas de referencia,
+  como `f(x)`, el polinomio o la solucion exacta, se ven siempre. El resultado
+  final (la raiz, el punto evaluado) queda tenue hasta llegar a la ultima fila.
+  En Interpolacion de Lagrange, ademas, se dibuja la curva del termino de esa
+  fila.
+- **En la tabla** la fila elegida queda marcada con fondo de color y una barra a
+  la izquierda; si la pestana **Iteraciones** esta abierta, se desplaza hasta
+  ella al mover el recorrido.
+- **Bajo el plano**, una **franja** repite los valores de esa fila, columna por
+  columna, para leerlos sin buscar en la tabla.
+- **En la tarjeta Formula**, debajo de la formula general, aparece la misma
+  formula con los numeros de la fila: "En la iteracion n:" (o "En el punto n",
+  "En el subintervalo n", "En el paso n") seguido de la sustitucion. Los numeros
+  negativos van entre parentesis. En Runge-Kutta se escribe una linea por cada
+  incognita del sistema.
+
+Algunas cosas conviene saberlas:
+
+- **Decimales no mueve la fila.** Cambiar los decimales solo reescribe los
+  numeros de la franja y de la formula; el recorrido queda donde estaba.
+- **Reproducir se detiene** al pulsar cualquier otro control del recorrido, al
+  cambiar de metodo y al **Resolver** de nuevo o **Comparar metodos**. Resolver
+  deja el recorrido en la ultima fila del resultado nuevo.
+- **No hay barra** si el resultado tiene una sola fila (por ejemplo, cuando el
+  punto inicial ya es la raiz) y tampoco mientras se muestra una comparacion: ahi
+  el plano vuelve a dibujar todas las curvas, sin resaltar ninguna.
+- **Recorrer no recalcula nada**: los numeros de la franja y de la formula son
+  los que ya calculo el metodo, solo se muestran.
+- Si un metodo diverge, tambien se puede recorrer; las filas con valores que no
+  existen muestran una raya.
+
+## 6. Comparar metodos
 
 **Comparar metodos** resuelve el mismo problema con todos los metodos que
 reciben los mismos datos, y arma una tabla con iteraciones, resultado, error
@@ -194,7 +265,7 @@ punto inicial, y se ve para que sirve congelar la derivada y lo que cuesta.
 Menos iteraciones no siempre es mejor: un metodo puede converger rapido en un
 punto y romperse en otro.
 
-## 6. Exportar
+## 7. Exportar
 
 **Exportar CSV** baja la tabla completa. **Exportar PDF** baja un documento con
 el metodo, la funcion, los parametros, la tabla y el resultado.

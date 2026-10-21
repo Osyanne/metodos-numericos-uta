@@ -67,9 +67,9 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
     x_actual = x0
     for paso in range(1, n + 1):
         if orden == 2:
-            siguiente = _paso_heun(expresiones, nombres, x_actual, estado, h)
+            siguiente, ks = _paso_heun(expresiones, nombres, x_actual, estado, h)
         else:
-            siguiente = _paso_rk4(expresiones, nombres, x_actual, estado, h)
+            siguiente, ks = _paso_rk4(expresiones, nombres, x_actual, estado, h)
 
         if not all(math.isfinite(valor) for valor in siguiente):
             raise MethodError(
@@ -88,6 +88,7 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
                     config.decimals,
                 ),
                 error=None,
+                detalle=_detalle_fila(h, ks, nombres[1:], escalar),
             )
         )
         x_actual = x_nuevo
@@ -335,13 +336,14 @@ def _paso_heun(
     x: float,
     estado: Sequence[float],
     h: float,
-) -> list[float]:
+) -> tuple[list[float], dict[str, list[float]]]:
     k1 = _evaluar(expresiones, nombres, x, estado)
     k2 = _evaluar(expresiones, nombres, x + h, _sumar(estado, k1, h))
-    return [
+    siguiente = [
         valor + h * (pendiente_1 + pendiente_2) / 2.0
         for valor, pendiente_1, pendiente_2 in zip(estado, k1, k2, strict=True)
     ]
+    return siguiente, {"k1": k1, "k2": k2}
 
 
 def _paso_rk4(
@@ -350,15 +352,34 @@ def _paso_rk4(
     x: float,
     estado: Sequence[float],
     h: float,
-) -> list[float]:
+) -> tuple[list[float], dict[str, list[float]]]:
     k1 = _evaluar(expresiones, nombres, x, estado)
     k2 = _evaluar(expresiones, nombres, x + h / 2.0, _sumar(estado, k1, h / 2.0))
     k3 = _evaluar(expresiones, nombres, x + h / 2.0, _sumar(estado, k2, h / 2.0))
     k4 = _evaluar(expresiones, nombres, x + h, _sumar(estado, k3, h))
-    return [
+    siguiente = [
         valor + h * (p1 + 2.0 * p2 + 2.0 * p3 + p4) / 6.0
         for valor, p1, p2, p3, p4 in zip(estado, k1, k2, k3, k4, strict=True)
     ]
+    return siguiente, {"k1": k1, "k2": k2, "k3": k3, "k4": k4}
+
+
+def _detalle_fila(
+    h: float,
+    ks: dict[str, list[float]],
+    componentes: Sequence[str],
+    escalar: bool,
+) -> dict[str, float]:
+    """`h` mas cada k: sin sufijo si es escalar, con el de la componente si no."""
+    detalle = {"h": h}
+    for nombre, valores in ks.items():
+        if escalar:
+            detalle[nombre] = valores[0]
+        else:
+            detalle.update(
+                {f"{nombre}_{c}": v for c, v in zip(componentes, valores, strict=True)}
+            )
+    return detalle
 
 
 def _valores_fila(

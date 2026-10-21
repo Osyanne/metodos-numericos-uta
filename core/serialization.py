@@ -48,4 +48,8 @@ def jsonable_iteration(iteration: Iteration) -> dict[str, Any]:
         },
         # El error siempre es una medicion: nunca lleva texto.
         "error": finite_or_none(iteration.error),
+        "detalle": {
+            clave: finite_or_none(valor)
+            for clave, valor in iteration.detalle.items()
+        },
     }
