@@ -10,6 +10,7 @@ import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
 import { ICONOS } from "./iconos.js";
 import { formulaPara, sustitucionPara } from "./formulas.js";
+import { asasDe, mover, campoDe } from "./asas.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -21,6 +22,10 @@ const estado = {
   // respuesta el contador cambio, el usuario ya pidio otra cosa y lo que
   // llego corresponde a una pregunta que nadie esta haciendo: se descarta.
   corrida: 0,
+  // Parametros de la ultima resolucion exitosa: de ahi salen las asas del plano.
+  params: null,
+  // Arrastre de un asa en curso (ver alArrastrar) o null.
+  arrastre: null,
   // Ultimo metodo marcado en cada familia, para volver a el al regresar.
   ultimoPorFamilia: {},
 };
@@ -86,6 +91,7 @@ const formulario = new Formulario($("#formulario"));
 
 const plano = new Plano($("#plano"), {
   alElegir: (k) => recorrido.ir(k),
+  alArrastrar,
   alMuestrear: async (peticion) => {
     try {
       return await api.muestrear(peticion);
@@ -172,6 +178,7 @@ async function pedirTermino(k) {
 }
 
 function limpiarPantalla() {
+  cancelarArrastre();
   recorrido.ocultar();
   $("#fila-actual").innerHTML = "";
   $("#resumen").innerHTML = "";
@@ -294,6 +301,7 @@ function aplicarPreset(id) {
 }
 
 async function resolver() {
+  cancelarArrastre();
   avisar("");
   // La reproduccion vieja no sigue mientras llega el resultado nuevo.
   recorrido.pausar();
@@ -314,6 +322,7 @@ async function resolver() {
     });
     if (corrida !== estado.corrida) return;
     estado.resultado = resultado;
+    estado.params = params;
     pintarResultado();
     // Si la pagina esta scrolleada hacia abajo (mirando los campos del
     // formulario o la configuracion), la animacion del plano pasa fuera de
@@ -324,6 +333,7 @@ async function resolver() {
     if (corrida !== estado.corrida) return;
     avisar(e.message);
     estado.resultado = null;
+    estado.params = null;
     limpiarPantalla();
   } finally {
     // Se rehabilita siempre. Condicionarlo a que la corrida siga siendo la
@@ -369,10 +379,13 @@ function llevarLaVistaAlPlano() {
   }, 0);
 }
 
-function pintarResultado() {
+// `conservarVista`: el resultado de un dato arrastrado, sobre la vista que ya
+// se esta mirando (sin reencuadrar ni animar).
+function pintarResultado({ conservarVista = false } = {}) {
   formatearResultado();
   const { capas, resample } = capasDesdePlot(estado.resultado.plot, estado.resultado.iterations);
-  plano.mostrar(capas, resample);
+  plano.mostrar(capas, resample, {}, { conservarVista });
+  plano.ponerAsas(asasDe(estado.metodo, estado.params, estado.resultado));
   $("#leyenda").innerHTML = "";
   for (const capa of plano.capas) {
     if (!capa.nombre) continue;
@@ -391,6 +404,117 @@ function formatearResultado() {
   const decimales = Number($("#decimales").value);
   dibujarResumen($("#resumen"), estado.resultado, decimales, estado.metodo.family);
   dibujarTabla($("#tabla"), estado.resultado, decimales);
+}
+
+// ------------------------------------------------------------ arrastre
+
+// Un dato arrastrado en el plano se vuelve a resolver en vivo, con freno: una
+// peticion en vuelo como mucho y una cada FRENO_MS. Mientras tanto solo se
+// rehacen el plano y el resumen; tabla, franja y recorrido esperan a soltar.
+const FRENO_MS = 100;
+
+function alArrastrar(id, x, y, soltado) {
+  if (!estado.metodo || !estado.params) return;
+  if (!estado.arrastre) {
+    recorrido.pausar();
+    recorrido.deshabilitar(true);
+    // Lo que la persona ve en el formulario, aunque haya cambiado otro campo
+    // sin resolver; si no se puede leer, lo ultimo que se resolvio.
+    let actuales;
+    try {
+      actuales = formulario.valores();
+    } catch {
+      actuales = estado.params;
+    }
+    estado.arrastre = {
+      actuales, validos: estado.params, enVuelo: false, pendiente: null,
+      ultimoEnvio: -Infinity, soltado: false, temporizador: null,
+    };
+  }
+  const arrastre = estado.arrastre;
+  arrastre.actuales = mover(estado.metodo, arrastre.actuales, id, x, y);
+  const campo = campoDe(id);
+  formulario.poner(campo, arrastre.actuales[campo]);
+  if (campo === "y0") formulario.poner("x0", arrastre.actuales.x0);
+  plano.ponerAsas(asasDe(estado.metodo, arrastre.actuales, estado.resultado));
+  arrastre.soltado = soltado;
+  arrastre.pendiente = arrastre.actuales;
+  avanzarArrastre();
+}
+
+const mismos = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// Manda lo pendiente si no hay nada en vuelo y el freno lo deja.
+function avanzarArrastre() {
+  const arrastre = estado.arrastre;
+  if (!arrastre || arrastre.enVuelo || !arrastre.pendiente) return;
+  // Soltar donde ya se resolvio no vuelve a pedir: se pinta lo que hay.
+  if (arrastre.soltado && mismos(arrastre.pendiente, arrastre.validos)) {
+    terminarArrastre();
+    return;
+  }
+  const espera = arrastre.ultimoEnvio + FRENO_MS - performance.now();
+  clearTimeout(arrastre.temporizador);
+  if (espera > 0) {
+    arrastre.temporizador = setTimeout(avanzarArrastre, espera);
+    return;
+  }
+  const params = arrastre.pendiente;
+  arrastre.pendiente = null;
+  enviarArrastre(arrastre, params, arrastre.soltado);
+}
+
+async function enviarArrastre(arrastre, params, final) {
+  arrastre.enVuelo = true;
+  arrastre.ultimoEnvio = performance.now();
+  const corrida = ++estado.corrida;
+  let resultado = null;
+  try {
+    resultado = await api.resolver(estado.metodo.slug, { params, ...configuracion() });
+  } catch {
+    // shortcut: un error del nucleo durante el arrastre todavia no se muestra.
+  }
+  // Resolver, cambiar de metodo o comparar cancelaron el arrastre.
+  if (corrida !== estado.corrida || estado.arrastre !== arrastre) return;
+  arrastre.enVuelo = false;
+  if (resultado) {
+    estado.resultado = resultado;
+    arrastre.validos = params;
+    if (final) {
+      terminarArrastre();
+      return;
+    }
+    pintarEnVivo();
+  } else if (final) {
+    cancelarArrastre();
+    pintarResultado({ conservarVista: true });
+    return;
+  }
+  avanzarArrastre();
+}
+
+function pintarEnVivo() {
+  const { capas, resample } = capasDesdePlot(estado.resultado.plot, estado.resultado.iterations);
+  plano.mostrar(capas, resample, {}, { conservarVista: true });
+  dibujarResumen($("#resumen"), estado.resultado, Number($("#decimales").value), estado.metodo.family);
+}
+
+// Al soltar: el ultimo resultado valido se pinta completo y el recorrido vuelve.
+function terminarArrastre() {
+  const { validos } = estado.arrastre;
+  cancelarArrastre();
+  estado.params = validos;
+  pintarResultado({ conservarVista: true });
+}
+
+// Resolver, cambiar de metodo, limpiar o comparar cortan un arrastre en curso:
+// una respuesta que llegue despues ya es de otra corrida y se descarta.
+function cancelarArrastre() {
+  const arrastre = estado.arrastre;
+  if (!arrastre) return;
+  clearTimeout(arrastre.temporizador);
+  estado.arrastre = null;
+  recorrido.deshabilitar(false);
 }
 
 // ------------------------------------------------------------ familias y chips
@@ -472,7 +596,7 @@ async function iniciar() {
   armarSelector(estado.metodos);
   if (estado.metodos.length) marcarMetodo(estado.metodos[0].slug);
 
-  montarComparador({ api, estado, plano, configuracion, formulario, recorrido });
+  montarComparador({ api, estado, plano, configuracion, formulario, recorrido, cancelarArrastre });
 }
 
 // ------------------------------------------------------------ ajustes

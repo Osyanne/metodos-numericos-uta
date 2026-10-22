@@ -15,7 +15,7 @@ function comparables(metodos, metodo) {
   return metodos.filter((m) => firma(m) === mia);
 }
 
-export function montarComparador({ api, estado, plano, configuracion, formulario, recorrido }) {
+export function montarComparador({ api, estado, plano, configuracion, formulario, recorrido, cancelarArrastre }) {
   const boton = $("#comparar");
   const caja = $("#comparacion");
 
@@ -40,8 +40,11 @@ export function montarComparador({ api, estado, plano, configuracion, formulario
     // La comparacion reemplaza el plano: sin recorrido, sin paso y sin la
     // reproduccion en marcha. ++corrida tambien descarta un termino de Lagrange
     // que estuviera por llegar.
+    cancelarArrastre();
     recorrido.ocultar();
     plano.marcarPaso(null);
+    // Las curvas de convergencia no son un problema: no hay datos que arrastrar.
+    plano.ponerAsas(null);
     const corrida = ++estado.corrida;
     boton.disabled = true;
     const cuerpo = { params, ...configuracion() };
