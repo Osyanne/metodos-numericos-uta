@@ -1096,6 +1096,12 @@ export class Plano {
     // resultado final.
     const total = capa.puntos.length;
     const hasta = Math.ceil(total * this.animacion.progreso);
+    // Con mas marcas a la vista de las que caben a 16 px entre si, los rotulos
+    // se pisan y dibujarlos cuesta (Punto Medio con n = 10 000): solo se
+    // rotula la de la fila actual.
+    const v = this.vista;
+    const visibles = capa.puntos.filter((p) => p.x >= v.x0 && p.x <= v.x1).length;
+    const rotularTodas = visibles <= (a.der - a.izq) / 16;
     for (let i = 0; i < Math.min(total, hasta); i++) {
       const p = capa.puntos[i];
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
@@ -1108,7 +1114,7 @@ export class Plano {
       ctx.beginPath();
       ctx.arc(px, py, 3, 0, Math.PI * 2);
       ctx.stroke();
-      if (p.etiqueta !== undefined) {
+      if (p.etiqueta !== undefined && (rotularTodas || estado === "actual")) {
         ctx.fillText(p.etiqueta, px + 6, py - 6);
       }
       if (estado === "actual") this._anillo(px, py, 3);

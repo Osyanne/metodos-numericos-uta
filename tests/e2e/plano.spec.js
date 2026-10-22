@@ -657,3 +657,37 @@ test("el cursor invita a tomar un asa solo cuando hay una debajo", async ({ page
   await page.mouse.move(x + 200, y - 100);
   await expect(lienzo).not.toHaveClass(/sobre-asa/);
 });
+
+test("con marcas densas solo se rotula la de la fila actual", async ({ page }) => {
+  await page.goto("/");
+  const r = await page.evaluate(async () => {
+    const { Plano } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    caja.append(canvas);
+    document.body.append(caja);
+    const plano = new Plano(canvas);
+    const rotulos = [];
+    const fillText = plano.ctx.fillText.bind(plano.ctx);
+    plano.ctx.fillText = (texto, ...xy) => {
+      if (String(texto).startsWith("m")) rotulos.push(texto);
+      return fillText(texto, ...xy);
+    };
+    const marcas = (n) => ({
+      tipo: "marcas", nombre: "m",
+      puntos: Array.from({ length: n }, (_, i) => ({ x: (i * 10) / n, y: 1, etiqueta: `m${i}` })),
+      aparece: Array.from({ length: n }, (_, i) => i),
+    });
+    const rotular = (n, k) => {
+      plano.mostrar([marcas(n)], null, {}, { animar: false });
+      plano.marcarPaso(k);
+      rotulos.length = 0;
+      plano.repintar();
+      return [...rotulos];
+    };
+    return { densas: rotular(200, 5), pocas: rotular(5, 2) };
+  });
+  expect(r.densas).toEqual(["m5"]);
+  expect(r.pocas).toEqual(["m0", "m1", "m2", "m3", "m4"]);
+});

@@ -526,7 +526,8 @@ test.describe("recorrido", () => {
   test("a 375 px cada etiqueta de la franja queda junto a su valor", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     for (const [slug, preset, k] of [
-      ["interpolacion-lagrange", "lagrange-docente", 3],
+      // Una fila del medio: la ultima de Lagrange tiene menos pares en la franja.
+      ["interpolacion-lagrange", "lagrange-docente", 1],
       ["von-mises", "von-mises-docente", 1],
     ]) {
       await resolver(page, slug, preset);
@@ -580,5 +581,45 @@ test.describe("recorrido", () => {
     await expect(page.locator("#paso-siguiente")).toBeEnabled();
     await expect(page.locator("#paso")).toBeEnabled();
     await expect(page.locator("#tabla")).toHaveClass(/recorrible/);
+  });
+
+  test("una clave de derivada faltante no se toma por raíz exacta", async ({ page }) => {
+    await page.goto("/");
+    const r = await page.evaluate(async () => {
+      const { sustitucionPara } = await import("/formulas.js");
+      const sustituir = (fila) => sustitucionPara("newton-raphson", [fila], 0, { columns: [] }, String);
+      return {
+        malEscrita: sustituir({ n: 0, values: { xi: 1, fxi: 0.5 }, detalle: { dfxx: 2 } }),
+        exacta: sustituir({ n: 0, values: { xi: 1, fxi: 0 } }),
+      };
+    });
+    expect(r.malEscrita).toBeNull();
+    expect(r.exacta).toContain("raíz exacta");
+  });
+
+  test("en Newton-Raphson y Von Mises toda fila que avanza muestra la división", async ({ page }) => {
+    await page.goto("/");
+    const sinDivision = await page.evaluate(async () => {
+      const { sustitucionPara } = await import("/formulas.js");
+      const { presetsPara } = await import("/presets.js");
+      const faltan = [];
+      for (const slug of ["newton-raphson", "von-mises"]) {
+        for (const preset of presetsPara(slug)) {
+          const respuesta = await fetch(`/api/methods/${slug}/solve`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ params: preset.params, ...preset.config }),
+          });
+          if (!respuesta.ok) continue;
+          const res = await respuesta.json();
+          res.iterations.forEach((fila, k) => {
+            if (fila.values.fxi === 0 || !Number.isFinite(fila.values.fxi)) return;
+            const html = sustitucionPara(slug, res.iterations, k, res, String) ?? "";
+            if (!html.includes("<mfrac")) faltan.push(`${preset.id} fila ${k}`);
+          });
+        }
+      }
+      return faltan;
+    });
+    expect(sinDivision).toEqual([]);
   });
 });

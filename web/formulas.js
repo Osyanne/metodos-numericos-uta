@@ -163,9 +163,12 @@ const igual = (izquierda, ...derecha) => fila(izquierda, mo("="), ...derecha);
 
 // `dfx` es la clave de `detalle` con la derivada que uso esa fila. En una raiz
 // exacta (f(x) = 0) el nucleo no la calcula: la fila no avanza, sin division.
+// Si falta con f(x) distinto de 0 es un dato que no llego (o una clave mal
+// escrita): no hay sustitucion, en vez de anunciar una raiz que no es.
 const raiz = (dfx) => ({ it, num }) => {
   const { values: v, detalle } = it;
   if (detalle?.[dfx] === undefined) {
+    if (v.fxi !== 0) return null;
     return [igual(f(sub(x, mn(it.n))), num(v.fxi)), rotulo("raíz exacta: el método no avanza")];
   }
   return [igual(xSig, num(v.xi), mo("−"), frac(num(v.fxi), num(detalle[dfx])))];
@@ -232,10 +235,14 @@ function interpolacionNewton({ filas, it, k, res, num }) {
 const SUSTITUCIONES = {
   "newton-raphson": raiz("dfxi"),
 
-  "von-mises": (c) => [
-    ...raiz("dfx0")(c),
-    ...(c.it.detalle?.dfx0 === undefined ? [] : [igual(fila(fPrima, paren(x0)), c.num(c.it.detalle.dfx0))]),
-  ],
+  "von-mises": (c) => {
+    const renglones = raiz("dfx0")(c);
+    if (!renglones) return null;
+    return [
+      ...renglones,
+      ...(c.it.detalle?.dfx0 === undefined ? [] : [igual(fila(fPrima, paren(x0)), c.num(c.it.detalle.dfx0))]),
+    ];
+  },
 
   "interpolacion-newton": interpolacionNewton,
 
@@ -280,5 +287,6 @@ export function sustitucionPara(slug, filas, k, resultado, fmt) {
   const renglones = hacer({
     filas, it, ant: filas[k - 1], k, res: resultado, num: (v) => numero(v, fmt),
   });
+  if (!renglones) return null;
   return `<math display="block" data-sustitucion="${slug}">${tabla(renglones)}</math>`;
 }
