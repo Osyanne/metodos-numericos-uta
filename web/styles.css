@@ -530,6 +530,16 @@ output { font-family: var(--mono); color: var(--accent); }
 
 /* ---------------------------------------------------------- resultados */
 
+/* El motivo por el que el nucleo rechaza un dato mientras se arrastra. */
+.aviso-arrastre {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--mal);
+  background: var(--mal-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+
 .aviso {
   margin: 0;
   padding: 10px 14px;

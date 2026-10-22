@@ -10,7 +10,7 @@ import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
 import { ICONOS } from "./iconos.js";
 import { formulaPara, sustitucionPara } from "./formulas.js";
-import { asasDe, mover, campoDe } from "./asas.js";
+import { asasDe, mover, campoDe, describir } from "./asas.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -432,6 +432,7 @@ function alArrastrar(id, x, y, soltado) {
     };
   }
   const arrastre = estado.arrastre;
+  arrastre.id = id;
   arrastre.actuales = mover(estado.metodo, arrastre.actuales, id, x, y);
   const campo = campoDe(id);
   formulario.poner(campo, arrastre.actuales[campo]);
@@ -469,10 +470,11 @@ async function enviarArrastre(arrastre, params, final) {
   arrastre.ultimoEnvio = performance.now();
   const corrida = ++estado.corrida;
   let resultado = null;
+  let error = null;
   try {
     resultado = await api.resolver(estado.metodo.slug, { params, ...configuracion() });
-  } catch {
-    // shortcut: un error del nucleo durante el arrastre todavia no se muestra.
+  } catch (e) {
+    error = e;
   }
   // Resolver, cambiar de metodo o comparar cancelaron el arrastre.
   if (corrida !== estado.corrida || estado.arrastre !== arrastre) return;
@@ -484,11 +486,15 @@ async function enviarArrastre(arrastre, params, final) {
       terminarArrastre();
       return;
     }
+    avisoArrastre("");
     pintarEnVivo();
   } else if (final) {
-    cancelarArrastre();
-    pintarResultado({ conservarVista: true });
+    volverAlValido(arrastre, params, error);
     return;
+  } else {
+    // El nucleo no acepta este valor: lo ultimo valido queda tenue, el asa
+    // sigue al puntero y el motivo se ve sin anunciarse en cada movimiento.
+    avisoArrastre(error.message);
   }
   avanzarArrastre();
 }
@@ -497,6 +503,28 @@ function pintarEnVivo() {
   const { capas, resample } = capasDesdePlot(estado.resultado.plot, estado.resultado.iterations);
   plano.mostrar(capas, resample, {}, { conservarVista: true });
   dibujarResumen($("#resumen"), estado.resultado, Number($("#decimales").value), estado.metodo.family);
+}
+
+// Mensaje del nucleo mientras se arrastra ("" lo quita). #aviso-arrastre no
+// es una region viva: el definitivo va una sola vez a #aviso al soltar.
+function avisoArrastre(mensaje) {
+  $("#aviso-arrastre").textContent = mensaje;
+  $("#aviso-arrastre").hidden = !mensaje;
+  if (plano.atenuado !== Boolean(mensaje)) plano.atenuar(Boolean(mensaje));
+}
+
+// Soltar en un valor que el nucleo rechaza devuelve el dato al ultimo valido:
+// sin dibujo no quedarian asas para corregirlo arrastrando.
+function volverAlValido(arrastre, intentados, error) {
+  const { validos, id } = arrastre;
+  const asa = (params) => asasDe(estado.metodo, params, estado.resultado).asas.find((a) => a.id === id);
+  const campo = campoDe(id);
+  formulario.poner(campo, validos[campo]);
+  if (campo === "y0") formulario.poner("x0", validos.x0);
+  const mensaje = `Con ${describir(asa(intentados))} no se pudo resolver: `
+    + `${error.message.replace(/\.$/, "")}. Se volvió a ${describir(asa(validos))}.`;
+  terminarArrastre();
+  avisar(mensaje);
 }
 
 // Al soltar: el ultimo resultado valido se pinta completo y el recorrido vuelve.
@@ -514,6 +542,7 @@ function cancelarArrastre() {
   if (!arrastre) return;
   clearTimeout(arrastre.temporizador);
   estado.arrastre = null;
+  avisoArrastre("");
   recorrido.deshabilitar(false);
 }
 
