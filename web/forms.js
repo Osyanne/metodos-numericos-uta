@@ -49,6 +49,12 @@ export class Formulario {
     }
     return params;
   }
+
+  // Escribe un valor en el campo `nombre`, como si la persona lo hubiera tipeado.
+  // Lo usan las asas del plano; un campo que no existe o no se escribe se ignora.
+  poner(nombre, valor) {
+    this.campos.find((c) => c.definicion.name === nombre)?.escribir?.(valor);
+  }
 }
 
 function etiquetaDe(campo) {
@@ -139,6 +145,9 @@ function controlSimple(campo) {
       if (campo.kind === "expression") return bruto;
       return numero(bruto, campo.label, campo.kind === "integer");
     },
+    escribir(valor) {
+      input.value = valor ?? "";
+    },
   };
 }
 
@@ -227,6 +236,17 @@ function controlLista(campo) {
       };
       const lista = valores.map(convertir);
       return lista.length === 1 ? lista[0] : lista;
+    },
+    // Un escalar va a la fila 0. Con otra cantidad de valores se rehacen las filas.
+    escribir(valor) {
+      const valores = [valor].flat();
+      const inputs = [...filas.querySelectorAll("input")];
+      if (inputs.length === valores.length) {
+        inputs.forEach((input, i) => { input.value = valores[i]; });
+        return;
+      }
+      filas.innerHTML = "";
+      for (const v of valores) nuevaFila(v);
     },
   };
 }
@@ -329,6 +349,18 @@ function controlPuntos(campo) {
         puntos.push([x, y]);
       }
       return puntos.length ? puntos : null;
+    },
+    escribir(puntos) {
+      const filas = [...cuerpo.children];
+      if (filas.length !== puntos.length) {
+        cuerpo.innerHTML = "";
+        for (const [x, y] of puntos) nuevaFila(x, y);
+        return;
+      }
+      filas.forEach((tr, i) => {
+        const [ex, ey] = tr.querySelectorAll("input");
+        [ex.value, ey.value] = puntos[i];
+      });
     },
   };
 }
