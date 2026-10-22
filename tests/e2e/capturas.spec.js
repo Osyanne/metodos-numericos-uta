@@ -29,6 +29,19 @@ async function dibujoTerminado(page) {
   await page.waitForTimeout(2300);
 }
 
+// Un punto del plano de la aplicacion en coordenadas de pagina: la raiz o un
+// asa. Lo calcula el propio plano, asi no depende de donde quede el lienzo.
+async function puntoDelPlano(page, cual) {
+  const [px, py] = await page.evaluate(async (cual) => {
+    const { plano } = await import("/app.js");
+    if (cual !== "raiz") return plano.posicionAsa(cual);
+    const raiz = plano.capas.find((c) => c.nombre === "raiz").puntos[0];
+    return plano._aPantalla(raiz.x, raiz.y);
+  }, cual);
+  const caja = await page.locator("#plano").boundingBox();
+  return [caja.x + px, caja.y + py];
+}
+
 test("capturas del manual", async ({ page }) => {
   await page.goto("/");
   await esperarDesplegable(page);
@@ -75,8 +88,28 @@ test("capturas del manual", async ({ page }) => {
   await arriba(page);
   // Con la vista inicial todos los puntos caen casi sobre la raiz: se acerca
   // a ella para que se vean el elemento actual y los siguientes, atenuados.
-  await page.mouse.move(870, 1018);
+  await page.mouse.move(...await puntoDelPlano(page, "raiz"));
   for (let i = 0; i < 16; i++) await page.mouse.wheel(0, -300);
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${DESTINO}04-recorrido.png` });
+
+  // El arrastre: √2 con Newton-Raphson, con el asa x0 tomada y llevada de 1
+  // hacia la izquierda, donde las tangentes se ven. Se fotografia con el boton
+  // todavia apretado.
+  await page.setViewportSize({ width: 1280, height: 820 });
+  await elegirMetodo(page, "newton-raphson");
+  await page.locator("#preset").selectOption("newton-raiz-de-dos");
+  await page.locator("#resolver").click();
+  await expect(page.locator("#resumen .estado")).toBeVisible();
+  await dibujoTerminado(page);
+  // Solo la tarjeta del plano: con la pagina arriba el eje queda bajo el borde.
+  await page.locator("#plano").scrollIntoViewIfNeeded();
+  const [x, y] = await puntoDelPlano(page, "x0");
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x - 90, y, { steps: 10 });
+  await expect(page.locator("#campo-x0")).not.toHaveValue("1");
+  await page.waitForTimeout(600);
+  await page.locator("#tarjeta-plano").screenshot({ path: `${DESTINO}05-arrastre.png` });
+  await page.mouse.up();
 });
