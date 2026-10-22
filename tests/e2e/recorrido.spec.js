@@ -540,4 +540,45 @@ test.describe("recorrido", () => {
       expect(sueltos, preset).toEqual([]);
     }
   });
+
+  test("el recorrido se ve y se usa desde la pestaña Iteraciones", async ({ page }) => {
+    await resolver(page);
+    await page.locator("#paso-primero").click();
+    await page.locator("#ver-tabla").click();
+    const reproducir = page.locator("#paso-reproducir");
+    await expect(reproducir).toBeVisible();
+    await reproducir.click();
+    await expect(reproducir).toHaveAttribute("aria-label", "Pausar");
+    await reproducir.click();
+    await expect(reproducir).toHaveAttribute("aria-label", "Reproducir");
+  });
+
+  test("tras comparar, la tabla vieja no invita al clic ni lo atiende", async ({ page }) => {
+    const errores = [];
+    page.on("pageerror", (e) => errores.push(e.message));
+    await resolver(page);
+    await page.locator("#comparar").click();
+    await expect(page.locator("#comparacion table")).toBeVisible();
+    await page.locator("#ver-tabla").click();
+    const fila = page.locator("#tabla tr[data-indice]").first();
+    await expect(fila).toHaveCSS("cursor", "auto");
+    await fila.click();
+    await expect(page.locator("#tabla tr.actual")).toHaveCount(0);
+    expect(errores).toEqual([]);
+  });
+
+  test("deshabilitar apaga los controles y la tabla, y se deshace", async ({ page }) => {
+    await resolver(page);
+    const deshabilitar = (si) => page.evaluate(async (si) => {
+      (await import("/app.js")).recorrido.deshabilitar(si);
+    }, si);
+    await deshabilitar(true);
+    await expect(page.locator("#paso-siguiente")).toBeDisabled();
+    await expect(page.locator("#paso")).toBeDisabled();
+    await expect(page.locator("#tabla")).not.toHaveClass(/recorrible/);
+    await deshabilitar(false);
+    await expect(page.locator("#paso-siguiente")).toBeEnabled();
+    await expect(page.locator("#paso")).toBeEnabled();
+    await expect(page.locator("#tabla")).toHaveClass(/recorrible/);
+  });
 });

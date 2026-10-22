@@ -755,7 +755,7 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .iteraciones tbody tr:last-child td { border-bottom: none; }
 .iteraciones tbody tr:hover { background: var(--surface-2); }
-.iteraciones tbody tr[data-indice] { cursor: pointer; }
+#tabla.recorrible tr[data-indice] { cursor: pointer; }
 .iteraciones tbody tr.actual td { background: var(--accent-bg); }
 .iteraciones tbody tr.actual td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 

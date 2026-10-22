@@ -143,7 +143,7 @@ function alCambiar(k, porUsuario) {
   pedirTermino(k);
 }
 
-const recorrido = montarRecorrido({ raiz: $("#recorrido"), alCambiar });
+const recorrido = montarRecorrido({ raiz: $("#recorrido"), alCambiar, tabla: $("#tabla") });
 
 // En Lagrange el plano muestra tambien el termino f(x_i) L_i(x) de la fila k.
 // Lo muestrea el nucleo (la interfaz no evalua nada); una respuesta tardia, de
@@ -555,7 +555,7 @@ $("#decimales").addEventListener("input", () => {
 // Un clic en una fila de la tabla lleva el recorrido a esa fila.
 $("#tabla").addEventListener("click", (e) => {
   const fila = e.target.closest("tr[data-indice]");
-  if (fila) recorrido.ir(Number(fila.dataset.indice));
+  if (fila && recorrido.disponible) recorrido.ir(Number(fila.dataset.indice));
 });
 
 $("#preset").addEventListener("change", () => aplicarPreset($("#preset").value));
@@ -627,3 +627,6 @@ for (const formato of ["csv", "pdf"]) {
 }
 
 iniciar();
+
+// Para las pruebas de interfaz, que necesitan llegar al plano y al recorrido.
+export { plano, recorrido };

@@ -13,7 +13,9 @@ import { ICONOS } from "./iconos.js";
 // con pocas filas ni se vuelva ilegible con muchas.
 const intervaloPara = (N) => Math.min(800, Math.max(120, 8000 / N));
 
-export function montarRecorrido({ raiz, alCambiar }) {
+// `tabla` (#tabla) lleva la clase `recorrible` mientras un clic en sus filas
+// sirve: con un resultado cargado y el recorrido habilitado.
+export function montarRecorrido({ raiz, alCambiar, tabla }) {
   const $ = (sel) => raiz.querySelector(sel);
   const deslizador = $("#paso");
   const rotulo = $("#paso-rotulo");
@@ -26,6 +28,10 @@ export function montarRecorrido({ raiz, alCambiar }) {
   let nombre = "";
   let k = 0;
   let temporizador = null;
+  let deshabilitado = false;
+
+  const disponible = () => filas.length > 0 && !deshabilitado;
+  const marcarTabla = () => tabla?.classList.toggle("recorrible", disponible());
 
   const rotularReproducir = (corriendo) => {
     const icono = document.createElement("span");
@@ -88,6 +94,7 @@ export function montarRecorrido({ raiz, alCambiar }) {
       nombre = rotuloPaso;
       deslizador.max = Math.max(0, filas.length - 1);
       raiz.hidden = filas.length < 2;
+      marcarTabla();
       if (filas.length) mover(filas.length - 1, false);
       else alCambiar(null, false);
     },
@@ -98,7 +105,19 @@ export function montarRecorrido({ raiz, alCambiar }) {
       detener();
       raiz.hidden = true;
       filas = [];
+      marcarTabla();
       alCambiar(null, false);
+    },
+    // Mientras se arrastra un dato del plano el resultado esta cambiando: los
+    // controles y el clic en la tabla se apagan hasta soltar.
+    deshabilitar(si) {
+      if (si) detener();
+      deshabilitado = si;
+      for (const control of raiz.querySelectorAll("button, input")) control.disabled = si;
+      marcarTabla();
+    },
+    get disponible() {
+      return disponible();
     },
     get k() {
       return k;

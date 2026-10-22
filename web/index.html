@@ -136,18 +136,19 @@
         </nav>
       </div>
 
-      <div id="panel-plano" class="panel">
-        <div id="recorrido" class="recorrido" role="group" aria-label="Recorrer las iteraciones" hidden>
-          <div class="recorrido-botones">
-            <button id="paso-primero" class="boton-icono" type="button" aria-label="Primera fila"><span data-icono="player-skip-back"></span></button>
-            <button id="paso-anterior" class="boton-icono" type="button" aria-label="Fila anterior"><span data-icono="player-track-prev"></span></button>
-            <button id="paso-reproducir" class="boton-icono" type="button" aria-label="Reproducir"></button>
-            <button id="paso-siguiente" class="boton-icono" type="button" aria-label="Fila siguiente"><span data-icono="player-track-next"></span></button>
-            <button id="paso-ultimo" class="boton-icono" type="button" aria-label="Última fila"><span data-icono="player-skip-forward"></span></button>
-          </div>
-          <input id="paso" class="control" type="range" min="0" max="0" step="1" value="0" aria-label="Fila del recorrido">
-          <span id="paso-rotulo" class="recorrido-rotulo"></span>
+      <div id="recorrido" class="recorrido" role="group" aria-label="Recorrer las iteraciones" hidden>
+        <div class="recorrido-botones">
+          <button id="paso-primero" class="boton-icono" type="button" aria-label="Primera fila"><span data-icono="player-skip-back"></span></button>
+          <button id="paso-anterior" class="boton-icono" type="button" aria-label="Fila anterior"><span data-icono="player-track-prev"></span></button>
+          <button id="paso-reproducir" class="boton-icono" type="button" aria-label="Reproducir"></button>
+          <button id="paso-siguiente" class="boton-icono" type="button" aria-label="Fila siguiente"><span data-icono="player-track-next"></span></button>
+          <button id="paso-ultimo" class="boton-icono" type="button" aria-label="Última fila"><span data-icono="player-skip-forward"></span></button>
         </div>
+        <input id="paso" class="control" type="range" min="0" max="0" step="1" value="0" aria-label="Fila del recorrido">
+        <span id="paso-rotulo" class="recorrido-rotulo"></span>
+      </div>
+
+      <div id="panel-plano" class="panel">
         <div class="plano-barra">
           <div id="leyenda" class="leyenda"></div>
           <div class="plano-botones">
