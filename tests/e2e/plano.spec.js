@@ -691,3 +691,9 @@ test("con marcas densas solo se rotula la de la fila actual", async ({ page }) =
   expect(r.densas).toEqual(["m5"]);
   expect(r.pocas).toEqual(["m0", "m1", "m2", "m3", "m4"]);
 });
+
+test("un temblor vertical sobre un asa de eje x no avisa nada", async ({ page }) => {
+  await planoConAsas(page);
+  await arrastrar(page, await dondeAsa(page, "x0"), 0, 8);
+  expect(await enPlano(page, () => window.arrastres)).toEqual([]);
+});

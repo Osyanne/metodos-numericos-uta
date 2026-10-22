@@ -91,7 +91,7 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **213 pruebas de interfaz** con Playwright, que
+Aparte de las de Python hay **218 pruebas de interfaz** con Playwright, que
 levantan el servidor de verdad y manejan la pantalla:
 
 ```bash

@@ -577,6 +577,8 @@ test.describe("recorrido", () => {
     await expect(page.locator("#paso-siguiente")).toBeDisabled();
     await expect(page.locator("#paso")).toBeDisabled();
     await expect(page.locator("#tabla")).not.toHaveClass(/recorrible/);
+    // Apagados tambien a la vista: un boton que no responde no parece activo.
+    await expect(page.locator("#paso-siguiente")).toHaveCSS("opacity", "0.5");
     await deshabilitar(false);
     await expect(page.locator("#paso-siguiente")).toBeEnabled();
     await expect(page.locator("#paso")).toBeEnabled();

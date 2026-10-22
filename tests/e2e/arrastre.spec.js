@@ -224,4 +224,66 @@ test.describe("arrastre", () => {
     await expect(aviso).not.toHaveAttribute("role", /.*/);
     await expect(aviso).not.toHaveAttribute("aria-live", /.*/);
   });
+
+  // ---------------------------------------------------------- revision final
+
+  test("al soltar b la vista previa de la integral lo muestra", async ({ page }) => {
+    await resolver(page, "trapecio", "trapecio-docente");
+    await arrastrarAsa(page, "b", -40, 0);
+    await expect(page.locator("#paso-rotulo")).toHaveText(enLaUltima);
+    await expect(page.locator(".integral-superior")).toHaveText(await page.locator("#campo-b").inputValue());
+  });
+
+  test("un arrastre bueno quita el aviso de una vuelta anterior", async ({ page }) => {
+    await aMasAllaDeB(page);
+    await expect(page.locator("#aviso-arrastre")).toBeVisible();
+    await page.mouse.up();
+    await expect(page.locator("#aviso")).toBeVisible();
+    await arrastrarAsa(page, "b", 20, 0);
+    await expect(page.locator("#aviso")).toBeHidden();
+  });
+
+  test("un segundo arrastre con la final del primero en vuelo espera a que termine", async ({ page }) => {
+    await resolver(page, "trapecio", "trapecio-docente");
+    let retener = true;
+    const retenidas = [];
+    await page.route("**/api/methods/*/solve", (ruta) => (retener ? retenidas.push(ruta) : ruta.continue()));
+    const [xa, ya] = await dondeAsa(page, "a");
+    const [xb, yb] = await dondeAsa(page, "b");
+    const bAntes = await page.locator("#campo-b").inputValue();
+    // a mas alla de b de un solo movimiento: la unica peticion es la rechazada.
+    await page.mouse.move(xa, ya);
+    await page.mouse.down();
+    await page.mouse.move(xb + 40, ya, { steps: 1 });
+    await page.mouse.up();
+    await expect.poll(() => retenidas.length).toBe(1);
+    // Enseguida, b un poco a la izquierda, con la de a todavia sin respuesta.
+    await page.mouse.move(xb, yb);
+    await page.mouse.down();
+    await page.mouse.move(xb - 20, yb, { steps: 4 });
+    await page.mouse.up();
+    retener = false;
+    for (const ruta of retenidas) await ruta.continue();
+    await expect(page.locator("#aviso")).toContainText("Con a = ");
+    await expect(page.locator("#paso-siguiente")).toBeEnabled();
+    await expect(page.locator("#campo-b")).not.toHaveValue(bAntes);
+    const a = Number(await page.locator("#campo-a").inputValue());
+    expect(a).toBeLessThan(Number(await page.locator("#campo-b").inputValue()));
+    await expect(page.locator("#aviso-arrastre")).toBeHidden();
+  });
+
+  test("volver al último válido conserva lo editado a mano en otro punto", async ({ page }) => {
+    await resolver(page, "interpolacion-lagrange", "lagrange-docente");
+    const yP0 = page.getByLabel("y del punto 1");
+    await yP0.fill("9");
+    const [x1, y1] = await dondeAsa(page, "p:1");
+    const [x2] = await dondeAsa(page, "p:2");
+    // P1 sobre la x de P2 de un solo movimiento: x repetida, el nucleo la rechaza.
+    await page.mouse.move(x1, y1);
+    await page.mouse.down();
+    await page.mouse.move(x2, y1, { steps: 1 });
+    await page.mouse.up();
+    await expect(page.locator("#aviso")).toContainText("Con P₁");
+    await expect(yP0).toHaveValue("9");
+  });
 });

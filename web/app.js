@@ -26,6 +26,9 @@ const estado = {
   params: null,
   // Arrastre de un asa en curso (ver alArrastrar) o null.
   arrastre: null,
+  // Ultimo aviso de un gesto nuevo llegado mientras el anterior esperaba su
+  // respuesta final: [id, x, y, soltado] o null.
+  siguienteArrastre: null,
   // Ultimo metodo marcado en cada familia, para volver a el al regresar.
   ultimoPorFamilia: {},
 };
@@ -415,7 +418,16 @@ const FRENO_MS = 100;
 
 function alArrastrar(id, x, y, soltado) {
   if (!estado.metodo || !estado.params) return;
+  // Otra asa tomada mientras la anterior espera su respuesta final: se aplica
+  // cuando esa termine, sobre el formulario que deje (vuelto al valido si el
+  // nucleo la rechazo). Mezclarlas revertiria la equivocada.
+  if (estado.arrastre?.soltado) {
+    estado.siguienteArrastre = [id, x, y, soltado];
+    return;
+  }
   if (!estado.arrastre) {
+    // Un aviso viejo (una vuelta al valido, una exportacion) ya no aplica.
+    avisar("");
     recorrido.pausar();
     recorrido.deshabilitar(true);
     // Lo que la persona ve en el formulario, aunque haya cambiado otro campo
@@ -516,13 +528,18 @@ function avisoArrastre(mensaje) {
 // Soltar en un valor que el nucleo rechaza devuelve el dato al ultimo valido:
 // sin dibujo no quedarian asas para corregirlo arrastrando.
 function volverAlValido(arrastre, intentados, error) {
-  const { validos, id } = arrastre;
-  const asa = (params) => asasDe(estado.metodo, params, estado.resultado).asas.find((a) => a.id === id);
+  const { validos, actuales, id } = arrastre;
+  const asa = (params) => asasDe(estado.metodo, params, estado.resultado)?.asas.find((a) => a.id === id);
+  const valida = asa(validos);
+  // Vuelve solo el dato del asa: lo demas del formulario (otro punto editado a
+  // mano sin resolver) queda como la persona lo dejo.
+  const revertidos = valida ? mover(estado.metodo, actuales, id, valida.x, valida.y) : validos;
   const campo = campoDe(id);
-  formulario.poner(campo, validos[campo]);
-  if (campo === "y0") formulario.poner("x0", validos.x0);
+  formulario.poner(campo, revertidos[campo]);
+  if (campo === "y0") formulario.poner("x0", revertidos.x0);
   const mensaje = `Con ${describir(asa(intentados))} no se pudo resolver: `
-    + `${error.message.replace(/\.$/, "")}. Se volvió a ${describir(asa(validos))}.`;
+    + `${error.message.replace(/\.$/, "")}. `
+    + `Se volvió a ${valida ? describir(valida) : "lo último que se pudo resolver"}.`;
   terminarArrastre();
   avisar(mensaje);
 }
@@ -530,9 +547,11 @@ function volverAlValido(arrastre, intentados, error) {
 // Al soltar: el ultimo resultado valido se pinta completo y el recorrido vuelve.
 function terminarArrastre() {
   const { validos } = estado.arrastre;
+  const siguiente = estado.siguienteArrastre;
   cancelarArrastre();
   estado.params = validos;
   pintarResultado({ conservarVista: true });
+  if (siguiente) alArrastrar(...siguiente);
 }
 
 // Resolver, cambiar de metodo, limpiar o comparar cortan un arrastre en curso:
@@ -542,8 +561,12 @@ function cancelarArrastre() {
   if (!arrastre) return;
   clearTimeout(arrastre.temporizador);
   estado.arrastre = null;
+  estado.siguienteArrastre = null;
   avisoArrastre("");
   recorrido.deshabilitar(false);
+  // Lo que escucha el formulario (la vista previa de la integral) se entera
+  // una vez al final: es region viva y no puede anunciar cada movimiento.
+  formulario.contenedor.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 // ------------------------------------------------------------ familias y chips

@@ -504,6 +504,7 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .boton:hover { border-color: var(--accent); }
 .boton:disabled { opacity: 0.5; cursor: default; }
+.boton-icono:disabled { opacity: 0.5; cursor: default; }
 
 .boton-primario {
   color: var(--accent-tinta);

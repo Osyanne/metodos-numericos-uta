@@ -140,7 +140,7 @@ export class Plano {
       ? null
       : this._redondearAsa(acotar(wy, v.y0, v.y1), v.y1 - v.y0, a.abajo - a.arriba);
     if (x === tomada.x && y === tomada.y) return;
-    Object.assign(tomada, { x, y });
+    Object.assign(tomada, { x, y, avisada: true });
     asa.x = x;
     if (y !== null) asa.y = y;
     this.alArrastrar?.(tomada.id, x, y, false);
@@ -474,8 +474,10 @@ export class Plano {
       arrastrando = null;
       c.classList.remove("arrastrando");
       const tomada = this._asaTomada;
-      if (tomada) {
-        this._asaTomada = null;
+      this._asaTomada = null;
+      // Un asa que se movio sin cambiar de valor (un temblor vertical sobre
+      // una de eje x) no avisa: no hubo arrastre que terminar.
+      if (tomada?.avisada) {
         this.alArrastrar?.(tomada.id, tomada.x, tomada.y, true);
         return;
       }
