@@ -534,3 +534,126 @@ test("atenuar cambia el dibujo de las capas y se deshace", async ({ page }) => {
   });
   expect(r).toEqual({ cambia: true, vuelve: true });
 });
+
+// Coordenadas de pagina del asa `id` del plano de prueba.
+async function dondeAsa(page, id) {
+  const caja = await page.locator("#lienzoAsas").boundingBox();
+  const [px, py] = await page.evaluate((id) => window.planoPrueba.posicionAsa(id), id);
+  return [caja.x + px, caja.y + py];
+}
+
+async function arrastrar(page, [x, y], dx, dy) {
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 8 });
+  await page.mouse.up();
+}
+
+test("_redondearAsa deja el valor a la precision de un pixel, tambien con zoom extremo", async ({ page }) => {
+  await planoConAsas(page);
+  const r = await enPlano(page, () => {
+    const p = window.planoPrueba;
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = "any";
+    const caso = (valor, rango) => {
+      const v = p._redondearAsa(valor, rango, 600);
+      const paso = 10 ** Math.floor(Math.log10(rango / 600));
+      input.value = String(v);
+      return {
+        finito: Number.isFinite(v),
+        multiplo: Math.abs(v / paso - Math.round(v / paso)) < 1e-6,
+        valido: input.validity.valid && input.value !== "",
+      };
+    };
+    return {
+      normal: p._redondearAsa(1.36729, 10, 600),
+      sinRuido: p._redondearAsa(0.1 + 0.2, 10, 600),
+      chico: caso(1.2345678912345e-7, 1e-6),
+      grande: caso(123456789.123, 1e6),
+    };
+  });
+  expect(r.normal).toBe(1.37);
+  expect(r.sinRuido).toBe(0.3);
+  expect(r.chico).toEqual({ finito: true, multiplo: true, valido: true });
+  expect(r.grande).toEqual({ finito: true, multiplo: true, valido: true });
+});
+
+test("arrastrar un asa de eje x avisa cada valor y al soltar, sin mover la vista", async ({ page }) => {
+  await planoConAsas(page);
+  await arrastrar(page, await dondeAsa(page, "x0"), 60, 30);
+  const r = await enPlano(page, () => ({
+    arrastres: window.arrastres, elegidos: window.elegidos, vista: window.planoPrueba.vista,
+  }));
+  expect(r.vista).toEqual({ x0: 0, x1: 10, y0: -5, y1: 5 });
+  expect(r.elegidos).toEqual([]);
+  const ultima = r.arrastres.at(-1);
+  expect(ultima[0]).toBe("x0");
+  expect(ultima[1]).toBeCloseTo(2 + 60 * 10 / 528, 1);
+  expect(ultima[2]).toBeNull();
+  expect(ultima[3]).toBe(true);
+  expect(r.arrastres.slice(0, -1).every((a) => a[3] === false && a[2] === null)).toBe(true);
+  expect(r.arrastres.length).toBeGreaterThan(2);
+});
+
+test("un asa libre cambia tambien su y", async ({ page }) => {
+  await planoConAsas(page);
+  await arrastrar(page, await dondeAsa(page, "p:0"), 40, -50);
+  const ultima = await enPlano(page, () => window.arrastres.at(-1));
+  expect(ultima[0]).toBe("p:0");
+  expect(ultima[1]).toBeGreaterThan(5.5);
+  expect(ultima[2]).toBeGreaterThan(2);
+  expect(ultima[3]).toBe(true);
+});
+
+test("el valor de un asa no sale de la vista", async ({ page }) => {
+  await planoConAsas(page);
+  await arrastrar(page, await dondeAsa(page, "x0"), 900, 0);
+  const ultima = await enPlano(page, () => window.arrastres.at(-1));
+  expect(ultima[1]).toBe(10);
+});
+
+test("pointercancel a mitad de arrastre cuenta como soltar", async ({ page }) => {
+  await planoConAsas(page);
+  const [x, y] = await dondeAsa(page, "x0");
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 50, y, { steps: 5 });
+  await page.locator("#lienzoAsas").dispatchEvent("pointercancel", { pointerId: 1, isPrimary: true });
+  await page.mouse.up();
+  const r = await enPlano(page, () => window.arrastres);
+  expect(r.at(-1)[3]).toBe(true);
+  expect(r.filter((a) => a[3]).length).toBe(1);
+});
+
+test("un clic sin mover sobre un asa sigue eligiendo la fila del punto de abajo", async ({ page }) => {
+  await planoConAsas(page);
+  await enPlano(page, () => {
+    const p = window.planoPrueba;
+    p.capas.push({ tipo: "puntos", nombre: "datos", color: "--serie-2", puntos: [{ x: 5, y: 1 }], aparece: [1] });
+    p.marcarPaso(0);
+  });
+  await page.mouse.click(...await dondeAsa(page, "p:0"));
+  const r = await enPlano(page, () => ({ arrastres: window.arrastres, elegidos: window.elegidos }));
+  expect(r).toEqual({ arrastres: [], elegidos: [1] });
+});
+
+test("arrastrar el fondo, lejos de las asas, sigue moviendo la vista", async ({ page }) => {
+  await planoConAsas(page);
+  const caja = await page.locator("#lienzoAsas").boundingBox();
+  await arrastrar(page, [caja.x + 450, caja.y + 60], -80, 0);
+  const r = await enPlano(page, () => ({ arrastres: window.arrastres, x0: window.planoPrueba.vista.x0 }));
+  expect(r.arrastres).toEqual([]);
+  expect(r.x0).toBeGreaterThan(0.5);
+});
+
+test("el cursor invita a tomar un asa solo cuando hay una debajo", async ({ page }) => {
+  await planoConAsas(page);
+  const lienzo = page.locator("#lienzoAsas");
+  const [x, y] = await dondeAsa(page, "x0");
+  await page.mouse.move(x, y);
+  await expect(lienzo).toHaveClass(/sobre-asa/);
+  expect(await enPlano(page, () => window.planoPrueba.asaActiva)).toBe("x0");
+  await page.mouse.move(x + 200, y - 100);
+  await expect(lienzo).not.toHaveClass(/sobre-asa/);
+});

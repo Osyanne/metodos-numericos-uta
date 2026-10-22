@@ -657,6 +657,7 @@ output { font-family: var(--mono); color: var(--accent); }
 
 #plano { display: block; cursor: crosshair; touch-action: none; max-width: 100%; }
 #plano:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+#plano.sobre-asa { cursor: grab; }
 #plano.arrastrando { cursor: grabbing; }
 
 /* ---------------------------------------------------------- recorrido */

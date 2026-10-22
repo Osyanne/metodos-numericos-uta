@@ -42,11 +42,14 @@ const RADIO_ASA_TACTIL = 20;
 const ALFA_TENUE = 0.25;
 
 export class Plano {
-  constructor(canvas, { alMuestrear, alElegir } = {}) {
+  constructor(canvas, { alMuestrear, alElegir, alArrastrar } = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.alMuestrear = alMuestrear;
     this.alElegir = alElegir;
+    // alArrastrar(id, x, y, soltado): un asa se movio a (x, y), y es null en un
+    // asa de eje x; soltado es true una sola vez, al terminar el gesto.
+    this.alArrastrar = alArrastrar;
 
     this.capas = [];
     this.resample = null;
@@ -104,8 +107,43 @@ export class Plano {
   // capa: { tipo: "asas", asas: [{ id, x, y, eje: "x" | "xy", etiqueta }] } o
   // null. Va aparte de las capas: un resultado nuevo no la borra.
   ponerAsas(capa) {
-    this.asas = capa;
+    // El asa que se esta arrastrando sigue al puntero, no al dato que llega.
+    const tomada = this._asaTomada;
+    this.asas = capa && tomada
+      ? { ...capa, asas: capa.asas.map((a) => (a.id === tomada.id
+        ? { ...a, x: tomada.x, y: tomada.y ?? a.y }
+        : a)) }
+      : capa;
     this._pintar();
+  }
+
+  // Redondea a la potencia de 10 que entra en un pixel: con 10 unidades en
+  // 600 px, a 0.01. toFixed quita el ruido binario (0.1 + 0.2 da 0.3).
+  _redondearAsa(valor, rango, largoPx) {
+    const paso = 10 ** Math.floor(Math.log10(rango / largoPx));
+    const decimales = Math.min(100, Math.max(0, -Math.floor(Math.log10(paso))));
+    return Number((Math.round(valor / paso) * paso).toFixed(decimales));
+  }
+
+  // Lleva el asa tomada a (px, py), dentro de la vista y redondeada, y avisa
+  // si el valor cambio.
+  _moverAsa(px, py) {
+    const tomada = this._asaTomada;
+    const asa = this.asas?.asas.find((a) => a.id === tomada.id);
+    if (!asa) return;
+    const v = this.vista;
+    const a = this._area;
+    const [wx, wy] = this._aMundo(px, py);
+    const acotar = (valor, min, max) => Math.min(Math.max(valor, min), max);
+    const x = this._redondearAsa(acotar(wx, v.x0, v.x1), v.x1 - v.x0, a.der - a.izq);
+    const y = asa.eje === "x"
+      ? null
+      : this._redondearAsa(acotar(wy, v.y0, v.y1), v.y1 - v.y0, a.abajo - a.arriba);
+    if (x === tomada.x && y === tomada.y) return;
+    Object.assign(tomada, { x, y });
+    asa.x = x;
+    if (y !== null) asa.y = y;
+    this.alArrastrar?.(tomada.id, x, y, false);
   }
 
   atenuar(activo) {
@@ -388,20 +426,36 @@ export class Plano {
       }
     });
 
+    // Sobre un asa, el arrastre del asa empieza recien al moverse UMBRAL_CLIC:
+    // antes es un clic, que sigue eligiendo la fila del punto que haya abajo.
     let arrastrando = null;
     c.addEventListener("pointerdown", (e) => {
       this._cancelarAnimacion();
       this._invalidarRemuestreo();
       c.focus({ preventScroll: true });
-      arrastrando = { ...this._posicionObj(e), vista: { ...this.vista } };
+      const inicio = this._posicionObj(e);
+      const asa = e.button === 0 ? this.asaEn(inicio.x, inicio.y, e.pointerType === "touch") : null;
+      arrastrando = { ...inicio, vista: { ...this.vista }, asa };
       c.setPointerCapture(e.pointerId);
-      c.classList.add("arrastrando");
+      if (!asa) c.classList.add("arrastrando");
     });
 
     c.addEventListener("pointermove", (e) => {
       const [px, py] = this._posicion(e);
       this.cursor = this._aMundo(px, py);
-      if (arrastrando) {
+      if (arrastrando?.asa) {
+        if (!this._asaTomada && Math.hypot(px - arrastrando.x, py - arrastrando.y) >= UMBRAL_CLIC) {
+          const asa = this.asas?.asas.find((a) => a.id === arrastrando.asa);
+          this._asaTomada = { id: asa.id, x: asa.x, y: asa.eje === "x" ? null : asa.y };
+          this.asaActiva = asa.id;
+          c.classList.add("arrastrando");
+        }
+        if (this._asaTomada) this._moverAsa(px, py);
+      } else if (!arrastrando) {
+        const asa = this.asaEn(px, py, e.pointerType === "touch");
+        this.asaActiva = asa;
+        c.classList.toggle("sobre-asa", asa !== null);
+      } else {
         const a = this._area;
         const v = arrastrando.vista;
         const dx = ((px - arrastrando.x) / (a.der - a.izq)) * (v.x1 - v.x0);
@@ -419,6 +473,12 @@ export class Plano {
       const inicio = arrastrando;
       arrastrando = null;
       c.classList.remove("arrastrando");
+      const tomada = this._asaTomada;
+      if (tomada) {
+        this._asaTomada = null;
+        this.alArrastrar?.(tomada.id, tomada.x, tomada.y, true);
+        return;
+      }
       this._pedirRemuestreo();
       // Un clic (casi sin mover) con un paso elegido pasa a ese elemento. Solo
       // el boton principal: el derecho abre el menu y el del medio hace scroll.
@@ -430,7 +490,14 @@ export class Plano {
     };
     c.addEventListener("pointerup", soltar);
     c.addEventListener("pointercancel", soltar);
-    c.addEventListener("pointerleave", () => { this.cursor = null; this._pintar(); });
+    c.addEventListener("pointerleave", () => {
+      this.cursor = null;
+      if (!arrastrando) {
+        this.asaActiva = null;
+        c.classList.remove("sobre-asa");
+      }
+      this._pintar();
+    });
 
     c.addEventListener("dblclick", () => {
       this._cancelarAnimacion();
