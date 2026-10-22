@@ -34,6 +34,13 @@ const DURACION_ANIMACION = 2000;
 const UMBRAL_CLIC = 4;
 const RADIO_ELEGIR = 12;
 
+// Un asa se toma a menos de RADIO_ASA px (con el dedo, RADIO_ASA_TACTIL). Se
+// dibuja con radio 6, y con 8 la que esta bajo el puntero o se arrastra.
+const RADIO_ASA = 12;
+const RADIO_ASA_TACTIL = 20;
+// Opacidad de lo atenuado: la misma que lo tenue del recorrido.
+const ALFA_TENUE = 0.25;
+
 export class Plano {
   constructor(canvas, { alMuestrear, alElegir } = {}) {
     this.canvas = canvas;
@@ -50,6 +57,13 @@ export class Plano {
     this.paso = null;
     // Capa extra encima de todas, sin `aparece` (el termino de Lagrange). Ver ponerTermino.
     this.termino = null;
+    // Datos del problema que se pueden arrastrar (ver ponerAsas) y el asa que
+    // esta bajo el puntero o se arrastra, que se dibuja mas grande.
+    this.asas = null;
+    this.asaActiva = null;
+    // Con true las capas se dibujan tenues: el ultimo dibujo valido mientras el
+    // nucleo rechaza el valor que se esta arrastrando.
+    this.atenuado = false;
     this.temporizador = null;
     this.versionMuestreo = 0;
     // Estado de la animacion en curso. `progreso` va de 0 a 1: al llegar a 1
@@ -68,6 +82,8 @@ export class Plano {
   // resample: {expression, variables, domain} o null
   // opciones: { animar } — animar el trazado por defecto, salvo cuando el
   //           dibujo viene de un remuestreo (ahi ya se vio la animacion).
+  //           { conservarVista } — ni encuadrar ni animar: el resultado nuevo
+  //           de un dato que se esta arrastrando, sobre la vista que ya se mira.
   mostrar(capas, resample = null, etiquetas = {}, opciones = {}) {
     this._invalidarRemuestreo();
     this.paso = null;
@@ -75,8 +91,55 @@ export class Plano {
     this.capas = capas.map((c, i) => ({ color: COLORES[i % COLORES.length], ...c }));
     this.resample = resample;
     this.etiquetas = { x: "x", y: "y", ...etiquetas };
+    if (opciones.conservarVista) {
+      this._cancelarAnimacion();
+      this._pintar();
+      this._pedirRemuestreo();
+      return;
+    }
     this.encuadrar();
     if (opciones.animar !== false) this._iniciarAnimacion();
+  }
+
+  // capa: { tipo: "asas", asas: [{ id, x, y, eje: "x" | "xy", etiqueta }] } o
+  // null. Va aparte de las capas: un resultado nuevo no la borra.
+  ponerAsas(capa) {
+    this.asas = capa;
+    this._pintar();
+  }
+
+  atenuar(activo) {
+    this.atenuado = activo;
+    this._pintar();
+  }
+
+  // Donde esta dibujada el asa `id`, en pixeles CSS del lienzo, o null si no
+  // existe o cae fuera del area. Un asa de eje x va sobre y = 0, o pegada al
+  // borde de arriba o de abajo cuando el 0 no esta a la vista.
+  posicionAsa(id) {
+    const asa = this.asas?.asas.find((a) => a.id === id);
+    if (!asa) return null;
+    const v = this.vista;
+    const y = asa.eje === "x" ? Math.min(Math.max(0, v.y0), v.y1) : asa.y;
+    if (!Number.isFinite(asa.x) || !Number.isFinite(y)) return null;
+    const [px, py] = this._aPantalla(asa.x, y);
+    const a = this._area;
+    // 1 px de holgura: un asa pegada al borde cae justo en el limite del area.
+    if (px < a.izq - 1 || px > a.der + 1 || py < a.arriba - 1 || py > a.abajo + 1) return null;
+    return [px, py];
+  }
+
+  // El asa mas cercana a (px, py) dentro del radio de captura, o null.
+  asaEn(px, py, tactil = false) {
+    let mejor = null;
+    let distMejor = tactil ? RADIO_ASA_TACTIL : RADIO_ASA;
+    for (const asa of this.asas?.asas ?? []) {
+      const pos = this.posicionAsa(asa.id);
+      if (!pos) continue;
+      const d = Math.hypot(pos[0] - px, pos[1] - py);
+      if (d < distMejor) { distMejor = d; mejor = asa.id; }
+    }
+    return mejor;
   }
 
   // Dibuja hasta la fila k: lo que aparece antes va normal, lo de la fila k
@@ -159,6 +222,9 @@ export class Plano {
     this.capas = [];
     this.resample = null;
     this.cursor = null;
+    this.asas = null;
+    this.asaActiva = null;
+    this.atenuado = false;
     this._pintar();
   }
 
@@ -476,21 +542,74 @@ export class Plano {
     if (!this.ancho) return;
     ctx.clearRect(0, 0, this.ancho, this.alto);
     this._ejes();
-    // Las areas de integracion se dibujan primero para que la curva y las
-    // marcas queden encima, no tapadas por su relleno semitransparente.
-    for (const capa of this.capas) {
-      if (capa.tipo === "rectangulos") this._rectangulos(capa);
-      else if (capa.tipo === "trapecios") this._trapecios(capa);
-      else if (capa.tipo === "parabolas") this._parabolas(capa);
-    }
-    for (const capa of this.capas) {
-      if (capa.tipo === "curva") this._curva(capa);
-      else if (capa.tipo === "segmentos") this._segmentos(capa);
-      else if (capa.tipo === "puntos") this._puntos(capa);
-      else if (capa.tipo === "marcas") this._marcas(capa);
-    }
-    if (this.termino) this._curva(this.termino);
+    this._conAlfa(this.atenuado ? ALFA_TENUE : 1, () => {
+      // Las areas de integracion se dibujan primero para que la curva y las
+      // marcas queden encima, no tapadas por su relleno semitransparente.
+      for (const capa of this.capas) {
+        if (capa.tipo === "rectangulos") this._rectangulos(capa);
+        else if (capa.tipo === "trapecios") this._trapecios(capa);
+        else if (capa.tipo === "parabolas") this._parabolas(capa);
+      }
+      for (const capa of this.capas) {
+        if (capa.tipo === "curva") this._curva(capa);
+        else if (capa.tipo === "segmentos") this._segmentos(capa);
+        else if (capa.tipo === "puntos") this._puntos(capa);
+        else if (capa.tipo === "marcas") this._marcas(capa);
+      }
+      if (this.termino) this._curva(this.termino);
+    });
+    this._asas();
     this._coordenadas();
+  }
+
+  // Dibuja con una opacidad comun. Cada capa fija su propio globalAlpha, asi
+  // que con alfa < 1 se dibujan en un lienzo aparte que se compone una vez.
+  _conAlfa(alfa, dibujar) {
+    if (alfa === 1) {
+      dibujar();
+      return;
+    }
+    const aparte = (this._lienzoAparte ??= document.createElement("canvas"));
+    aparte.width = this.canvas.width;
+    aparte.height = this.canvas.height;
+    const ctx = this.ctx;
+    this.ctx = aparte.getContext("2d");
+    this.ctx.setTransform(ctx.getTransform());
+    try {
+      dibujar();
+    } finally {
+      this.ctx = ctx;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = alfa;
+    ctx.drawImage(aparte, 0, 0);
+    ctx.restore();
+  }
+
+  _asas() {
+    if (!this.asas) return;
+    const { ctx } = this;
+    // --accent cambia con la familia en <body>: se lee del canvas, no de :root.
+    const estilo = getComputedStyle(this.canvas);
+    const color = (nombre) => estilo.getPropertyValue(nombre).trim() || "#888";
+    ctx.save();
+    ctx.font = "11px ui-monospace, Consolas, monospace";
+    for (const asa of this.asas.asas) {
+      const pos = this.posicionAsa(asa.id);
+      if (!pos) continue;
+      const [px, py] = pos;
+      ctx.beginPath();
+      ctx.arc(px, py, asa.id === this.asaActiva ? 8 : 6, 0, Math.PI * 2);
+      ctx.fillStyle = color("--accent");
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = color("--surface");
+      ctx.stroke();
+      ctx.fillStyle = color("--ink");
+      ctx.fillText(asa.etiqueta, px + 8, py - 8);
+    }
+    ctx.restore();
   }
 
   // Escala "bonita": 1, 2 o 5 por decada, para que las marcas caigan en

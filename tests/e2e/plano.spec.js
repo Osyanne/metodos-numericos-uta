@@ -422,3 +422,115 @@ test("cortarAnimacion termina la animacion y marcarPaso no la toca", async ({ pa
   });
   expect(r).toEqual({ sigue: true, corta: true });
 });
+
+// ------------------------------------------------------------------ asas
+
+// Plano de prueba de 600x300 con vista fija, dos asas (una de eje x en x = 2 y
+// una libre en (5, 1)) y callbacks que anotan en window.
+async function planoConAsas(page) {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { Plano } = await import("/plano.js");
+    const caja = document.createElement("div");
+    caja.style.cssText = "width:600px;height:300px";
+    const canvas = document.createElement("canvas");
+    canvas.id = "lienzoAsas";
+    caja.append(canvas);
+    document.body.prepend(caja);
+    window.arrastres = [];
+    window.elegidos = [];
+    window.planoPrueba = new Plano(canvas, {
+      alArrastrar: (...args) => window.arrastres.push(args),
+      alElegir: (k) => window.elegidos.push(k),
+    });
+    const plano = window.planoPrueba;
+    plano.mostrar([{ tipo: "curva", nombre: "c", xs: [0, 5, 10], ys: [-4, 3, -1] }], null, {}, { animar: false });
+    plano.vista = { x0: 0, x1: 10, y0: -5, y1: 5 };
+    plano.ponerAsas({ tipo: "asas", asas: [
+      { id: "x0", x: 2, y: 0, eje: "x", etiqueta: "x₀" },
+      { id: "p:0", x: 5, y: 1, eje: "xy", etiqueta: "P₀" },
+    ] });
+  });
+}
+
+const enPlano = (page, fn, arg) => page.evaluate(fn, arg);
+
+test("asaEn encuentra el asa a 12 px, a 20 px con el dedo, y nada más lejos", async ({ page }) => {
+  await planoConAsas(page);
+  const r = await enPlano(page, () => {
+    const p = window.planoPrueba;
+    const [px, py] = p.posicionAsa("x0");
+    return {
+      encima: p.asaEn(px, py),
+      a11: p.asaEn(px + 11, py),
+      a15: p.asaEn(px + 15, py),
+      a15tactil: p.asaEn(px + 15, py, true),
+      a25tactil: p.asaEn(px + 25, py, true),
+      otra: p.asaEn(...p.posicionAsa("p:0")),
+    };
+  });
+  expect(r).toEqual({ encima: "x0", a11: "x0", a15: null, a15tactil: "x0", a25tactil: null, otra: "p:0" });
+});
+
+test("un asa de eje x va sobre y = 0 o pegada al borde si el 0 no se ve", async ({ page }) => {
+  await planoConAsas(page);
+  const r = await enPlano(page, () => {
+    const p = window.planoPrueba;
+    const y = (vista) => {
+      p.vista = vista;
+      return [p.posicionAsa("x0")[1], p._aPantalla(2, vista.y0 > 0 ? vista.y0 : vista.y1 < 0 ? vista.y1 : 0)[1]];
+    };
+    return {
+      centro: y({ x0: 0, x1: 10, y0: -5, y1: 5 }),
+      arriba: y({ x0: 0, x1: 10, y0: 1, y1: 9 }),
+      abajo: y({ x0: 0, x1: 10, y0: -9, y1: -1 }),
+      libre: (y({ x0: 0, x1: 10, y0: -5, y1: 5 }), p.posicionAsa("p:0")[1] === p._aPantalla(5, 1)[1]),
+    };
+  });
+  for (const [dibujada, esperada] of [r.centro, r.arriba, r.abajo]) expect(dibujada).toBeCloseTo(esperada);
+  expect(r.libre).toBe(true);
+});
+
+test("posicionAsa da null fuera de la vista, sin asas y tras limpiar", async ({ page }) => {
+  await planoConAsas(page);
+  const r = await enPlano(page, () => {
+    const p = window.planoPrueba;
+    const desconocida = p.posicionAsa("b");
+    p.vista = { x0: 20, x1: 30, y0: -5, y1: 5 };
+    const fuera = p.posicionAsa("x0");
+    p.vista = { x0: 0, x1: 10, y0: -5, y1: 5 };
+    p.limpiar();
+    return { desconocida, fuera, limpio: p.posicionAsa("x0") };
+  });
+  expect(r).toEqual({ desconocida: null, fuera: null, limpio: null });
+});
+
+test("mostrar con conservarVista no encuadra ni anima", async ({ page }) => {
+  await planoConAsas(page);
+  const r = await enPlano(page, () => {
+    const p = window.planoPrueba;
+    const capas = [{ tipo: "curva", nombre: "c", xs: [100, 200], ys: [100, 300] }];
+    p.mostrar(capas, null, {}, { conservarVista: true });
+    const conservada = { ...p.vista, progreso: p.animacion.progreso, asas: p.posicionAsa("x0") !== null };
+    p.mostrar(capas);
+    return { conservada, encuadrada: p.vista.x0 > 50, anima: p.animacion.progreso < 1 };
+  });
+  expect(r.conservada).toEqual({ x0: 0, x1: 10, y0: -5, y1: 5, progreso: 1, asas: true });
+  expect(r.encuadrada).toBe(true);
+  expect(r.anima).toBe(true);
+});
+
+test("atenuar cambia el dibujo de las capas y se deshace", async ({ page }) => {
+  await planoConAsas(page);
+  const r = await enPlano(page, () => {
+    const p = window.planoPrueba;
+    const c = document.getElementById("lienzoAsas");
+    p.repintar();
+    const normal = c.toDataURL();
+    p.atenuar(true);
+    const tenue = c.toDataURL();
+    p.atenuar(false);
+    return { cambia: tenue !== normal, vuelve: c.toDataURL() === normal };
+  });
+  expect(r).toEqual({ cambia: true, vuelve: true });
+});
