@@ -7,15 +7,15 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual: **339 pruebas de Python**, **172 de navegador** y
-**5 del sitio de GitHub Pages**, todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
+Verificacion local actual: **339 pruebas de Python**, **218 de navegador** y
+**6 del sitio de GitHub Pages**, todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
 tenia 275 y 39 respectivamente. En el total de navegador no entra la prueba de
 las capturas del manual, que solo corre a pedido (`CAPTURAS=1`).
 
 ```bash
 pytest --ignore=tests/e2e     # 339
-npx playwright test           # 172
-npx playwright test --config playwright.pages.config.js   # 5, necesita internet
+npx playwright test           # 218
+npx playwright test --config playwright.pages.config.js   # 6, necesita internet
 ```
 
 ## De donde salen los numeros
@@ -243,6 +243,8 @@ Pages) y verifica con Python corriendo en el navegador:
 - Los errores con el mismo codigo y mensaje que en local: 422 de un metodo,
   404 de un metodo inexistente y 422 de un pedido invalido.
 - La exportacion a CSV y PDF desde los botones.
+- Arrastrar el x0 de Newton-Raphson en el plano: el campo y el resultado se
+  recalculan con Python en el navegador.
 - Que no quede ningun error en la consola.
 
 Si alguna falla, el workflow no publica. `tests/test_pages.py` fija ademas que

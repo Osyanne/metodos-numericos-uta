@@ -136,18 +136,19 @@
         </nav>
       </div>
 
-      <div id="panel-plano" class="panel">
-        <div id="recorrido" class="recorrido" role="group" aria-label="Recorrer las iteraciones" hidden>
-          <div class="recorrido-botones">
-            <button id="paso-primero" class="boton-icono" type="button" aria-label="Primera fila"><span data-icono="player-skip-back"></span></button>
-            <button id="paso-anterior" class="boton-icono" type="button" aria-label="Fila anterior"><span data-icono="player-track-prev"></span></button>
-            <button id="paso-reproducir" class="boton-icono" type="button" aria-label="Reproducir"></button>
-            <button id="paso-siguiente" class="boton-icono" type="button" aria-label="Fila siguiente"><span data-icono="player-track-next"></span></button>
-            <button id="paso-ultimo" class="boton-icono" type="button" aria-label="Última fila"><span data-icono="player-skip-forward"></span></button>
-          </div>
-          <input id="paso" class="control" type="range" min="0" max="0" step="1" value="0" aria-label="Fila del recorrido">
-          <span id="paso-rotulo" class="recorrido-rotulo"></span>
+      <div id="recorrido" class="recorrido" role="group" aria-label="Recorrer las iteraciones" hidden>
+        <div class="recorrido-botones">
+          <button id="paso-primero" class="boton-icono" type="button" aria-label="Primera fila"><span data-icono="player-skip-back"></span></button>
+          <button id="paso-anterior" class="boton-icono" type="button" aria-label="Fila anterior"><span data-icono="player-track-prev"></span></button>
+          <button id="paso-reproducir" class="boton-icono" type="button" aria-label="Reproducir"></button>
+          <button id="paso-siguiente" class="boton-icono" type="button" aria-label="Fila siguiente"><span data-icono="player-track-next"></span></button>
+          <button id="paso-ultimo" class="boton-icono" type="button" aria-label="Última fila"><span data-icono="player-skip-forward"></span></button>
         </div>
+        <input id="paso" class="control" type="range" min="0" max="0" step="1" value="0" aria-label="Fila del recorrido">
+        <span id="paso-rotulo" class="recorrido-rotulo"></span>
+      </div>
+
+      <div id="panel-plano" class="panel">
         <div class="plano-barra">
           <div id="leyenda" class="leyenda"></div>
           <div class="plano-botones">
@@ -158,12 +159,15 @@
         <div class="plano-caja">
           <canvas id="plano" role="img" aria-label="Plano cartesiano interactivo" aria-describedby="plano-ayuda"></canvas>
         </div>
+        <p id="aviso-arrastre" class="aviso-arrastre" hidden></p>
         <div id="fila-actual" class="fila-actual" aria-live="polite"></div>
         <p id="plano-ayuda" class="campo-ayuda">
-          Rueda para acercar, arrastrar para mover, doble clic para volver al inicio.
-          Un clic sobre un punto (o una barra o franja) elige su fila.
-          Con el plano enfocado: flechas para mover, +/− para zoom y Home para vista inicial.
-          Al acercarte la curva se recalcula.
+          Rueda para acercar, arrastrar el fondo para mover, doble clic para volver
+          al inicio. Los círculos de color son datos del problema: arrástralos para
+          cambiarlos y ver el resultado en vivo; el formulario se actualiza a la vez.
+          Un clic sobre un punto (o sobre un rectángulo, trapecio o parábola del área)
+          elige su fila. Con el plano enfocado: flechas para mover, +/− para zoom y
+          Home para vista inicial. Al acercarte la curva se recalcula.
         </p>
         <div id="comparacion"></div>
       </div>

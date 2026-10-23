@@ -526,7 +526,8 @@ test.describe("recorrido", () => {
   test("a 375 px cada etiqueta de la franja queda junto a su valor", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     for (const [slug, preset, k] of [
-      ["interpolacion-lagrange", "lagrange-docente", 3],
+      // Una fila del medio: la ultima de Lagrange tiene menos pares en la franja.
+      ["interpolacion-lagrange", "lagrange-docente", 1],
       ["von-mises", "von-mises-docente", 1],
     ]) {
       await resolver(page, slug, preset);
@@ -539,5 +540,88 @@ test.describe("recorrido", () => {
         ).map((dt) => dt.textContent));
       expect(sueltos, preset).toEqual([]);
     }
+  });
+
+  test("el recorrido se ve y se usa desde la pestaña Iteraciones", async ({ page }) => {
+    await resolver(page);
+    await page.locator("#paso-primero").click();
+    await page.locator("#ver-tabla").click();
+    const reproducir = page.locator("#paso-reproducir");
+    await expect(reproducir).toBeVisible();
+    await reproducir.click();
+    await expect(reproducir).toHaveAttribute("aria-label", "Pausar");
+    await reproducir.click();
+    await expect(reproducir).toHaveAttribute("aria-label", "Reproducir");
+  });
+
+  test("tras comparar, la tabla vieja no invita al clic ni lo atiende", async ({ page }) => {
+    const errores = [];
+    page.on("pageerror", (e) => errores.push(e.message));
+    await resolver(page);
+    await page.locator("#comparar").click();
+    await expect(page.locator("#comparacion table")).toBeVisible();
+    await page.locator("#ver-tabla").click();
+    const fila = page.locator("#tabla tr[data-indice]").first();
+    await expect(fila).toHaveCSS("cursor", "auto");
+    await fila.click();
+    await expect(page.locator("#tabla tr.actual")).toHaveCount(0);
+    expect(errores).toEqual([]);
+  });
+
+  test("deshabilitar apaga los controles y la tabla, y se deshace", async ({ page }) => {
+    await resolver(page);
+    const deshabilitar = (si) => page.evaluate(async (si) => {
+      (await import("/app.js")).recorrido.deshabilitar(si);
+    }, si);
+    await deshabilitar(true);
+    await expect(page.locator("#paso-siguiente")).toBeDisabled();
+    await expect(page.locator("#paso")).toBeDisabled();
+    await expect(page.locator("#tabla")).not.toHaveClass(/recorrible/);
+    // Apagados tambien a la vista: un boton que no responde no parece activo.
+    await expect(page.locator("#paso-siguiente")).toHaveCSS("opacity", "0.5");
+    await deshabilitar(false);
+    await expect(page.locator("#paso-siguiente")).toBeEnabled();
+    await expect(page.locator("#paso")).toBeEnabled();
+    await expect(page.locator("#tabla")).toHaveClass(/recorrible/);
+  });
+
+  test("una clave de derivada faltante no se toma por raíz exacta", async ({ page }) => {
+    await page.goto("/");
+    const r = await page.evaluate(async () => {
+      const { sustitucionPara } = await import("/formulas.js");
+      const sustituir = (fila) => sustitucionPara("newton-raphson", [fila], 0, { columns: [] }, String);
+      return {
+        malEscrita: sustituir({ n: 0, values: { xi: 1, fxi: 0.5 }, detalle: { dfxx: 2 } }),
+        exacta: sustituir({ n: 0, values: { xi: 1, fxi: 0 } }),
+      };
+    });
+    expect(r.malEscrita).toBeNull();
+    expect(r.exacta).toContain("raíz exacta");
+  });
+
+  test("en Newton-Raphson y Von Mises toda fila que avanza muestra la división", async ({ page }) => {
+    await page.goto("/");
+    const sinDivision = await page.evaluate(async () => {
+      const { sustitucionPara } = await import("/formulas.js");
+      const { presetsPara } = await import("/presets.js");
+      const faltan = [];
+      for (const slug of ["newton-raphson", "von-mises"]) {
+        for (const preset of presetsPara(slug)) {
+          const respuesta = await fetch(`/api/methods/${slug}/solve`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ params: preset.params, ...preset.config }),
+          });
+          if (!respuesta.ok) continue;
+          const res = await respuesta.json();
+          res.iterations.forEach((fila, k) => {
+            if (fila.values.fxi === 0 || !Number.isFinite(fila.values.fxi)) return;
+            const html = sustitucionPara(slug, res.iterations, k, res, String) ?? "";
+            if (!html.includes("<mfrac")) faltan.push(`${preset.id} fila ${k}`);
+          });
+        }
+      }
+      return faltan;
+    });
+    expect(sinDivision).toEqual([]);
   });
 });

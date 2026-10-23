@@ -34,12 +34,22 @@ const DURACION_ANIMACION = 2000;
 const UMBRAL_CLIC = 4;
 const RADIO_ELEGIR = 12;
 
+// Un asa se toma a menos de RADIO_ASA px (con el dedo, RADIO_ASA_TACTIL). Se
+// dibuja con radio 6, y con 8 la que esta bajo el puntero o se arrastra.
+const RADIO_ASA = 12;
+const RADIO_ASA_TACTIL = 20;
+// Opacidad de lo atenuado: la misma que lo tenue del recorrido.
+const ALFA_TENUE = 0.25;
+
 export class Plano {
-  constructor(canvas, { alMuestrear, alElegir } = {}) {
+  constructor(canvas, { alMuestrear, alElegir, alArrastrar } = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.alMuestrear = alMuestrear;
     this.alElegir = alElegir;
+    // alArrastrar(id, x, y, soltado): un asa se movio a (x, y), y es null en un
+    // asa de eje x; soltado es true una sola vez, al terminar el gesto.
+    this.alArrastrar = alArrastrar;
 
     this.capas = [];
     this.resample = null;
@@ -50,6 +60,13 @@ export class Plano {
     this.paso = null;
     // Capa extra encima de todas, sin `aparece` (el termino de Lagrange). Ver ponerTermino.
     this.termino = null;
+    // Datos del problema que se pueden arrastrar (ver ponerAsas) y el asa que
+    // esta bajo el puntero o se arrastra, que se dibuja mas grande.
+    this.asas = null;
+    this.asaActiva = null;
+    // Con true las capas se dibujan tenues: el ultimo dibujo valido mientras el
+    // nucleo rechaza el valor que se esta arrastrando.
+    this.atenuado = false;
     this.temporizador = null;
     this.versionMuestreo = 0;
     // Estado de la animacion en curso. `progreso` va de 0 a 1: al llegar a 1
@@ -68,6 +85,8 @@ export class Plano {
   // resample: {expression, variables, domain} o null
   // opciones: { animar } — animar el trazado por defecto, salvo cuando el
   //           dibujo viene de un remuestreo (ahi ya se vio la animacion).
+  //           { conservarVista } — ni encuadrar ni animar: el resultado nuevo
+  //           de un dato que se esta arrastrando, sobre la vista que ya se mira.
   mostrar(capas, resample = null, etiquetas = {}, opciones = {}) {
     this._invalidarRemuestreo();
     this.paso = null;
@@ -75,8 +94,90 @@ export class Plano {
     this.capas = capas.map((c, i) => ({ color: COLORES[i % COLORES.length], ...c }));
     this.resample = resample;
     this.etiquetas = { x: "x", y: "y", ...etiquetas };
+    if (opciones.conservarVista) {
+      this._cancelarAnimacion();
+      this._pintar();
+      this._pedirRemuestreo();
+      return;
+    }
     this.encuadrar();
     if (opciones.animar !== false) this._iniciarAnimacion();
+  }
+
+  // capa: { tipo: "asas", asas: [{ id, x, y, eje: "x" | "xy", etiqueta }] } o
+  // null. Va aparte de las capas: un resultado nuevo no la borra.
+  ponerAsas(capa) {
+    // El asa que se esta arrastrando sigue al puntero, no al dato que llega.
+    const tomada = this._asaTomada;
+    this.asas = capa && tomada
+      ? { ...capa, asas: capa.asas.map((a) => (a.id === tomada.id
+        ? { ...a, x: tomada.x, y: tomada.y ?? a.y }
+        : a)) }
+      : capa;
+    this._pintar();
+  }
+
+  // Redondea a la potencia de 10 que entra en un pixel: con 10 unidades en
+  // 600 px, a 0.01. toFixed quita el ruido binario (0.1 + 0.2 da 0.3).
+  _redondearAsa(valor, rango, largoPx) {
+    const paso = 10 ** Math.floor(Math.log10(rango / largoPx));
+    const decimales = Math.min(100, Math.max(0, -Math.floor(Math.log10(paso))));
+    return Number((Math.round(valor / paso) * paso).toFixed(decimales));
+  }
+
+  // Lleva el asa tomada a (px, py), dentro de la vista y redondeada, y avisa
+  // si el valor cambio.
+  _moverAsa(px, py) {
+    const tomada = this._asaTomada;
+    const asa = this.asas?.asas.find((a) => a.id === tomada.id);
+    if (!asa) return;
+    const v = this.vista;
+    const a = this._area;
+    const [wx, wy] = this._aMundo(px, py);
+    const acotar = (valor, min, max) => Math.min(Math.max(valor, min), max);
+    const x = this._redondearAsa(acotar(wx, v.x0, v.x1), v.x1 - v.x0, a.der - a.izq);
+    const y = asa.eje === "x"
+      ? null
+      : this._redondearAsa(acotar(wy, v.y0, v.y1), v.y1 - v.y0, a.abajo - a.arriba);
+    if (x === tomada.x && y === tomada.y) return;
+    Object.assign(tomada, { x, y, avisada: true });
+    asa.x = x;
+    if (y !== null) asa.y = y;
+    this.alArrastrar?.(tomada.id, x, y, false);
+  }
+
+  atenuar(activo) {
+    this.atenuado = activo;
+    this._pintar();
+  }
+
+  // Donde esta dibujada el asa `id`, en pixeles CSS del lienzo, o null si no
+  // existe o cae fuera del area. Un asa de eje x va sobre y = 0, o pegada al
+  // borde de arriba o de abajo cuando el 0 no esta a la vista.
+  posicionAsa(id) {
+    const asa = this.asas?.asas.find((a) => a.id === id);
+    if (!asa) return null;
+    const v = this.vista;
+    const y = asa.eje === "x" ? Math.min(Math.max(0, v.y0), v.y1) : asa.y;
+    if (!Number.isFinite(asa.x) || !Number.isFinite(y)) return null;
+    const [px, py] = this._aPantalla(asa.x, y);
+    const a = this._area;
+    // 1 px de holgura: un asa pegada al borde cae justo en el limite del area.
+    if (px < a.izq - 1 || px > a.der + 1 || py < a.arriba - 1 || py > a.abajo + 1) return null;
+    return [px, py];
+  }
+
+  // El asa mas cercana a (px, py) dentro del radio de captura, o null.
+  asaEn(px, py, tactil = false) {
+    let mejor = null;
+    let distMejor = tactil ? RADIO_ASA_TACTIL : RADIO_ASA;
+    for (const asa of this.asas?.asas ?? []) {
+      const pos = this.posicionAsa(asa.id);
+      if (!pos) continue;
+      const d = Math.hypot(pos[0] - px, pos[1] - py);
+      if (d < distMejor) { distMejor = d; mejor = asa.id; }
+    }
+    return mejor;
   }
 
   // Dibuja hasta la fila k: lo que aparece antes va normal, lo de la fila k
@@ -159,6 +260,9 @@ export class Plano {
     this.capas = [];
     this.resample = null;
     this.cursor = null;
+    this.asas = null;
+    this.asaActiva = null;
+    this.atenuado = false;
     this._pintar();
   }
 
@@ -322,20 +426,36 @@ export class Plano {
       }
     });
 
+    // Sobre un asa, el arrastre del asa empieza recien al moverse UMBRAL_CLIC:
+    // antes es un clic, que sigue eligiendo la fila del punto que haya abajo.
     let arrastrando = null;
     c.addEventListener("pointerdown", (e) => {
       this._cancelarAnimacion();
       this._invalidarRemuestreo();
       c.focus({ preventScroll: true });
-      arrastrando = { ...this._posicionObj(e), vista: { ...this.vista } };
+      const inicio = this._posicionObj(e);
+      const asa = e.button === 0 ? this.asaEn(inicio.x, inicio.y, e.pointerType === "touch") : null;
+      arrastrando = { ...inicio, vista: { ...this.vista }, asa };
       c.setPointerCapture(e.pointerId);
-      c.classList.add("arrastrando");
+      if (!asa) c.classList.add("arrastrando");
     });
 
     c.addEventListener("pointermove", (e) => {
       const [px, py] = this._posicion(e);
       this.cursor = this._aMundo(px, py);
-      if (arrastrando) {
+      if (arrastrando?.asa) {
+        if (!this._asaTomada && Math.hypot(px - arrastrando.x, py - arrastrando.y) >= UMBRAL_CLIC) {
+          const asa = this.asas?.asas.find((a) => a.id === arrastrando.asa);
+          this._asaTomada = { id: asa.id, x: asa.x, y: asa.eje === "x" ? null : asa.y };
+          this.asaActiva = asa.id;
+          c.classList.add("arrastrando");
+        }
+        if (this._asaTomada) this._moverAsa(px, py);
+      } else if (!arrastrando) {
+        const asa = this.asaEn(px, py, e.pointerType === "touch");
+        this.asaActiva = asa;
+        c.classList.toggle("sobre-asa", asa !== null);
+      } else {
         const a = this._area;
         const v = arrastrando.vista;
         const dx = ((px - arrastrando.x) / (a.der - a.izq)) * (v.x1 - v.x0);
@@ -353,6 +473,14 @@ export class Plano {
       const inicio = arrastrando;
       arrastrando = null;
       c.classList.remove("arrastrando");
+      const tomada = this._asaTomada;
+      this._asaTomada = null;
+      // Un asa que se movio sin cambiar de valor (un temblor vertical sobre
+      // una de eje x) no avisa: no hubo arrastre que terminar.
+      if (tomada?.avisada) {
+        this.alArrastrar?.(tomada.id, tomada.x, tomada.y, true);
+        return;
+      }
       this._pedirRemuestreo();
       // Un clic (casi sin mover) con un paso elegido pasa a ese elemento. Solo
       // el boton principal: el derecho abre el menu y el del medio hace scroll.
@@ -364,7 +492,14 @@ export class Plano {
     };
     c.addEventListener("pointerup", soltar);
     c.addEventListener("pointercancel", soltar);
-    c.addEventListener("pointerleave", () => { this.cursor = null; this._pintar(); });
+    c.addEventListener("pointerleave", () => {
+      this.cursor = null;
+      if (!arrastrando) {
+        this.asaActiva = null;
+        c.classList.remove("sobre-asa");
+      }
+      this._pintar();
+    });
 
     c.addEventListener("dblclick", () => {
       this._cancelarAnimacion();
@@ -476,21 +611,74 @@ export class Plano {
     if (!this.ancho) return;
     ctx.clearRect(0, 0, this.ancho, this.alto);
     this._ejes();
-    // Las areas de integracion se dibujan primero para que la curva y las
-    // marcas queden encima, no tapadas por su relleno semitransparente.
-    for (const capa of this.capas) {
-      if (capa.tipo === "rectangulos") this._rectangulos(capa);
-      else if (capa.tipo === "trapecios") this._trapecios(capa);
-      else if (capa.tipo === "parabolas") this._parabolas(capa);
-    }
-    for (const capa of this.capas) {
-      if (capa.tipo === "curva") this._curva(capa);
-      else if (capa.tipo === "segmentos") this._segmentos(capa);
-      else if (capa.tipo === "puntos") this._puntos(capa);
-      else if (capa.tipo === "marcas") this._marcas(capa);
-    }
-    if (this.termino) this._curva(this.termino);
+    this._conAlfa(this.atenuado ? ALFA_TENUE : 1, () => {
+      // Las areas de integracion se dibujan primero para que la curva y las
+      // marcas queden encima, no tapadas por su relleno semitransparente.
+      for (const capa of this.capas) {
+        if (capa.tipo === "rectangulos") this._rectangulos(capa);
+        else if (capa.tipo === "trapecios") this._trapecios(capa);
+        else if (capa.tipo === "parabolas") this._parabolas(capa);
+      }
+      for (const capa of this.capas) {
+        if (capa.tipo === "curva") this._curva(capa);
+        else if (capa.tipo === "segmentos") this._segmentos(capa);
+        else if (capa.tipo === "puntos") this._puntos(capa);
+        else if (capa.tipo === "marcas") this._marcas(capa);
+      }
+      if (this.termino) this._curva(this.termino);
+    });
+    this._asas();
     this._coordenadas();
+  }
+
+  // Dibuja con una opacidad comun. Cada capa fija su propio globalAlpha, asi
+  // que con alfa < 1 se dibujan en un lienzo aparte que se compone una vez.
+  _conAlfa(alfa, dibujar) {
+    if (alfa === 1) {
+      dibujar();
+      return;
+    }
+    const aparte = (this._lienzoAparte ??= document.createElement("canvas"));
+    aparte.width = this.canvas.width;
+    aparte.height = this.canvas.height;
+    const ctx = this.ctx;
+    this.ctx = aparte.getContext("2d");
+    this.ctx.setTransform(ctx.getTransform());
+    try {
+      dibujar();
+    } finally {
+      this.ctx = ctx;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = alfa;
+    ctx.drawImage(aparte, 0, 0);
+    ctx.restore();
+  }
+
+  _asas() {
+    if (!this.asas) return;
+    const { ctx } = this;
+    // --accent cambia con la familia en <body>: se lee del canvas, no de :root.
+    const estilo = getComputedStyle(this.canvas);
+    const color = (nombre) => estilo.getPropertyValue(nombre).trim() || "#888";
+    ctx.save();
+    ctx.font = "11px ui-monospace, Consolas, monospace";
+    for (const asa of this.asas.asas) {
+      const pos = this.posicionAsa(asa.id);
+      if (!pos) continue;
+      const [px, py] = pos;
+      ctx.beginPath();
+      ctx.arc(px, py, asa.id === this.asaActiva ? 8 : 6, 0, Math.PI * 2);
+      ctx.fillStyle = color("--accent");
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = color("--surface");
+      ctx.stroke();
+      ctx.fillStyle = color("--ink");
+      ctx.fillText(asa.etiqueta, px + 8, py - 8);
+    }
+    ctx.restore();
   }
 
   // Escala "bonita": 1, 2 o 5 por decada, para que las marcas caigan en
@@ -910,6 +1098,12 @@ export class Plano {
     // resultado final.
     const total = capa.puntos.length;
     const hasta = Math.ceil(total * this.animacion.progreso);
+    // Con mas marcas a la vista de las que caben a 16 px entre si, los rotulos
+    // se pisan y dibujarlos cuesta (Punto Medio con n = 10 000): solo se
+    // rotula la de la fila actual.
+    const v = this.vista;
+    const visibles = capa.puntos.filter((p) => p.x >= v.x0 && p.x <= v.x1).length;
+    const rotularTodas = visibles <= (a.der - a.izq) / 16;
     for (let i = 0; i < Math.min(total, hasta); i++) {
       const p = capa.puntos[i];
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
@@ -922,7 +1116,7 @@ export class Plano {
       ctx.beginPath();
       ctx.arc(px, py, 3, 0, Math.PI * 2);
       ctx.stroke();
-      if (p.etiqueta !== undefined) {
+      if (p.etiqueta !== undefined && (rotularTodas || estado === "actual")) {
         ctx.fillText(p.etiqueta, px + 6, py - 6);
       }
       if (estado === "actual") this._anillo(px, py, 3);

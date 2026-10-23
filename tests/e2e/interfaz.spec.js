@@ -236,3 +236,32 @@ test("el orden escrito como 2.0 muestra la fórmula de Heun", async ({ page }) =
   await page.locator("#campo-orden").fill("2.0");
   await expect(page.locator("#formula math")).toHaveAttribute("data-formula", "runge-kutta-2");
 });
+
+// ------------------------------------------------------------------ formulario
+
+// Lo que un asa escribe con poner() se lee igual con leer() y se ve en el campo.
+for (const [slug, nombre, valor] of [
+  ["newton-raphson", "x0", 1.37],
+  ["runge-kutta", "y0", [1, 3]],
+  ["interpolacion-lagrange", "points", [[1, 0], [4, 2]]],
+]) {
+  test(`poner y leer dan lo mismo en ${nombre}`, async ({ page }) => {
+    const r = await page.evaluate(async ([slug, nombre, valor]) => {
+      const { Formulario } = await import("/forms.js");
+      const metodos = await (await fetch("/api/methods")).json();
+      const caja = document.createElement("div");
+      document.body.append(caja);
+      const formulario = new Formulario(caja);
+      formulario.dibujar(metodos.find((m) => m.slug === slug));
+      formulario.poner(nombre, valor);
+      formulario.poner("no-existe", 5);
+      const campo = formulario.campos.find((c) => c.definicion.name === nombre);
+      return {
+        leido: campo.leer(),
+        visibles: [...campo.elemento.querySelectorAll("input")].map((i) => i.value).filter(Boolean),
+      };
+    }, [slug, nombre, valor]);
+    expect(r.leido).toEqual(valor);
+    expect(r.visibles).toEqual([valor].flat(2).map(String));
+  });
+}

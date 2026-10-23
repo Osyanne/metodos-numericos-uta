@@ -100,6 +100,27 @@ test("exporta CSV y PDF desde los botones", async () => {
   }
 });
 
+test("arrastrar x₀ de Newton-Raphson recalcula con Python en el navegador", async () => {
+  await elegirMetodo(page, "newton-raphson");
+  await page.locator("#preset").selectOption("newton-clasico");
+  await page.locator("#resolver").click();
+  await expect(page.locator("#resumen .estado")).toBeVisible();
+  const resumen = await page.locator("#resumen").textContent();
+  const posicion = () => page.evaluate(async () =>
+    (await import(new URL("app.js", location.href))).plano.posicionAsa("x0"));
+  await page.locator("#plano").scrollIntoViewIfNeeded();
+  await expect.poll(posicion).not.toBeNull();
+  const [px, py] = await posicion();
+  const caja = await page.locator("#plano").boundingBox();
+  await page.mouse.move(caja.x + px, caja.y + py);
+  await page.mouse.down();
+  await page.mouse.move(caja.x + px - 60, caja.y + py, { steps: 10 });
+  await page.mouse.up();
+  await expect(page.locator("#campo-x0")).not.toHaveValue("2");
+  await expect.poll(() => page.locator("#resumen").textContent()).not.toBe(resumen);
+  await expect(page.locator("#paso-siguiente")).toBeEnabled();
+});
+
 test("no quedan errores en la consola", async () => {
   expect(errores).toEqual([]);
 });

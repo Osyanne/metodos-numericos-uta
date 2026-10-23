@@ -504,6 +504,7 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .boton:hover { border-color: var(--accent); }
 .boton:disabled { opacity: 0.5; cursor: default; }
+.boton-icono:disabled { opacity: 0.5; cursor: default; }
 
 .boton-primario {
   color: var(--accent-tinta);
@@ -529,6 +530,16 @@ output { font-family: var(--mono); color: var(--accent); }
 .pestana:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------------------------------------------------------- resultados */
+
+/* El motivo por el que el nucleo rechaza un dato mientras se arrastra. */
+.aviso-arrastre {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--mal);
+  background: var(--mal-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
 
 .aviso {
   margin: 0;
@@ -657,6 +668,7 @@ output { font-family: var(--mono); color: var(--accent); }
 
 #plano { display: block; cursor: crosshair; touch-action: none; max-width: 100%; }
 #plano:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+#plano.sobre-asa { cursor: grab; }
 #plano.arrastrando { cursor: grabbing; }
 
 /* ---------------------------------------------------------- recorrido */
@@ -754,7 +766,7 @@ output { font-family: var(--mono); color: var(--accent); }
 
 .iteraciones tbody tr:last-child td { border-bottom: none; }
 .iteraciones tbody tr:hover { background: var(--surface-2); }
-.iteraciones tbody tr[data-indice] { cursor: pointer; }
+#tabla.recorrible tr[data-indice] { cursor: pointer; }
 .iteraciones tbody tr.actual td { background: var(--accent-bg); }
 .iteraciones tbody tr.actual td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 

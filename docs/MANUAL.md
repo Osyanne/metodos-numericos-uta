@@ -171,7 +171,9 @@ produce una estimacion de error por fila, y la nota lo explica.
 Es un plano de verdad, no una imagen:
 
 - **Rueda del mouse** para acercar y alejar.
-- **Arrastrar** para mover.
+- **Arrastrar el fondo** para mover.
+- **Los circulos de color** son datos del problema y se pueden arrastrar (ver
+  la seccion 6).
 - **Doble clic** vuelve a la vista inicial.
 - Con el plano **enfocado** (haciendo clic o con Tab): flechas para mover, `+`
   y `−` para el zoom, `Home` para volver al inicio.
@@ -192,7 +194,7 @@ iteracion 1, resaltado, y los de las filas siguientes, tenues.
 
 Despues de resolver, el aplicativo no solo muestra el final: se puede ir paso a
 paso, como en el pizarron. Arriba del plano aparece una barra con cinco botones
-y un deslizador. Al resolver queda en la **ultima fila**; para volver a mirar
+y un deslizador; queda a la vista tambien en la pestana **Iteraciones**. Al resolver queda en la **ultima fila**; para volver a mirar
 desde el principio se pulsa **Primera fila**.
 
 | Control | Que hace |
@@ -236,7 +238,9 @@ Una vez elegida la fila, todo se mueve junto:
   formula con los numeros de la fila: "En la iteracion n:" (o "En el punto n",
   "En el subintervalo n", "En el paso n") seguido de la sustitucion. Los numeros
   negativos van entre parentesis. En Runge-Kutta se escribe una linea por cada
-  incognita del sistema.
+  incognita del sistema. En Newton-Raphson y Von Mises, si la fila cae justo en
+  la raiz (f(x) = 0) el metodo no avanza: en vez de la division se lee
+  `raiz exacta: el metodo no avanza`.
 
 Algunas cosas conviene saberlas:
 
@@ -253,7 +257,45 @@ Algunas cosas conviene saberlas:
 - Si un metodo diverge, tambien se puede recorrer; las filas con valores que no
   existen muestran una raya.
 
-## 6. Comparar metodos
+## 6. Arrastrar en el plano
+
+![Arrastrando el x0 de Newton-Raphson](capturas/05-arrastre.png)
+
+Despues de resolver, los datos del problema aparecen en el plano como
+**circulos de color** que se pueden tomar con el mouse (o con el dedo) y mover:
+
+| Familia | Que se arrastra |
+|---|---|
+| Raices | El valor inicial `x0`, sobre el eje x. |
+| Interpolacion | Cada punto `P0`, `P1`... en cualquier direccion, y el `x` a evaluar sobre el eje x. |
+| Integracion | Los extremos `a` y `b`, sobre el eje x. |
+| EDO | La condicion inicial (`x0`, `y0`); en un sistema, una por incognita. |
+
+Mientras se arrastra, el campo del formulario cambia a la vez y el metodo **se
+vuelve a resolver en vivo**: el plano y el numero del resultado cambian varias
+veces por segundo. La tabla, la franja y el recorrido esperan a que se suelte;
+al soltar quedan en la ultima fila del resultado nuevo, como despues de
+**Resolver**. En la captura, el `x0` de √2 se lleva de 1 a 0.6 y se ven las
+tangentes nuevas.
+
+- El valor se redondea a lo que se distingue en pantalla: con la vista
+  inicial, a centesimos; acercandose aparecen mas decimales.
+- El dato no sale de la vista. Para llevarlo mas lejos, alejar el zoom o
+  escribirlo en el formulario.
+- Un clic corto sobre un circulo no lo mueve: sigue eligiendo la fila de ese
+  punto (seccion 5).
+- Si el metodo no acepta el valor (por ejemplo `a` mas alla de `b`, dos puntos
+  con la misma `x`, o una derivada que se anula), el dibujo anterior queda
+  tenue y el motivo aparece bajo el plano. Al volver a un valor valido todo
+  vuelve a la normalidad; si se suelta ahi, el dato vuelve al ultimo valor que
+  funciono y un aviso lo explica.
+- Todo lo que se hace arrastrando se puede hacer escribiendo en el formulario y
+  pulsando **Resolver**.
+- En la version en linea (GitHub Pages) Python corre en el navegador: el
+  recalculo es mas lento y la pagina puede trabarse un instante mientras
+  calcula.
+
+## 7. Comparar metodos
 
 **Comparar metodos** resuelve el mismo problema con todos los metodos que
 reciben los mismos datos, y arma una tabla con iteraciones, resultado, error
@@ -265,7 +307,7 @@ punto inicial, y se ve para que sirve congelar la derivada y lo que cuesta.
 Menos iteraciones no siempre es mejor: un metodo puede converger rapido en un
 punto y romperse en otro.
 
-## 7. Exportar
+## 8. Exportar
 
 **Exportar CSV** baja la tabla completa. **Exportar PDF** baja un documento con
 el metodo, la funcion, los parametros, la tabla y el resultado.
