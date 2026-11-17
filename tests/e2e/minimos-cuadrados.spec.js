@@ -175,3 +175,63 @@ for (const tema of ["light", "dark"]) {
     expect(razon).toBeGreaterThanOrEqual(4.5);
   });
 }
+
+// ------------------------------------------------------------------ teoria
+
+test("Teoria del ajuste: se lee sin resolver y trae el ejemplo del docente", async ({ page }) => {
+  await abrir(page);
+  await expect(page.locator("#ver-teoria")).toBeVisible();
+  await page.locator("#ver-teoria").click();
+  const teoria = page.locator("#panel-teoria");
+  await expect(teoria).toBeVisible();
+  await expect(teoria.getByRole("heading", { level: 3 })).toHaveText([
+    "Qué resuelve", "Fórmulas", "Cómo leer r", "Modelos que no son rectas",
+    "Pasos", "Ejemplo del docente",
+  ]);
+  await expect(teoria).toContainText("y = 1.9x + 0.22");
+  await expect(teoria).toContainText("0.0430");
+  await expect(teoria).toContainText("0.9976");
+  expect(await teoria.locator("math").count()).toBeGreaterThanOrEqual(5);
+});
+
+for (const ancho of [320, 375]) {
+  test(`la teoria del ajuste no desborda la pagina a ${ancho} px`, async ({ page }) => {
+    await page.setViewportSize({ width: ancho, height: 812 });
+    await abrir(page);
+    await page.locator("#ver-teoria").click();
+    await expect(page.locator("#panel-teoria")).toBeVisible();
+    expect(await page.evaluate(() =>
+      document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+}
+
+for (const tema of ["light", "dark"]) {
+  test(`la teoria del ajuste es legible en tema ${tema} (contraste AA del texto)`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: tema });
+    await abrir(page);
+    await page.locator("#ver-teoria").click();
+    const peor = await page.evaluate(() => {
+      const num = (c) => c.match(/[\d.]+/g).map(Number);
+      const lum = ([r, g, b]) => {
+        const l = [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+        return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
+      };
+      const fondo = (el) => {
+        for (let e = el; e; e = e.parentElement) {
+          const v = num(getComputedStyle(e).backgroundColor);
+          if (v.length < 4 || v[3] > 0.5) return v.slice(0, 3);
+        }
+        return [255, 255, 255];
+      };
+      let min = 21;
+      for (const el of document.querySelectorAll("#panel-teoria p, #panel-teoria li, #panel-teoria h3, #panel-teoria h4")) {
+        if (!el.textContent.trim()) continue;
+        const a = lum(num(getComputedStyle(el).color).slice(0, 3)) + 0.05;
+        const b = lum(fondo(el)) + 0.05;
+        min = Math.min(min, Math.max(a, b) / Math.min(a, b));
+      }
+      return min;
+    });
+    expect(peor).toBeGreaterThanOrEqual(4.5);
+  });
+}

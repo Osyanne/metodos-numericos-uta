@@ -498,7 +498,118 @@ const SIMPSON_38 = `
 </section>
 `;
 
-const TEORIAS = { "simpson-38": SIMPSON_38 };
+// --------------------------------------------------- ajuste por minimos cuadrados
+
+const sig = mo("∑");
+const yi = sub(mi("y"), i);
+const xiTeo = nodo(i);
+const suma2 = (t) => fila(sig, sup(t, mn("2")));
+const msqrt = (t) => `<msqrt>${t}</msqrt>`;
+const logTeo = (t) => fila(mi("log"), t);
+
+const MC_PIEZAS = mat(
+  fila(mi("N"), mo("="), n, sig, xiTeo, yi, mo("−"), sig, xiTeo, sig, yi),
+  fila(sub(mi("D"), x), mo("="), n, suma2(xiTeo), mo("−"), sup(paren(sig, xiTeo), mn("2"))),
+  fila(sub(mi("D"), mi("y")), mo("="), n, suma2(yi), mo("−"), sup(paren(sig, yi), mn("2"))),
+);
+
+const MC_FORMULAS = mat(
+  fila(mi("m"), mo("="), frac(mi("N"), sub(mi("D"), x))),
+  fila(mi("b"), mo("="), frac(fila(sig, yi, mo("−"), mi("m"), sig, xiTeo), n)),
+  fila(mi("r"), mo("="), frac(mi("N"), msqrt(fila(sub(mi("D"), x), sub(mi("D"), mi("y")))))),
+);
+
+const MC_NORMALES = mat(
+  fila(mi("m"), suma2(xiTeo), mo("+"), mi("b"), sig, xiTeo, mo("="), sig, xiTeo, yi),
+  fila(mi("m"), sig, xiTeo, mo("+"), n, mi("b"), mo("="), sig, yi),
+);
+
+const MC_DOCENTE = mat(
+  fila(mi("m"), mo("="), frac(fila(mn("5"), mo("·"), mn("44.95"), mo("−"), mn("10"), mo("·"), mn("20.1")),
+    fila(mn("5"), mo("·"), mn("22.5"), mo("−"), sup(mn("10"), mn("2")))), mo("="), frac(mn("23.75"), mn("12.5")), mo("="), mn("1.90")),
+  fila(mi("b"), mo("="), frac(fila(mn("20.1"), mo("−"), mn("1.9"), mo("·"), mn("10")), mn("5")), mo("="), mn("0.22")),
+  fila(mi("r"), mo("="), frac(mn("23.75"), msqrt(fila(mn("12.5"), mo("·"), mn("45.34")))), mo("≈"), mn("0.9976")),
+);
+
+const MC_MODELOS = mat(
+  fila(mtext("potencial:"), separa, mi("y"), mo("="), mi("b"), sup(x, mi("m")), mo("⇒"), separa,
+    logTeo(mi("y")), mo("="), mi("m"), logTeo(x), mo("+"), logTeo(mi("b"))),
+  fila(mtext("exponencial:"), separa, mi("y"), mo("="), mi("b"), sup(mi("e"), fila(mi("m"), x)), mo("⇒"), separa,
+    logTeo(mi("y")), mo("="), paren(mi("m"), logTeo(mi("e"))), x, mo("+"), logTeo(mi("b"))),
+  fila(mtext("logarítmica:"), separa, mi("y"), mo("="), mi("m"), logTeo(x), mo("+"), mi("b")),
+);
+
+const MINIMOS_CUADRADOS = `
+<section aria-labelledby="teo-mc-definicion">
+  <h3 id="teo-mc-definicion">Qué resuelve</h3>
+  <p>Cuando se miden datos (xᵢ, yᵢ) con error, no existe una recta que pase por todos los puntos. El
+  <strong>ajuste por mínimos cuadrados</strong> busca la recta y = m x + b que <em>mejor</em> los representa: la que
+  hace mínima la suma de los cuadrados de los residuos dᵢ = m xᵢ + b − yᵢ, es decir, de las distancias verticales
+  entre cada dato y la recta.</p>
+  <p>Hay que hallar dos números, m (la pendiente) y b (la ordenada al origen). Al derivar la suma de cuadrados
+  respecto de m y de b e igualar a cero salen las dos ecuaciones normales:</p>
+  ${MC_NORMALES}
+</section>
+
+<section aria-labelledby="teo-mc-formulas">
+  <h3 id="teo-mc-formulas">Fórmulas</h3>
+  <p>Resolviendo las dos ecuaciones normales, con n datos y las sumas de la tabla:</p>
+  ${MC_PIEZAS}
+  ${MC_FORMULAS}
+  <p>La tabla del docente tiene una columna para cada suma: xᵢ, yᵢ, xᵢyᵢ, xᵢ², yᵢ² y el error (m xᵢ + b − yᵢ)².
+  La fila <strong>Total</strong> da las sumas que entran en las fórmulas, y el total de la columna de error es la suma
+  de cuadrados mínima.</p>
+</section>
+
+<section aria-labelledby="teo-mc-r">
+  <h3 id="teo-mc-r">Cómo leer r</h3>
+  <p>El coeficiente de correlación r mide qué tan alineados están los datos y siempre queda entre −1 y 1:</p>
+  <ul>
+    <li><strong>r = 1</strong>: correlación perfecta y directa (todos los puntos sobre una recta que sube).</li>
+    <li><strong>r = −1</strong>: correlación perfecta e inversa (sobre una recta que baja).</li>
+    <li><strong>r = 0</strong>: no hay correlación: los datos no siguen ninguna recta.</li>
+  </ul>
+  <p>El signo de r es el de la pendiente m. Cuanto más cerca de ±1, mejor describe la recta a los datos.
+  Si todas las y son iguales, r no está definida (el aplicativo lo avisa).</p>
+</section>
+
+<section aria-labelledby="teo-mc-modelos">
+  <h3 id="teo-mc-modelos">Modelos que no son rectas</h3>
+  <p>El potencial, el exponencial y el logarítmico se <strong>linealizan</strong> con logaritmos en base 10 y
+  se ajusta una recta a los datos transformados; después se deshace la transformación para hallar m y b:</p>
+  ${MC_MODELOS}
+  <ul>
+    <li><strong>Potencial:</strong> la pendiente de la recta es m y su ordenada es log b, así que b = 10 elevado a la ordenada.</li>
+    <li><strong>Exponencial:</strong> la pendiente de la recta es m·log e, así que m = pendiente / log e; y b = 10 elevado a la ordenada.</li>
+    <li><strong>Logarítmica:</strong> solo se transforma x; m y b son los de la recta.</li>
+  </ul>
+  <p class="teo-nota"><strong>Condición:</strong> el log solo existe para positivos. El potencial pide x &gt; 0 e y &gt; 0,
+  el exponencial y &gt; 0 y el logarítmico x &gt; 0. En estos modelos la tabla muestra los datos transformados, y r y la suma
+  de cuadrados se miden sobre la recta ajustada a ellos.</p>
+</section>
+
+<section aria-labelledby="teo-mc-pasos">
+  <h3 id="teo-mc-pasos">Pasos</h3>
+  <ol>
+    <li>Armar la tabla con xᵢ, yᵢ, xᵢyᵢ, xᵢ² e yᵢ² (y, si el modelo lo pide, transformar los datos antes).</li>
+    <li>Sumar cada columna: la fila Total.</li>
+    <li>Calcular m con N y Dₓ, y después b.</li>
+    <li>Calcular r con N, Dₓ y D<sub>y</sub> para juzgar el ajuste.</li>
+    <li>Escribir la ecuación y evaluarla en el x que se pida.</li>
+  </ol>
+</section>
+
+<section aria-labelledby="teo-mc-ejemplo">
+  <h3 id="teo-mc-ejemplo">Ejemplo del docente</h3>
+  <p>Con los puntos (1, 2), (1.5, 3.2), (2, 4.1), (2.5, 4.9) y (3, 5.9), la fila Total da n = 5, Σx = 10, Σy = 20.1,
+  Σxy = 44.95, Σx² = 22.5 y Σy² = 89.87:</p>
+  ${MC_DOCENTE}
+  <p>La recta es y = 1.9x + 0.22 y los errores (m xᵢ + b − yᵢ)² son 0.0144, 0.0169, 0.0064, 0.0049 y 0.0004, que suman
+  0.0430. Se puede cargar con el ejercicio «Docente · cinco puntos, recta y correlación» y comparar con la tabla.</p>
+</section>
+`;
+
+const TEORIAS = { "simpson-38": SIMPSON_38, "minimos-cuadrados": MINIMOS_CUADRADOS };
 
 // HTML de la explicacion del metodo, o null si todavia no la tiene.
 export function teoriaPara(slug) {
