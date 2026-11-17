@@ -115,6 +115,38 @@ Como los dos metodos construyen el mismo polinomio, hay una prueba que los corre
 sobre los mismos puntos y exige que coincidan. No dice cual esta mal si
 difieren; dice que hay que mirar.
 
+### Punto Medio
+
+Aproxima una integral definida con rectangulos de igual ancho. La altura de
+cada rectangulo se toma en el **centro** del subintervalo:
+
+```
+Delta_x = (b - a) / n
+m_i = a + (i - 1/2) * Delta_x
+I ~= sum(f(m_i) * Delta_x, i = 1..n)
+```
+
+La entrada es `f(x)`, los extremos `a`, `b` y el numero de subintervalos `n`.
+Se exige `a < b` y un entero positivo `n <= 10000`. La tabla muestra una fila
+por subintervalo, numerada desde 1, con el punto medio, `f(m_i)`, el area con
+signo de ese rectangulo y la suma acumulada. El plano dibuja la curva y los
+rectangulos, cuya altura puede ser negativa: se aproxima la integral con
+signo, no la suma de areas absolutas.
+
+Es un metodo de **malla fija**: recorre los `n` subintervalos y termina como
+integracion completada. No persigue una tolerancia ni produce error por fila;
+para comparar aproximaciones se puede resolver otra vez con el doble de
+subintervalos. Los decimales solo cambian como se muestran los numeros.
+
+El ejemplo del material del docente para el parcial 1 usa
+`f(x) = 0.25*x^3 - x`, en `[-1.5, 2]`, con `n = 7`. Da `Delta_x = 0.5` y
+puntos medios `-1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75`. La suma sin
+redondear es `-0.205078125`; a cuatro decimales reproduce el `-0.2051` de la
+diapositiva. La integral analitica es `-0.19140625`: es una referencia para
+comprobar que refinar la malla mejora la aproximacion, no el resultado que
+se espera con siete rectangulos. El caso se conserva en
+`tests/casos_referencia.py`, como `PUNTO_MEDIO_RESUELTO`.
+
 ### Metodo del Trapecio
 
 Divide el intervalo en `n` subintervalos de ancho `h = (b - a) / n` y une los
