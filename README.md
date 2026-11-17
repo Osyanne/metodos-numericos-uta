@@ -5,8 +5,11 @@ Universidad Tecnica de Ambato — FISEI — Carrera de Software, Nivel 3.
 Resuelve problemas de metodos numericos mostrando **todas las iteraciones**, con
 precision ajustable y un plano interactivo tipo GeoGebra. Disenado para crecer:
 los seis metodos confirmados del primer parcial son los primeros de una decena.
-Tambien incorpora la Regla del Trapecio y el Metodo de Simpson de U1, a partir
-del material entregado para integracion numerica.
+Hoy son **once**: ademas del parcial incorpora la Regla del Trapecio, el Metodo
+de Simpson, Simpson 1/3 y Simpson 3/8 de U1, a partir del material entregado
+para integracion numerica, y el ajuste por minimos cuadrados. Abre en una
+**portada** con una tarjeta por metodo, y cada metodo tiene una pestana
+**Teoria** que lo explica.
 
 Funciona **sin internet**: no hay ninguna libreria externa ni CDN del lado del
 navegador. El plano esta dibujado a mano sobre Canvas.
@@ -24,13 +27,19 @@ entrega cada pedido a `api/` como lo haria uvicorn.
 
 Diferencias con la version local:
 
-- La primera visita tarda unos 20 segundos en descargar Python y SymPy; despues
-  queda en la cache del navegador.
+- La primera visita tiene que descargar Python y SymPy. La interfaz se pinta
+  antes, sin esperar a Python: la lista de metodos sale de un `catalogo.json`
+  armado con la propia aplicacion, y las descargas empiezan desde el HTML y
+  corren en paralelo. En la segunda visita, un service worker (`sw.js`, generado
+  al armar el sitio) guarda Pyodide, sus paquetes y el sitio, y funciona sin red.
+  El PDF baja su pila (pillow, fonttools, micropip y fpdf2) al exportar el
+  primero.
 - **Necesita internet**: Pyodide y sus paquetes se bajan de jsDelivr y PyPI.
   Para el laboratorio sin conexion sigue estando la version local de abajo.
 
 El sitio se publica solo con cada push a `main` (`.github/workflows/pages.yml`),
-y solo si antes pasan las pruebas del sitio armado:
+que instala antes las dependencias de Python, y solo si pasan las pruebas del
+sitio armado:
 
 ```bash
 npx playwright test --config playwright.pages.config.js
@@ -46,8 +55,11 @@ npx playwright test --config playwright.pages.config.js
 | Interpolacion de Lagrange | U1 | polinomio expandido, mostrando cada `L_i` con su numerador y denominador |
 | Punto Medio | U1 | integral definida `∫[a,b] f(x)dx` con rectangulos centrados |
 | Método del Trapecio | U1 | integral definida `∫[a,b] f(x)dx` con segmentos y trapecios |
-| Método de Simpson | U1 | integral definida `∫[a,b] f(x)dx` con arcos de parabola, `n` par |
+| Método de Simpson | U1 | integral definida `∫[a,b] f(x)dx` con arcos de parabola, `n` par, y un punto medio por subintervalo |
+| Simpson 1/3 | U1 | lo mismo con una parabola por cada dos subintervalos, `n` par (equivale al Metodo de Simpson con `2n`) |
+| Simpson 3/8 | U1 | lo mismo con cubicas, `n` de 3 o mas; si `n` no es multiplo de 3 combina las reglas 1/3 y 3/8 (aplicacion multiple) |
 | Runge-Kutta | U3 | EDO y sistemas de EDO, orden 2 y 4 |
+| Ajuste por minimos cuadrados | U4 | recta `y = m x + b` con correlacion `r` y la tabla con sus totales; modelos potencial, exponencial y logaritmico |
 
 ## Instalar y ejecutar
 
@@ -80,10 +92,10 @@ Y abrir <http://127.0.0.1:8000>.
 ## Comprobar que quedo bien instalado
 
 ```bash
-pytest
+python -m pytest tests/ --ignore=tests/e2e
 ```
 
-Tienen que dar **339 pruebas en verde**. Entre ellas hay cuatro que verifican
+Tienen que dar **503 pruebas en verde**. Entre ellas hay cuatro que verifican
 justamente la instalacion: que todo lo que el codigo importa este declarado en
 `pyproject.toml`, y que ningun archivo referenciado desde la interfaz falte en
 el repositorio. Las dos cosas pasan desapercibidas en la maquina donde se
@@ -91,8 +103,10 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **218 pruebas de interfaz** con Playwright, que
-levantan el servidor de verdad y manejan la pantalla:
+Aparte de las de Python hay **324 pruebas de interfaz** con Playwright (mas dos
+que solo regeneran las capturas del manual, a pedido), que levantan el servidor
+de verdad y manejan la pantalla. Entre ellas, `tests/e2e/portada.spec.js` cubre
+la portada y la ruta por hash:
 
 ```bash
 npm install
@@ -100,17 +114,24 @@ npx playwright install chromium
 npx playwright test
 ```
 
+Las del sitio de GitHub Pages son **10** y necesitan internet
+(`npx playwright test --config playwright.pages.config.js`). Para regenerar las
+capturas del manual: `CAPTURAS=1 npx playwright test capturas`.
+
 ## Como usarlo
 
-1. Elegir la familia en las pestanas (Raices, Interpolacion, Integracion, EDO)
-   y el metodo en sus botones.
+1. Abrir un metodo desde su tarjeta en la **portada** (`#/`; el titulo de la
+   cabecera vuelve a ella, y `#/metodo/<slug>` es un enlace directo a un
+   metodo), y cambiar de metodo con las pestanas de familia (Raices,
+   Interpolacion, Integracion, EDO, Ajuste) y los botones.
 2. Cargar un **ejercicio de ejemplo** del desplegable, o escribir los datos a
    mano. Los ejemplos incluyen los ejercicios del material del docente y
    ejercicios de practica para cada metodo, con la fuente de cada uno.
 3. Si hace falta, abrir **Ajustes de calculo** para cambiar iteraciones,
    tolerancia y criterio de error. Los decimales se mueven desde la tarjeta de
    Resultado.
-4. **Resolver**, y mirar la tabla completa de iteraciones o el plano.
+4. **Resolver**, y mirar la tabla completa de iteraciones o el plano. La
+   pestana **Teoria** explica el metodo y se puede leer sin resolver.
 5. **Comparar metodos** enfrenta sobre el mismo problema a los que reciben los
    mismos datos: Newton-Raphson contra Von Mises es el caso interesante.
 6. Exportar a CSV o PDF. Los numeros exportados van **sin redondear**: el
@@ -139,12 +160,19 @@ docs/           especificacion, contrato y validacion
 ## Agregar un metodo nuevo
 
 Crear un archivo en `core/methods/`, construir un `MethodSpec` y registrarlo.
-No hay que tocar ningun archivo existente: el registro lo descubre solo y la
-interfaz dibuja el formulario a partir de los campos que el metodo declara.
+No hay que tocar ningun archivo existente del nucleo ni de la API: el registro
+lo descubre solo y la interfaz dibuja el formulario a partir de los campos que el
+metodo declara.
 
-No es una promesa de folleto: `tests/test_extensibilidad.py` la ejercita
-escribiendo un metodo nuevo en disco y verificando que aparezca en el registro,
-en la API y con sus campos.
+La interfaz pide un poco mas, y una prueba lo exige: un metodo nuevo tambien
+necesita su **formula** en `web/formulas.js` y su **teoria** en `web/teoria.js`
+(sin ellas la prueba «todo metodo de la API tiene su guia» de
+`tests/e2e/portada.spec.js` falla), y su familia en `FAMILIAS` de `web/app.js`,
+con su color en `web/styles.css`, si la familia es nueva.
+
+El nucleo y la API cumplen esto sin promesa de folleto:
+`tests/test_extensibilidad.py` escribe un metodo nuevo en disco y verifica que
+aparezca en el registro, en la API y con sus campos.
 
 ## Documentacion
 
