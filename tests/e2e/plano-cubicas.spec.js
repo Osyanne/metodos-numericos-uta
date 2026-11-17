@@ -67,7 +67,7 @@ test("el arco de la cubica pasa por los cuatro nodos (Bezier cubica exacta)", as
     const canvas = new Function(`${montar}; return canvas;`)();
     const p = new Plano(canvas);
     p.mostrar([], null, {}, { animar: false });
-    p.vista = { x0: -1, x1: 4, y0: -2, y1: 12 };
+    p.vista = { x0: -1, x1: 4, y0: -2, y1: 24 };
     // Se interceptan los trazos del contorno para leer la Bezier que se manda.
     const real = window.Path2D;
     const trazos = [];
@@ -78,7 +78,8 @@ test("el arco de la cubica pasa por los cuatro nodos (Bezier cubica exacta)", as
     p.animacion.progreso = 1;
     p._cubicas({
       color: "--area",
-      cubicas: [{ x0: 0, y0: 0, x1: 1, y1: 1, x2: 2, y2: 4, x3: 3, y3: 9 }],
+      // Nodos de x³ − 2x: con una parábola (x²) el término cúbico no se probaba.
+      cubicas: [{ x0: 0, y0: 0, x1: 1, y1: -1, x2: 2, y2: 4, x3: 3, y3: 21 }],
     });
     window.Path2D = real;
     const [px0, py0] = trazos.find(([t]) => t === "L")[1];
@@ -88,7 +89,7 @@ test("el arco de la cubica pasa por los cuatro nodos (Bezier cubica exacta)", as
       const u = 1 - t;
       return u ** 3 * q[0] + 3 * u * u * t * q[1] + 3 * u * t * t * q[2] + t ** 3 * q[3];
     };
-    const [n1x, n1y] = p._aPantalla(1, 1);
+    const [n1x, n1y] = p._aPantalla(1, -1);
     const [n2x, n2y] = p._aPantalla(2, 4);
     return {
       dx1: B(1 / 3, 0) - n1x, dy1: B(1 / 3, 1) - n1y,
