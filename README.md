@@ -56,7 +56,7 @@ npx playwright test --config playwright.pages.config.js
 | Punto Medio | U1 | integral definida `∫[a,b] f(x)dx` con rectangulos centrados |
 | Método del Trapecio | U1 | integral definida `∫[a,b] f(x)dx` con segmentos y trapecios |
 | Método de Simpson | U1 | integral definida `∫[a,b] f(x)dx` con arcos de parabola, `n` par, y un punto medio por subintervalo |
-| Simpson 1/3 | U1 | lo mismo con una parabola por cada dos subintervalos, `n` par (equivale al Metodo de Simpson con `2n`) |
+| Simpson 1/3 | U1 | lo mismo con una parabola por cada dos subintervalos, `n` par (con `2n` da lo mismo que el Metodo de Simpson con `n`) |
 | Simpson 3/8 | U1 | lo mismo con cubicas, `n` de 3 o mas; si `n` no es multiplo de 3 combina las reglas 1/3 y 3/8 (aplicacion multiple) |
 | Runge-Kutta | U3 | EDO y sistemas de EDO, orden 2 y 4 |
 | Ajuste por minimos cuadrados | U4 | recta `y = m x + b` con correlacion `r` y la tabla con sus totales; modelos potencial, exponencial y logaritmico |
@@ -103,7 +103,7 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **324 pruebas de interfaz** con Playwright (mas dos
+Aparte de las de Python hay **325 pruebas de interfaz** con Playwright (mas dos
 que solo regeneran las capturas del manual, a pedido), que levantan el servidor
 de verdad y manejan la pantalla. Entre ellas, `tests/e2e/portada.spec.js` cubre
 la portada y la ruta por hash:

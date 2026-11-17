@@ -21,7 +21,7 @@ Docentes: Ing. Henry Cumbal, Dr. Victor Penafiel.
 | R9 | Runge-Kutta debe resolver **sistemas de ecuaciones**, y aceptar tanto el paso `h` como el numero de pasos. |
 | R10 | Newton-Raphson: **la app deriva sola**, pero el usuario tambien puede escribir la derivada. |
 | R11 | Los **tres criterios de error** implementados y **configurables**. |
-| R15 | **Simpson 1/3 (U1)**, de `Simpson1.pdf`: parabolas por tres nodos equiespaciados, con `n` par y los pesos `1, 4, 2, 4, ..., 4, 1`. El ejercicio del material es `exp(x^2)` en `[0, 1]` con `n = 10`. Es la misma regla que Simpson con `2n`. |
+| R15 | **Simpson 1/3 (U1)**, de `Simpson1.pdf`: parabolas por tres nodos equiespaciados, con `n` par y los pesos `1, 4, 2, 4, ..., 4, 1`. El ejercicio del material es `exp(x^2)` en `[0, 1]` con `n = 10`. Con `2n` es la misma regla que el Metodo de Simpson con `n`. |
 | R16 | **Simpson 3/8 (U1)**: cubicas por cuatro nodos equiespaciados, con `n = 3` o multiplo de 3, y la **aplicacion multiple** (1/3 mas 3/8) cuando `n` no es multiplo de 3, como en el ejemplo 21.6 de Chapra. Cada regla muestra su corchete y su factor. |
 | R17 | **Ajuste por minimos cuadrados (U4)**: la recta `y = m x + b` con su correlacion `r`, la tabla del docente con su fila de totales, y los modelos potencial, exponencial y logaritmico. El ejercicio del docente da `m = 1.90`, `b = 0.22` y `r = 0.9976`. |
 
