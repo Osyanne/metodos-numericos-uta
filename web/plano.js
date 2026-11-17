@@ -657,10 +657,17 @@ export class Plano {
       return;
     }
     const aparte = (this._lienzoAparte ??= document.createElement("canvas"));
-    aparte.width = this.canvas.width;
-    aparte.height = this.canvas.height;
     const ctx = this.ctx;
     this.ctx = aparte.getContext("2d");
+    // Asignar width/height realoca el bufer: solo si el tamano cambio. Si no,
+    // basta con borrar el cuadro anterior.
+    if (aparte.width !== this.canvas.width || aparte.height !== this.canvas.height) {
+      aparte.width = this.canvas.width;
+      aparte.height = this.canvas.height;
+    } else {
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.clearRect(0, 0, aparte.width, aparte.height);
+    }
     this.ctx.setTransform(ctx.getTransform());
     try {
       dibujar();
@@ -928,7 +935,8 @@ export class Plano {
     ctx.beginPath();
     ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
     ctx.clip();
-    ctx.strokeStyle = this._color(capa.color);
+    const color = this._color(capa.color);
+    ctx.strokeStyle = color;
     ctx.lineWidth = 1;
 
     const total = capa.rectangulos.length;
@@ -951,7 +959,7 @@ export class Plano {
       const w = Math.abs(px1 - px0);
       const y = Math.min(py0, py1);
       const h = Math.abs(py1 - py0);
-      ctx.fillStyle = this._color(capa.color);
+      ctx.fillStyle = color;
       ctx.globalAlpha = (r.y >= 0 ? 0.16 : 0.10) * alfa;
       ctx.fillRect(x, y, w, h);
       ctx.globalAlpha = alfa;
@@ -1178,15 +1186,16 @@ export class Plano {
     const v = this.vista;
     const visibles = capa.puntos.filter((p) => p.x >= v.x0 && p.x <= v.x1).length;
     const rotularTodas = visibles <= (a.der - a.izq) / 16;
+    const color = this._color(capa.color);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1;
     for (let i = 0; i < Math.min(total, hasta); i++) {
       const p = capa.puntos[i];
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
       const estado = this._estado(capa, i);
       const [px, py] = this._aPantalla(p.x, p.y);
       ctx.globalAlpha = estado === "tenue" ? 0.25 : 1;
-      ctx.strokeStyle = this._color(capa.color);
-      ctx.fillStyle = this._color(capa.color);
-      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(px, py, 3, 0, Math.PI * 2);
       ctx.stroke();

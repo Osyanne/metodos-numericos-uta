@@ -45,7 +45,10 @@ const FAMILIAS = {
   otros: { nombre: "Otros", icono: "funcion" },
 };
 
-const familiaDe = (metodo) => (metodo.family in FAMILIAS ? metodo.family : "otros");
+// Propiedad propia, no heredada: una familia "constructor" no es una familia.
+// hasOwnProperty y no Object.hasOwn, que Safari anterior a 15.4 no tiene.
+const familiaDe = (metodo) =>
+  (Object.prototype.hasOwnProperty.call(FAMILIAS, metodo.family) ? metodo.family : "otros");
 
 // ------------------------------------------------------------ API
 
@@ -725,10 +728,13 @@ function alternarTema() {
 }
 
 $("#tema").addEventListener("click", alternarTema);
-sistemaOscuro.addEventListener("change", () => {
+// Safari 13 no conoce MediaQueryList.addEventListener, solo addListener.
+const alCambiarTema = () => {
   rotularTema();
   plano.repintar();
-});
+};
+if (sistemaOscuro.addEventListener) sistemaOscuro.addEventListener("change", alCambiarTema);
+else sistemaOscuro.addListener(alCambiarTema);
 pintarIconos();
 rotularTema();
 
