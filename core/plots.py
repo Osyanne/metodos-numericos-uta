@@ -126,8 +126,9 @@ def integration(
     resample: Resample | None = None,
     trapezoids: Sequence[tuple[float, float, float, float]] = (),
     parabolas: Sequence[tuple[float, float, float, float, float, float]] = (),
+    cubicas: Sequence[Sequence[tuple[float, float]]] = (),
 ) -> PlotSpec:
-    """series = {curve, rectangles, trapezoids, parabolas, interval, integral}.
+    """series = {curve, rectangles, trapezoids, parabolas, cubicas, interval, integral}.
 
     Cada rectangulo es (x0, x1, y): sus bordes verticales y la altura f(m_i).
     La interfaz los pinta como cajas semitransparentes y superpone la curva de
@@ -142,6 +143,11 @@ def integration(
     Cada parabola es (x0, y0, xm, ym, x1, y1): los extremos del subintervalo y
     su punto medio. Simpson aproxima f por la parabola que pasa por esos tres
     puntos, y la interfaz la reconstruye con ellos.
+
+    Cada cubica son sus cuatro nodos [(x0, y0), ..., (x3, y3)], un tramo de tres
+    subintervalos, y la serie los guarda como x0, y0, ..., x3, y3. Simpson 3/8
+    aproxima f por la cubica que pasa por ellos, y la interfaz la reconstruye
+    con ellos.
     """
     return PlotSpec(
         kind=PlotKind.INTEGRATION,
@@ -162,6 +168,10 @@ def integration(
                     "x1": float(x1), "y1": float(y1),
                 }
                 for x0, y0, xm, ym, x1, y1 in parabolas
+            ],
+            "cubicas": [
+                {k: float(v) for j, (x, y) in enumerate(nodos) for k, v in ((f"x{j}", x), (f"y{j}", y))}
+                for nodos in cubicas
             ],
             "interval": {"a": float(a), "b": float(b)},
             "integral": float(integral),

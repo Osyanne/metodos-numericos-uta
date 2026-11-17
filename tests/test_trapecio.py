@@ -167,7 +167,8 @@ def test_grafica_muestra_trapecios_y_la_curva(metodo):
     assert resultado.plot.kind is PlotKind.INTEGRATION
     series = resultado.plot.series
     assert set(series) == {
-        "curve", "rectangles", "trapezoids", "parabolas", "interval", "integral"
+        "curve", "rectangles", "trapezoids", "parabolas", "cubicas", "interval",
+        "integral",
     }
     assert series["rectangles"] == []
     assert series["parabolas"] == []
