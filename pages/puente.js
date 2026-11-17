@@ -107,8 +107,9 @@ RAIZ = "/home/pyodide/aplicativo"
 os.makedirs(os.path.join(RAIZ, "web"), exist_ok=True)
 sys.path.insert(0, RAIZ)
 
-from api.main import create_app
-_app = create_app()
+# Importar api.main ya construye la aplicacion y carga los metodos: se
+# reutiliza, llamar create_app() otra vez repetiria esa carga.
+from api.main import app as _app
 
 async def atender(metodo, ruta, consulta, cuerpo):
     scope = {
