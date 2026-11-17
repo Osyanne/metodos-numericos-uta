@@ -140,7 +140,7 @@ def _ajustar(params: dict[str, Any], config: SolveConfig) -> MethodResult:
         iterations=iterations,
         result=result,
         converged=True,
-        stop_reason=StopReason.EXACT,
+        stop_reason=StopReason.FITTED,
         decimals=config.decimals,
         plot=plots.ajuste(
             puntos,

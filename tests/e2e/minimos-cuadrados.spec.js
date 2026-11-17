@@ -31,6 +31,7 @@ test("el ejercicio del docente: m, b, r, la tabla y su fila Total", async ({ pag
   expect(cuerpo.result.r).toBeCloseTo(0.9976, 4);
 
   // La ecuacion va primero y en grande; m, b y r con los decimales del ejercicio.
+  await expect(page.locator("#resumen .estado-ok")).toHaveText("Ajuste calculado");
   await expect(page.locator("#resumen dt.principal")).toHaveText("ecuacion");
   await expect(page.locator("#resumen dd.principal")).toHaveText("y = 1.9*x + 0.22");
   await expect(resultadoDe(page, "m")).toHaveText("1.9000");

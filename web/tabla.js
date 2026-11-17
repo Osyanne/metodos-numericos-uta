@@ -143,6 +143,7 @@ const MOTIVO = {
   // Un metodo de malla fija termina cuando recorre sus n pasos. Eso es el final
   // normal, en verde: no persigue ninguna tolerancia que pudiera no alcanzar.
   integracion_completada: ["ok", "Integración completada"],
+  ajuste_calculado: ["ok", "Ajuste calculado"],
   divergio: ["mal", "El método diverge"],
   fallo: ["mal", "Falló"],
 };

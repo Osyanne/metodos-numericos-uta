@@ -93,6 +93,9 @@ class StopReason(str, Enum):
     MAX_ITERATIONS = "n_iteraciones_completadas"
     EXACT = "solucion_exacta"
     COMPLETED = "integracion_completada"
+    # El ajuste por minimos cuadrados se resuelve de una vez, con las sumas de
+    # la tabla: no hay iteraciones que converjan ni una malla que recorrer.
+    FITTED = "ajuste_calculado"
     DIVERGED = "divergio"
     FAILED = "fallo"
 

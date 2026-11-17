@@ -63,7 +63,7 @@ def test_ejercicio_del_docente_m_b_y_r(metodo):
     assert res.result["r"] == pytest.approx(0.9976262076984156, abs=1e-12)
     assert res.result["r"] == pytest.approx(0.9976, abs=5e-5)
     assert res.result["suma_residuos"] == pytest.approx(0.043, abs=1e-12)
-    assert res.converged and res.stop_reason is StopReason.EXACT
+    assert res.converged and res.stop_reason is StopReason.FITTED
 
 
 def test_ejercicio_del_docente_la_tabla_es_la_del_pizarron(metodo):

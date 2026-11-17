@@ -68,7 +68,7 @@ function ajuste(id, modelo, transformados) {
   return math(
     id,
     ...modelo,
-    ...(transformados ? [mtext(transformados)] : []),
+    ...(transformados ? [transformados] : []),
     fila(mi("N"), mo("="), n, xy, mo("−"), sumaDe(xi), sumaDe(yi)),
     fila(sub(mi("D"), x), mo("="), n, sumaDe(cuadrado(xi)), mo("−"), cuadrado(paren(sumaDe(xi)))),
     fila(sub(mi("D"), mi("y")), mo("="), n, sumaDe(cuadrado(yi)), mo("−"), cuadrado(paren(sumaDe(yi)))),
@@ -186,14 +186,14 @@ export const FORMULAS = {
       potencial: ajuste("minimos-cuadrados-potencial", [
         fila(mi("y"), mo("="), mi("b"), `<msup>${x}${mi("m")}</msup>`),
         fila(logaritmo(mi("y")), mo("="), mi("m"), logaritmo(x), mo("+"), logaritmo(mi("b"))),
-      ], "x_i = log x_i, y_i = log y_i"),
+      ], fila(xi, mo("="), logaritmo(xi), mo(","), separa, yi, mo("="), logaritmo(yi))),
       exponencial: ajuste("minimos-cuadrados-exponencial", [
         fila(mi("y"), mo("="), mi("b"), `<msup>${mi("e")}${fila(mi("m"), x)}</msup>`),
         fila(logaritmo(mi("y")), mo("="), paren(mi("m"), logaritmo(mi("e"))), x, mo("+"), logaritmo(mi("b"))),
-      ], "y_i = log y_i"),
+      ], fila(yi, mo("="), logaritmo(yi))),
       logaritmica: ajuste("minimos-cuadrados-logaritmica", [
         fila(mi("y"), mo("="), mi("m"), logaritmo(x), mo("+"), mi("b")),
-      ], "x_i = log x_i"),
+      ], fila(xi, mo("="), logaritmo(xi))),
     },
   },
 
