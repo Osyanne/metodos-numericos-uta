@@ -59,7 +59,9 @@ jobs:
 
   navegador:
     name: Pruebas de interfaz (Playwright)
-    runs-on: ubuntu-latest
+    # Playwright 1.58 no instala Chromium en Ubuntu 26.04, que ya es ubuntu-latest.
+    # Volver a ubuntu-latest al subir Playwright a una version que lo soporte.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
