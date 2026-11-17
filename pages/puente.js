@@ -134,10 +134,12 @@
 
     paso("Cargando SymPy y FastAPI…");
     var paquetes = pyodide.loadPackage(PAQUETES);
-    // El zip ya esta bajado: descomprimirlo no espera a los paquetes.
+    // El zip ya esta bajado: descomprimirlo no espera a los paquetes. Se
+    // esperan juntos para que un fallo de los paquetes salga enseguida.
     paso("Cargando los métodos…");
-    pyodide.unpackArchive(await codigo, "zip", { extractDir: "/home/pyodide/aplicativo" });
-    await paquetes;
+    await Promise.all([paquetes, codigo.then(function (zip) {
+      pyodide.unpackArchive(zip, "zip", { extractDir: "/home/pyodide/aplicativo" });
+    })]);
 
     await pyodide.runPythonAsync(`
 import asyncio, os, sys, traceback

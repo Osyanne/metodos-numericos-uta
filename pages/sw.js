@@ -73,7 +73,8 @@ self.addEventListener("fetch", function (evento) {
           return fetch(pedido).then(function (respuesta) {
             // 200 completo y con CORS: una respuesta opaca o parcial no se guarda.
             if (respuesta.status === 200 && respuesta.type !== "opaque") {
-              cache.put(pedido, respuesta.clone());
+              // Sin waitUntil el navegador puede cortar el worker antes de guardar.
+              evento.waitUntil(cache.put(pedido, respuesta.clone()).catch(function () {}));
             }
             return respuesta;
           });
