@@ -168,7 +168,7 @@ def test_grafica_muestra_trapecios_y_la_curva(metodo):
     series = resultado.plot.series
     assert set(series) == {
         "curve", "rectangles", "trapezoids", "parabolas", "cubicas", "interval",
-        "integral",
+        "integral", "nodes", "arc_rows",
     }
     assert series["rectangles"] == []
     assert series["parabolas"] == []

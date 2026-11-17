@@ -160,6 +160,7 @@ def test_el_desplegable_sigue_el_orden_de_la_clase(registro_limpio):
         "punto-medio",
         "trapecio",
         "simpson",
+        "simpson-13",
         "simpson-38",
         "runge-kutta",
     ]
@@ -491,6 +492,7 @@ CASOS_POR_METODO = {
     "runge-kutta": {"fxy": "y", "x0": 0.0, "y0": 1.0, "h": 0.1, "n": 5},
     "trapecio": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 5},
     "simpson": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 4},
+    "simpson-13": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 4},
     "simpson-38": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 6},
 }
 

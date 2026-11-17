@@ -1,14 +1,16 @@
-"""Regla de Simpson 3/8 compuesta para integracion numerica.
+"""Regla de Simpson 3/8 para integracion numerica, con aplicacion multiple.
 
 Sustituye la curva por arcos de cubica: cada cubica pasa por cuatro nodos
-equiespaciados, o sea por un tramo de tres subintervalos. n tiene que ser
-multiplo de 3, con h = (b - a) / n y x_i = a + i * h.
+equiespaciados, o sea por un tramo de tres subintervalos de ancho h.
 
-Caso simple (n = 3, una sola cubica):
+Caso simple (n = 3, una sola cubica; "ancho por altura promedio"):
 
-    integral(f, a, b) ~= (b - a) / 8 * [f(x0) + 3 f(x1) + 3 f(x2) + f(x3)]
+    integral(f, a, b) ~= (b - a) * [f(x0) + 3 f(x1) + 3 f(x2) + f(x3)] / 8
+                       = (3h/8) * [f(x0) + 3 f(x1) + 3 f(x2) + f(x3)]
 
-Compuesta (Chapra), el mismo factor 3h/8 con los pesos de cada nodo:
+Error del caso simple: Et = -((b - a)^5 / 6480) * f(xi) = -(3/80) h^5 f(xi).
+
+n multiplo de 3 (compuesta, Chapra): h = (b - a) / n, x_i = a + i * h,
 
     integral(f, a, b) ~= (3h / 8) * [f(x_0)
         + 3 * sum(f(x_i), i no multiplo de 3)
@@ -17,6 +19,12 @@ Compuesta (Chapra), el mismo factor 3h/8 con los pesos de cada nodo:
 
 Los nodos en frontera entre dos tramos (i = 3, 6, ...) pesan 1 + 1 = 2: por
 eso la tabla lee 1, 3, 3, 2, 3, 3, 2, ..., 3, 3, 1.
+
+n que NO es multiplo de 3 (aplicacion multiple del docente, Chapra ejemplo
+21.6): la regla 1/3 cubre los primeros subintervalos (2 si n mod 3 = 2, 4 si
+n mod 3 = 1) y la 3/8 el resto. Cada regla lleva su corchete y su factor, y la
+integral es la suma de las dos. Con n = 1, 2 o 4 no queda un tramo de 3/8 y el
+metodo falla diciendolo.
 """
 from __future__ import annotations
 
@@ -25,11 +33,14 @@ from typing import Any
 
 from core import plots
 from core.config import SolveConfig
-from core.methods._integracion import (
-    leer_entero_positivo,
-    leer_funcion,
-    leer_numero,
-    validar_intervalo,
+from core.methods._simpson import (
+    arcos,
+    leer_problema,
+    malla,
+    nodos,
+    partir,
+    PUNTOS_GRAFICA,
+    recorrer,
 )
 from core.registry import register
 from core.sampling import sample
@@ -37,7 +48,6 @@ from core.types import (
     Column,
     FieldKind,
     InputField,
-    Iteration,
     MethodError,
     MethodResult,
     MethodSpec,
@@ -47,78 +57,71 @@ from core.types import (
 
 SLUG = "simpson-38"
 
-# Mismo limite que las otras reglas: cada subintervalo es una fila de la tabla.
-MAX_SUBINTERVALOS = 10_000
-PUNTOS_GRAFICA = 401
-
-# La tabla sigue el corchete punto por punto, de x0 a xn. La suma del corchete
-# es el numero que se escribe antes de multiplicar por 3h/8.
+# La tabla sigue el corchete nodo por nodo. Con n que no es multiplo de 3 el
+# nodo de union se repite (ultimo de la 1/3, primero de la 3/8) y "nodo" y
+# "regla" dicen de cual se trata. La suma arranca de cero con cada regla: la
+# ultima fila de un tramo muestra su corchete.
 COLUMNAS = [
+    Column("nodo", "nodo", numeric=False),
     Column("xi", "x"),
     Column("fxi", "f(x)"),
+    Column("regla", "regla", numeric=False),
     Column("peso", "peso"),
     Column("ponderado", "peso * f(x)"),
     Column("suma", "suma del corchete"),
 ]
 
 
-def _peso(i: int, n: int) -> float:
-    if i in (0, n):
-        return 1.0
-    return 2.0 if i % 3 == 0 else 3.0
+def _notas(f, a, b, n, h, integral, tramos, cortes):
+    notas = [f"∫[{a:g}, {b:g}] ({f}) dx ≈ {integral:.6f}"]
+    if len(tramos) == 1:
+        t = tramos[0]
+        notas += [
+            f"{n} subintervalos de ancho h = {h:g}, agrupados en {n // 3} "
+            f"tramo{'s' if n > 3 else ''} de tres: una cúbica por tramo. Los "
+            "extremos pesan 1, los nodos interiores de cada tramo 3 y los que "
+            "unen dos tramos 2.",
+            f"La suma del corchete es {t['corchete']:.8f}; multiplicada por "
+            f"3h/8 = {t['factor']:g} da la integral.",
+        ]
+    else:
+        uno, otro = tramos
+        k13 = cortes[0][2]
+        parabolas = k13 // 2
+        notas += [
+            f"n = {n} no es múltiplo de 3: se combinan las dos reglas de "
+            f"Simpson. La regla 1/3 cubre los primeros {k13} subintervalos "
+            f"(de x0 = {uno['desde']:g} a x{k13} = {uno['hasta']:g}, "
+            f"{parabolas} parábola{'s' if parabolas > 1 else ''}) y la regla "
+            f"3/8 los {n - k13} restantes (de x{k13} = {otro['desde']:g} a "
+            f"x{n} = {otro['hasta']:g}, {(n - k13) // 3} "
+            f"cúbica{'s' if n - k13 > 3 else ''}).",
+            f"Regla 1/3: corchete {uno['corchete']:.8f} por h/3 = "
+            f"{uno['factor']:g} da {uno['integral']:.8f}. Regla 3/8: corchete "
+            f"{otro['corchete']:.8f} por 3h/8 = {otro['factor']:g} da "
+            f"{otro['integral']:.8f}. La integral es la suma, "
+            f"{integral:.8f}.",
+            f"El nodo x{k13} = {uno['hasta']:g} aparece dos veces en la "
+            "tabla: como último de la regla 1/3 y como primero de la 3/8, "
+            "cada vez con peso 1. La suma del corchete arranca de cero en "
+            "cada regla.",
+        ]
+    notas.append(
+        "La columna de error queda vacía: este es un método de malla fija. "
+        "Para estimar la exactitud, resuelve otra vez con el doble de "
+        "subintervalos y compara las aproximaciones."
+    )
+    return notas
 
 
 def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
-    """Aproxima la integral de ``f`` en [a, b] con arcos de cubica."""
-    f = leer_funcion(params)
-    a = leer_numero(params, "a", "el extremo inferior a")
-    b = leer_numero(params, "b", "el extremo superior b")
-    n = leer_entero_positivo(params, "n", "el numero de subintervalos n")
-    validar_intervalo(a, b)
+    """Aproxima la integral de ``f`` en [a, b] con cubicas (y parabolas si hace falta)."""
+    f, a, b, n = leer_problema(params)
+    tramos = partir(n)
+    h, xs, fs = malla(f, a, b, n)
 
-    if n % 3:
-        raise MethodError(
-            f"n = {n} no es múltiplo de 3. Simpson 3/8 toma tramos de tres "
-            "subintervalos (cuatro nodos por cubica): usa n = 3, 6, 9, ... "
-            "Si n tiene que ser otro, Simpson 1/3 pide n par."
-        )
-    if n > MAX_SUBINTERVALOS:
-        raise MethodError(
-            f"Se piden {n} subintervalos y el maximo es {MAX_SUBINTERVALOS}. "
-            "Cada punto es una fila de la tabla que se calcula y se guarda "
-            "entera en memoria; con mas que eso deja de ser legible. Reduce n."
-        )
-
-    h = (b - a) / n
-    if not math.isfinite(h) or h == 0:
-        raise MethodError("El ancho de subintervalo h no es finito: revisa a, b y n.")
-    factor = 3 * h / 8
-
-    # x_i = a + i*h, sin acumular h, y el ultimo punto es b por construccion.
-    xs = [b if i == n else a + i * h for i in range(n + 1)]
-    iteraciones: list[Iteration] = []
-    valores_f: list[float] = []
-    corchete = 0.0
-    for i, xi in enumerate(xs):
-        fxi = f.evaluar(x=xi)
-        peso = _peso(i, n)
-        ponderado = peso * fxi
-        corchete += ponderado
-        valores_f.append(fxi)
-        iteraciones.append(
-            Iteration(
-                n=i,
-                values={
-                    "xi": xi,
-                    "fxi": fxi,
-                    "peso": peso,
-                    "ponderado": ponderado,
-                    "suma": corchete,
-                },
-                error=None,
-            )
-        )
-    integral = factor * corchete
+    iteraciones, resumen = recorrer(tramos, xs, fs, h, con_regla=True)
+    integral = sum(t["integral"] for t in resumen)
     if not math.isfinite(integral):
         raise MethodError(
             "La suma del corchete se desborda: los valores de f(x) son "
@@ -126,37 +129,19 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
         )
 
     curva_x, curva_y = sample(str(f), x_min=a, x_max=b, puntos=PUNTOS_GRAFICA)
-    # Una cubica por tramo de tres subintervalos: los nodos 3k .. 3k + 3.
-    cubicas = [
-        [(xs[j + d], valores_f[j + d]) for d in range(4)] for j in range(0, n, 3)
-    ]
+    parabolas, cubicas, filas = arcos(tramos, xs, fs)
 
-    notas = [
-        f"∫[{a:g}, {b:g}] ({f}) dx ≈ {integral:.6f}",
-        f"{n} subintervalos de ancho h = {h:g}, agrupados en {n // 3} "
-        f"tramo{'s' if n > 3 else ''} de tres: una cubica por tramo. Los "
-        "extremos pesan 1, los nodos interiores de cada tramo 3 y los que "
-        "unen dos tramos 2.",
-        f"La suma del corchete es {corchete:.8f}; multiplicada por "
-        f"3h/8 = {factor:g} da la integral.",
-        "La columna de error queda vacia: este es un metodo de malla fija. "
-        "Para estimar la exactitud, resuelve otra vez con el doble de "
-        "subintervalos y compara las aproximaciones.",
-    ]
+    resultado: dict[str, Any] = {"integral": integral}
+    if len(resumen) == 1:
+        # Un solo corchete y un solo factor: los de toda la integral.
+        resultado |= {"corchete": resumen[0]["corchete"], "factor": resumen[0]["factor"]}
+    resultado |= {"h": h, "a": a, "b": b, "n": n, "tramos": resumen}
 
     return MethodResult(
         method=SLUG,
         columns=COLUMNAS,
         iterations=iteraciones,
-        result={
-            "integral": integral,
-            "corchete": corchete,
-            "factor": factor,
-            "h": h,
-            "a": a,
-            "b": b,
-            "n": n,
-        },
+        result=resultado,
         converged=True,
         stop_reason=StopReason.COMPLETED,
         decimals=cfg.decimals,
@@ -169,9 +154,12 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
             integral=integral,
             title=f"Simpson 3/8 sobre f(x) = {f}",
             resample=Resample(expression=str(f), domain=(a, b)),
+            parabolas=parabolas,
             cubicas=cubicas,
+            nodos=nodos(tramos, xs, fs),
+            filas_arcos=filas,
         ),
-        notes=notas,
+        notes=_notas(f, a, b, n, h, integral, resumen, tramos),
     )
 
 
@@ -181,15 +169,22 @@ register(
         name="Simpson 3/8",
         unit="U1",
         family="integracion",
-        orden=8,
+        orden=9,
         description=(
             "Aproxima una integral definida sustituyendo la curva por arcos "
             "de cubica que pasan por cuatro nodos equiespaciados, uno por "
-            "cada tramo de tres subintervalos, y sumando el area bajo ellos."
+            "cada tramo de tres subintervalos, y sumando el area bajo ellos. "
+            "Simple (n = 3): (b - a) * [f(x0) + 3f(x1) + 3f(x2) + f(x3)] / 8. "
+            "Si n no es multiplo de 3 (n = 5 o mas, salvo 4) combina las dos "
+            "reglas de Simpson: la 1/3 en los primeros subintervalos y la "
+            "3/8 en el resto, como en la aplicacion multiple del docente. "
+            "Con la misma malla, Simpson 1/3 pide n par."
         ),
         reference=(
-            "(3h/8) * [f(x0) + 3*sum(f(xi), i no multiplo de 3) "
-            "+ 2*sum(f(xi), i multiplo de 3) + f(xn)], h = (b - a)/n, n multiplo de 3"
+            "n = 3: (b - a) * [f(x0) + 3f(x1) + 3f(x2) + f(x3)] / 8, "
+            "Et = -(b - a)^5/6480 * f''''(xi). Compuesta: (3h/8) * [f(x0) "
+            "+ 3*sum(f(xi), i no multiplo de 3) + 2*sum(f(xi), i multiplo de 3) "
+            "+ f(xn)], h = (b - a)/n, n multiplo de 3. n impar: 1/3 + 3/8"
         ),
         inputs=[
             InputField(
@@ -216,13 +211,15 @@ register(
             ),
             InputField(
                 name="n",
-                label="Numero de subintervalos n (múltiplo de 3)",
+                label="Numero de subintervalos n (3 o mas, menos 4)",
                 kind=FieldKind.INTEGER,
                 default=6,
                 help=(
-                    "Tiene que ser múltiplo de 3: cada cubica usa tres "
-                    "subintervalos. Con n = 3 se usa una sola cubica sobre "
-                    "[a, b]; con n = 6, 9, ... se encadenan tramos de tres."
+                    "Con n multiplo de 3 cada cubica usa tres subintervalos: "
+                    "n = 3 es una sola cubica sobre [a, b]; con n = 6, 9, ... "
+                    "se encadenan tramos de tres. Con otro n (5, 7, 8, ...) "
+                    "la regla 1/3 cubre los primeros subintervalos y la 3/8 "
+                    "el resto. n = 1, 2 y 4 no se pueden."
                 ),
             ),
         ],
