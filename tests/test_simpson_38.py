@@ -17,6 +17,7 @@ import pytest
 from core.config import SolveConfig
 from core.registry import all_methods, clear, get, load_methods
 from core.types import MethodError, PlotKind, StopReason
+from tests.casos_referencia import SIMPSON_38_CHAPRA
 
 
 @pytest.fixture
@@ -270,8 +271,8 @@ def test_las_notas_explican_la_regla_y_el_corchete(metodo):
 # Chapra, ejemplo 21.6: f(x) = 0.2 + 25x - 200x^2 + 675x^3 - 900x^4 + 400x^5
 # en [0, 0.8], valor exacto 1.640533. Los numeros salen de un script aparte con
 # fracciones y mpmath que no importa el nucleo.
-CHAPRA = "0.2 + 25*x - 200*x^2 + 675*x^3 - 900*x^4 + 400*x^5"
-CHAPRA_EXACTO = 1.640533333333333
+CHAPRA = SIMPSON_38_CHAPRA["fx"]
+CHAPRA_EXACTO = SIMPSON_38_CHAPRA["exacto"]
 
 
 def chapra(x):
@@ -286,16 +287,16 @@ def test_chapra_n_5_combina_1_3_en_dos_subintervalos_y_3_8_en_tres(metodo):
     assert (otro["regla"], otro["desde"], otro["hasta"]) == (
         "3/8", pytest.approx(0.32), pytest.approx(0.8),
     )
-    assert uno["corchete"] == pytest.approx(7.13106944, abs=1e-12)
+    assert uno["corchete"] == pytest.approx(SIMPSON_38_CHAPRA["tramo_1_3"]["corchete"], abs=1e-12)
     assert uno["factor"] == pytest.approx(0.16 / 3, rel=1e-14)
-    assert uno["integral"] == pytest.approx(0.3803237, abs=5e-8)
+    assert uno["integral"] == pytest.approx(SIMPSON_38_CHAPRA["tramo_1_3"]["integral"], abs=5e-8)
     assert uno["integral"] == pytest.approx(0.38032370346666667, abs=1e-13)
-    assert otro["corchete"] == pytest.approx(21.07922432, abs=1e-12)
+    assert otro["corchete"] == pytest.approx(SIMPSON_38_CHAPRA["tramo_3_8"]["corchete"], abs=1e-12)
     assert otro["factor"] == pytest.approx(3 * 0.16 / 8, rel=1e-14)
     # Chapra imprime 1.264754: redondeo de sus pasos intermedios (1.2647535).
     assert otro["integral"] == pytest.approx(1.264754, abs=1e-6)
     assert otro["integral"] == pytest.approx(1.2647534592, abs=1e-13)
-    assert r.result["integral"] == pytest.approx(1.645077, abs=5e-7)
+    assert r.result["integral"] == pytest.approx(SIMPSON_38_CHAPRA["integral"], abs=5e-7)
     assert r.result["integral"] == pytest.approx(1.6450771626666667, abs=1e-13)
     assert r.result["integral"] == pytest.approx(uno["integral"] + otro["integral"], abs=1e-15)
     # No es exacta: la funcion es de grado 5. El error real es de 4.5e-3.

@@ -17,6 +17,7 @@ import pytest
 from core.config import SolveConfig
 from core.registry import all_methods, clear, get, load_methods
 from core.types import MethodError, PlotKind, StopReason
+from tests.casos_referencia import SIMPSON_13_EXP_X2 as EXP_X2
 
 
 @pytest.fixture
@@ -44,15 +45,16 @@ def test_registra_el_metodo_en_la_familia_de_integracion(metodo):
 
 
 def test_ejercicio_del_docente_exp_x_cuadrado_con_n_10(metodo):
-    r = resolver(metodo, {"fx": "exp(x^2)", "a": 0, "b": 1, "n": 10})
+    r = resolver(metodo, {k: EXP_X2[k] for k in ("fx", "a", "b", "n")})
 
     # Lo que se lee en el pizarron: dx = 0.1, corchete 43.880442, resultado 1.4626.
     assert r.result["delta_x"] == pytest.approx(0.1, abs=1e-15)
-    assert r.result["corchete"] == pytest.approx(43.880442, abs=5e-7)
-    assert r.result["integral"] == pytest.approx(1.4626, abs=1e-4)
+    assert r.result["corchete"] == pytest.approx(EXP_X2["corchete"], abs=5e-7)
+    assert r.result["integral"] == pytest.approx(EXP_X2["integral_pizarron"], abs=1e-4)
     assert math.floor(r.result["integral"] * 1e4) / 1e4 == 1.4626  # truncado
     # Con todos los digitos.
     assert r.result["corchete"] == pytest.approx(43.88044200299391, rel=1e-13)
+    assert r.result["integral"] == pytest.approx(EXP_X2["integral"], abs=1e-8)
     assert r.result["integral"] == pytest.approx(1.4626814000997969, rel=1e-13)
     assert r.result["factor"] == pytest.approx(0.1 / 3, rel=1e-15)
     assert (r.result["a"], r.result["b"], r.result["n"]) == (0.0, 1.0, 10)

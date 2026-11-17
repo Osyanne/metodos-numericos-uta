@@ -151,3 +151,49 @@ PUNTO_MEDIO_RESUELTO = {
     "integral_diapositiva": -0.2051,
     "integral_exacta": -0.19140625,
 }
+
+
+# Ejercicio del docente de ajuste por minimos cuadrados (recta). Los totales y
+# los errores son los del pizarron, a dos decimales (el error, a cuatro).
+MINIMOS_CUADRADOS_DOCENTE = {
+    "fuente": "Material del docente, ajuste por minimos cuadrados",
+    "puntos": [[1.0, 2.0], [1.5, 3.2], [2.0, 4.1], [2.5, 4.9], [3.0, 5.9]],
+    "m": 1.9,
+    "b": 0.22,
+    "r": 0.9976262076984156,
+    "suma_residuos": 0.043,
+    "totales_pizarron": {
+        "xi": 10.0, "yi": 20.1, "xiyi": 44.95, "xi2": 22.5, "yi2": 89.87,
+        "error": 0.0430,
+    },
+    "errores_pizarron": [0.0144, 0.0169, 0.0064, 0.0049, 0.0004],
+}
+
+# Ejemplo 21.6 de Chapra: f(x) = 0.2 + 25x - 200x^2 + 675x^3 - 900x^4 + 400x^5
+# en [0, 0.8], valor exacto 1.640533. Con n = 5 (no multiplo de 3) Simpson 3/8
+# combina la regla 1/3 en los dos primeros subintervalos y la 3/8 en los tres
+# restantes. Chapra imprime 1.264754 para la 3/8 (redondeo de sus pasos).
+SIMPSON_38_CHAPRA = {
+    "fuente": "Chapra, ejemplo 21.6 (aplicacion multiple de Simpson)",
+    "fx": "0.2 + 25*x - 200*x^2 + 675*x^3 - 900*x^4 + 400*x^5",
+    "a": 0,
+    "b": 0.8,
+    "n": 5,
+    "exacto": 1.640533333333333,
+    "tramo_1_3": {"corchete": 7.13106944, "integral": 0.3803237},
+    "tramo_3_8": {"corchete": 21.07922432, "integral": 1.2647535},
+    "integral": 1.645077,
+}
+
+# Simpson1.pdf: integral de e^(x^2) en [0, 1] con n = 10 (dx = 0.1). El
+# pizarron deja el corchete en 43.880442 y la integral en 1.4626 (truncada).
+SIMPSON_13_EXP_X2 = {
+    "fuente": "Simpson1.pdf",
+    "fx": "exp(x^2)",
+    "a": 0,
+    "b": 1,
+    "n": 10,
+    "corchete": 43.880442,
+    "integral": 1.46268140,
+    "integral_pizarron": 1.4626,
+}

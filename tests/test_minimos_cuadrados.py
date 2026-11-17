@@ -13,8 +13,9 @@ from core.config import SolveConfig
 from core.expression import parse
 from core.registry import all_methods, clear, get, load_methods
 from core.types import FieldKind, MethodError, PlotKind, StopReason
+from tests.casos_referencia import MINIMOS_CUADRADOS_DOCENTE
 
-DOCENTE = [[1.0, 2.0], [1.5, 3.2], [2.0, 4.1], [2.5, 4.9], [3.0, 5.9]]
+DOCENTE = MINIMOS_CUADRADOS_DOCENTE["puntos"]
 
 
 @pytest.fixture
