@@ -23,7 +23,16 @@ Como extension de U1, se agrego el **Metodo del Trapecio** a partir del
 material de integracion numerica entregado. Conserva la misma entrada que Punto
 Medio (`f(x)`, `a`, `b`, `n`), pero aproxima la curva con segmentos rectos.
 Despues se sumo el **Metodo de Simpson**, a partir de `Método de Simpson.pdf`,
-con la misma entrada y arcos de parabola en lugar de segmentos.
+con la misma entrada y arcos de parabola en lugar de segmentos. Siguieron
+**Simpson 1/3** (`Simpson1.pdf`, con `n` par) y **Simpson 3/8**, con arcos de
+cubica y la aplicacion multiple de Chapra para los `n` que no son multiplo de 3,
+y el **Ajuste por minimos cuadrados** (U4), con la tabla del docente. En total
+son **once metodos**.
+
+Sobre la interfaz se agregaron una **portada** con una tarjeta por metodo, la
+navegacion por la direccion de la pagina y una pestana **Teoria** con la
+explicacion de cada metodo, para que el aplicativo se pueda estudiar y no solo
+usar.
 
 No hubo especificacion escrita ni rubrica —el docente confirmo que no existe—,
 asi que los requisitos se acordaron en clase y se dejaron por escrito en
@@ -190,6 +199,69 @@ Una prueba corre los tres metodos de integracion sobre la misma malla y exige
 que Simpson sea `(Trapecio + 2 * Punto Medio) / 3`: si no se cumple, una de las
 tres reglas esta mal.
 
+### Simpson 1/3
+
+Es la regla de `Simpson1.pdf`: una parabola por cada **dos** subintervalos, con
+`n` par y `dx = (b - a) / n`. Los `n + 1` puntos van con pesos `1, 4, 2, 4, ...,
+2, 4, 1`:
+
+```
+I ~= dx / 3 * [f(x_0) + 4 f(x_1) + 2 f(x_2) + ... + 4 f(x_(n-1)) + f(x_n)]
+```
+
+El ejercicio del docente, `exp(x^2)` en `[0, 1]` con `n = 10`, da el corchete
+`43.880442` y la integral `1.4626814`; el pizarron escribe `1.4626`, truncada.
+
+No es otra regla que el Metodo de Simpson: solo cuenta `n` de otra forma. El
+Metodo de Simpson evalua ademas el punto medio de cada subintervalo, asi que con
+`n` par (4 o mas) da exactamente lo mismo que Simpson 1/3 con `2n`, y con `n = 2`
+los dos son una sola parabola. Una prueba lo exige con `sqrt(5 + x^3)`: `n = 4`
+contra `n = 8` dan el mismo corchete, `54.97136101`. Con `n` impar no hay regla
+1/3 posible, y el aplicativo lo dice y manda a Simpson 3/8.
+
+### Simpson 3/8
+
+Cambia la parabola por una **cubica** que pasa por cuatro nodos equiespaciados:
+un tramo de tres subintervalos. Con `n = 3` es una sola cubica,
+`(b - a) * [f(x_0) + 3 f(x_1) + 3 f(x_2) + f(x_3)] / 8`, y con `n` multiplo de 3
+se encadenan tramos, donde los nodos de union pesan 2 y la tabla lee
+`1, 3, 3, 2, 3, 3, 2, ..., 3, 3, 1`.
+
+Lo que lo distingue es la **aplicacion multiple** del docente (Chapra, ejemplo
+21.6): con `n` que no es multiplo de 3 se combinan las dos reglas, la 1/3 en los
+primeros 2 o 4 subintervalos y la 3/8 en el resto. Con `f(x) = 0.2 + 25x − 200x² +
+675x³ − 900x⁴ + 400x⁵` en `[0, 0.8]` y `n = 5` salen dos tramos, uno por regla:
+`0.3803237` de la 1/3 y `1.2647535` de la 3/8, que suman **`1.6450772`** contra
+el valor exacto `1.640533`. Eso obligo a que el resultado no tenga un solo
+corchete: `result.tramos` lista el de cada regla, y `corchete` y `factor` solo
+quedan cuando hay un unico tramo. La tabla repite el nodo de union, una vez por
+regla, con dos columnas de texto (`nodo` y `regla`) que dicen a cual pertenece
+cada fila. Con `n = 1`, `2` y `4` no hay tramo de 3/8 y el metodo falla
+diciendolo.
+
+### Ajuste por minimos cuadrados
+
+A diferencia de los demas, no itera ni recorre una malla: dados unos puntos,
+calcula **una sola vez** la recta `y = m x + b` que minimiza la suma de los
+cuadrados de los residuos, y la correlacion `r`, de las sumas `Sx, Sy, Sxy, Sxx,
+Syy` de la tabla del docente:
+
+```
+m = (n Sxy - Sx Sy) / (n Sxx - Sx^2)        b = (Sy - m Sx) / n
+```
+
+El ejercicio del docente, con los puntos `(1, 2)`, `(1.5, 3.2)`, `(2, 4.1)`,
+`(2.5, 4.9)` y `(3, 5.9)`, tiene totales `10.00`, `20.10`, `44.95`, `22.50` y
+`89.87`, y da `m = 1.90`, `b = 0.22` y `r = 0.9976`. La columna de error de cada
+fila es el **residuo al cuadrado** (`0.0144`, `0.0169`, `0.0064`, `0.0049`,
+`0.0004`) y suman `0.0430`. Las sumas se hacen con fracciones exactas sobre el
+decimal de cada dato: asi sale `m = 1.9` y no `1.8999999999999995`.
+
+Ademas de la recta hay tres modelos que se linealizan con `log` en base 10, como
+en clase: potencial `y = b x^m`, exponencial `y = b e^(m x)` y logaritmico `y = m
+log x + b`. El modelo se elige en una lista desplegable, que es el primer campo
+de la API que declara sus opciones (`choices`).
+
 ### Runge-Kutta
 
 Resuelve `y' = f(x, y)` avanzando sobre una malla de paso fijo. Se
@@ -229,9 +301,18 @@ El registro lo descubre solo al importar el paquete, y **la interfaz dibuja el
 formulario a partir de los campos que el metodo declara**, sin saber de que
 metodo se trata.
 
-Eso cumple R3, y no como promesa: `tests/test_extensibilidad.py` escribe un
-metodo nuevo en disco, recarga el registro y verifica que aparezca en la API con
-sus campos y resolviendo, sin haber tocado ningun archivo existente.
+Eso cumple R3 para el nucleo y la API, y no como promesa:
+`tests/test_extensibilidad.py` escribe un metodo nuevo en disco, recarga el
+registro y verifica que aparezca en la API con sus campos y resolviendo, sin
+haber tocado ningun archivo existente.
+
+La interfaz pide un poco mas, y una prueba lo exige: el metodo necesita su
+**formula** en `web/formulas.js` y su **teoria** en `web/teoria.js` (la prueba
+«todo metodo de la API tiene su guia» de `tests/e2e/portada.spec.js` falla si
+falta), y su familia en `FAMILIAS` de `web/app.js`, con su color en
+`web/styles.css`, si es una familia nueva. Sin esas entradas el metodo aparece y
+resuelve, pero sin formula ni pestana Teoria. Los ejercicios de ejemplo
+(`web/presets.js`) son opcionales.
 
 ### Decisiones que vale la pena justificar
 
@@ -254,6 +335,30 @@ expresion sin evaluar no puede pasar. El texto va por una funcion aparte,
 `cell_value`, que solo usan las celdas de la tabla. El `error` de una fila sigue
 siendo siempre numerico.
 
+**Una celda de texto sirve para algo mas que un polinomio.** Lagrange las
+necesito para sus `L_i`; Simpson 3/8 las usa para `nodo` y `regla`, que dicen a
+que regla pertenece cada fila cuando el nodo de union aparece dos veces. El
+camino ya estaba hecho, y se probo de punta a punta tambien con la exportacion:
+el CSV y el PDF escriben esas columnas tal cual.
+
+**El resultado puede traer estructuras, y la interfaz decide donde van.**
+`result.tramos` (una lista de objetos) y `result.totales` (un objeto) no caben en
+una celda del resumen. La interfaz dibuja `totales` como la fila **Total** de la
+tabla y no lista ninguno de los dos en el resumen; el CSV y el PDF cierran la
+tabla con la fila `Total` cuando existe. Antes de fijarlo, el resumen de Simpson
+3/8 mostraba «tramos −, —», un texto sin sentido.
+
+**La portada y la direccion de la pagina.** La aplicacion abre en una portada
+con una tarjeta por metodo, y la ruta vive en el hash: `#/` es la portada y
+`#/metodo/<slug>` un metodo. Asi funcionan Atras, Adelante y los enlaces directos
+sin un servidor que enrute, que es lo que hay en GitHub Pages. Un nombre
+desconocido cae en la portada.
+
+**La pestana Teoria es contenido fijo.** `web/teoria.js` guarda la explicacion de
+cada metodo como HTML con formulas en MathML y graficas estaticas; la interfaz
+no calcula nada para armarla. Sus ejemplos citan el ejercicio de la lista que
+los verifica, y una prueba exige guia a todo metodo de la API.
+
 **Sin librerias externas en el navegador.** El aplicativo tiene que funcionar
 sin internet para poder demostrarlo en el laboratorio. El plano cartesiano esta
 dibujado a mano sobre Canvas.
@@ -263,8 +368,20 @@ ejecuta Python, y pasar los metodos a JavaScript habria creado justo lo que la
 arquitectura evita: dos implementaciones que pueden discrepar. Con Pyodide el
 navegador ejecuta los mismos `core/` y `api/`; `pages/puente.js` intercepta los
 pedidos a `api/` y se los pasa a la aplicacion FastAPI por ASGI. El costo es la
-primera carga (unos 20 segundos) y que esa version necesita internet; la local
-sigue funcionando sin conexion.
+primera carga, que tiene que bajar Python, y que esa version necesita internet
+la primera vez; la local sigue funcionando sin conexion.
+
+La carga se hizo rapida de varias formas, sin cambiar lo que se ejecuta. La
+interfaz **se pinta sin esperar a Python**: la lista de metodos sale de un
+`catalogo.json` que se arma con la propia aplicacion FastAPI al construir el
+sitio, y Python espera a que esa lista este pintada para arrancar. Las descargas
+(`codigo.zip`, Pyodide, sus paquetes y los modulos de `web/`) empiezan desde el
+HTML y corren en paralelo, y el puente reutiliza la aplicacion que ya construye
+`api.main` en vez de crear otra. La pila del PDF (pillow, fonttools, micropip y
+fpdf2) se baja solo al exportar el primer PDF. En la segunda visita, un service
+worker (`sw.js`, generado al armar el sitio, con una cache nueva por cada
+armado) guarda Pyodide, sus paquetes y el sitio, y el aplicativo funciona sin
+red. El armado de Pages instala antes las dependencias de Python en el CI.
 
 **Se ejecuta desde una copia del repositorio**, no como paquete instalado: la
 interfaz vive en `web/`, al lado de `api/`. Si esa carpeta falta, el servidor no
@@ -296,7 +413,7 @@ devolvia congela tambien el error.
 
 **El ejercicio propuesto de la diapositiva 10 diverge, y esta bien que diverja.**
 `4x³ − 18x² + 12x − 6 = 0` con `x₀ = 1.165`: la unica raiz real esta en
-3.81699684, donde `f'` vale +49.6 contra los −13.65 congelados en el punto
+3.81699684, donde `f'` vale +49.42 contra los −13.65 congelados en el punto
 inicial. El factor de amplificacion queda cerca de 4.6, muy por encima de 1, y
 la sucesion se aleja. El aplicativo lo reporta con la causa escrita y **no
 inventa una raiz**. Newton-Raphson resuelve el mismo ejercicio sin problema: el
@@ -319,15 +436,18 @@ Se declaran en vez de esconderse.
    resolver otra vez con la mitad del paso y comparar, y antes hay que decidir
    si se estima error local o global y como agregarlo en un sistema. Se dejo
    fuera de este parcial por eso, no por olvido.
-2. **Los metodos 7 a 10 no estan implementados.** La arquitectura para
-   agregarlos si, y esta ejercitada con una prueba que la usa de verdad.
+2. **La Teoria cubre los once metodos, pero la mantiene una persona.** Es
+   contenido fijo en `web/teoria.js`: si cambia un metodo, su explicacion no se
+   entera. Los ejemplos citan un ejercicio de la lista y la prueba de ese
+   ejercicio los verifica, pero el texto alrededor no.
 3. **Interpolacion de Newton trae las cuatro variantes** aunque el docente solo
    usa divididas, que es el default. Sobra codigo, pero no falta.
-4. **La validacion de puntos esta duplicada** entre los dos metodos de
-   interpolacion. Nacieron en paralelo y no comparten helper. Los casos de
-   referencia tambien viven en dos archivos por la misma razon. Unificarlos es
-   una limpieza pendiente, no un defecto de correctitud: las dos copias estan
-   cubiertas por pruebas.
+4. **Simpson 3/8 con `n` que no es multiplo de 3 mezcla dos reglas.** Es lo que
+   hace el docente en la aplicacion multiple, pero el error ya no es el de una
+   sola regla, y la columna de error va vacia como en toda malla fija. Para ver
+   la exactitud hay que resolver otra vez con otro `n` y comparar.
+5. **El ajuste solo tiene cuatro modelos** (recta, potencial, exponencial y
+   logaritmico) y ninguno polinomico de grado mayor. Eran los del material.
 
 ## 6. Preguntas abiertas al docente
 
