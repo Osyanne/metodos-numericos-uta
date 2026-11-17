@@ -3,14 +3,26 @@
 import { test, expect } from "@playwright/test";
 import { elegirMetodo } from "./desplegable.js";
 
+// Todos los metodos de la API tienen guia (lo exige portada.spec.js), asi que
+// uno sin ella se arma agregando a la lista un metodo que la API no tiene.
+async function conMetodoSinGuia(page) {
+  await page.route("**/api/methods", async (route) => {
+    const r = await route.fetch();
+    const m = await r.json();
+    m.push({ ...m[0], slug: "metodo-sin-guia", name: "Metodo sin guia", family: "otros", orden: 99 });
+    await route.fulfill({ response: r, json: m });
+  });
+}
+
 test("sin teoria, la pestana no aparece; con ella, si, antes de resolver", async ({ page }) => {
+  await conMetodoSinGuia(page);
   await page.goto("/");
-  await elegirMetodo(page, "trapecio");
+  await elegirMetodo(page, "metodo-sin-guia");
   await expect(page.locator("#ver-teoria")).toBeHidden();
   await elegirMetodo(page, "simpson-38");
   await expect(page.locator("#ver-teoria")).toBeVisible();
   await expect(page.locator("#ver-teoria")).toHaveText("Teoría");
-  await elegirMetodo(page, "simpson");
+  await elegirMetodo(page, "metodo-sin-guia");
   await expect(page.locator("#ver-teoria")).toBeHidden();
 });
 
@@ -64,10 +76,11 @@ test("la teoria no rompe Plano, Iteraciones ni el recorrido", async ({ page }) =
 });
 
 test("al pasar a un metodo sin teoria desde la teoria se vuelve al plano", async ({ page }) => {
+  await conMetodoSinGuia(page);
   await page.goto("/");
   await elegirMetodo(page, "simpson-38");
   await page.locator("#ver-teoria").click();
-  await elegirMetodo(page, "trapecio");
+  await elegirMetodo(page, "metodo-sin-guia");
   await expect(page.locator("#ver-teoria")).toBeHidden();
   await expect(page.locator("#panel-plano")).toBeVisible();
   await expect(page.locator("#panel-teoria")).toBeHidden();

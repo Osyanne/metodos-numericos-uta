@@ -3,9 +3,10 @@
 // calcula nada. Los numeros de los ejemplos estan verificados por el `esperado`
 // del ejercicio que cita (web/presets.js).
 //
-// Un metodo nuevo suma aca su entrada. Sin entrada, la pestana no aparece.
+// Un metodo nuevo suma aca su entrada. Sin entrada, la pestana no aparece, y
+// una prueba (tests/e2e/portada.spec.js) exige una por cada metodo de la API.
 
-import { mml } from "./formulas.js";
+import { mml, formulaPara } from "./formulas.js";
 
 const { mi, mn, mo, fila, sub, frac, paren, f, suma, resta, tabla, separa } = mml;
 
@@ -609,7 +610,301 @@ const MINIMOS_CUADRADOS = `
 </section>
 `;
 
-const TEORIAS = { "simpson-38": SIMPSON_38, "minimos-cuadrados": MINIMOS_CUADRADOS };
+// ------------------------------------------------- guias breves por metodo
+
+// Cada guia tiene siempre las mismas secciones, en este orden: que problema
+// resuelve, la idea, la formula (la de formulas.js, sin duplicarla), los pasos
+// tal como los hace el aplicativo, un ejemplo a mano, que mirar y los errores
+// comunes. Los numeros de los ejemplos estan calculados con el propio nucleo.
+const lista = (items, etiqueta = "ul") =>
+  `<${etiqueta}>${items.map((t) => `<li>${t}</li>`).join("")}</${etiqueta}>`;
+
+const bloque = (id, titulo, cuerpo) =>
+  `<section aria-labelledby="teo-${id}"><h3 id="teo-${id}">${titulo}</h3>${cuerpo}</section>`;
+
+const formulaDe = (slug, valor = () => "") =>
+  `<div class="teo-formula">${formulaPara(slug, valor)}</div>`;
+
+function guia(clave, { problema, idea, formula, pasos, ejemplo, mirar, errores }) {
+  return [
+    bloque(`${clave}-problema`, "Qué problema resuelve", `<p>${problema}</p>`),
+    bloque(`${clave}-idea`, "La idea", `<p>${idea}</p>`),
+    bloque(`${clave}-formula`, "Fórmula", formula),
+    bloque(`${clave}-pasos`, "Pasos en el aplicativo", lista(pasos, "ol")),
+    bloque(`${clave}-ejemplo`, "Ejemplo a mano", ejemplo),
+    bloque(`${clave}-mirar`, "Qué mirar en la tabla y en el plano", lista(mirar)),
+    bloque(`${clave}-errores`, "Errores comunes", lista(errores)),
+  ].join("\n");
+}
+
+const NEWTON_RAPHSON = guia("nr", {
+  problema: "Hallar una raíz de f(x) = 0 cuando no se puede despejar x. Se parte de una aproximación inicial x₀ y se mejora paso a paso.",
+  idea: "En cada paso se traza la recta tangente a f en (xᵢ, f(xᵢ)) y la nueva aproximación es el punto donde esa tangente corta el eje x. "
+    + "Cerca de una raíz simple la tangente casi coincide con la curva, y por eso el método converge rápido.",
+  formula: `${formulaDe("newton-raphson")}
+  <p>f′ la calcula el aplicativo (y muestra cuál usó) o se escribe a mano en el campo opcional de la derivada.</p>`,
+  pasos: [
+    "Escribir f(x) y el valor inicial x₀ (la derivada es opcional).",
+    "Calcular f(xᵢ) y f′(xᵢ) en el punto actual.",
+    "Calcular xᵢ₊₁ = xᵢ − f(xᵢ) / f′(xᵢ).",
+    "Medir el error entre xᵢ₊₁ y xᵢ con el criterio elegido en los ajustes.",
+    "Parar al alcanzar la tolerancia o las iteraciones máximas; si no, repetir con xᵢ₊₁.",
+  ],
+  ejemplo: `<p>Con f(x) = x³ − 2x − 5 y x₀ = 2: f(2) = −1 y f′(2) = 3·2² − 2 = 10, así que x₁ = 2 − (−1)/10 = 2.1.
+  Después f(2.1) = 0.061, f′(2.1) = 11.23 y x₂ = 2.0945681. Con los ajustes por omisión llega a la raíz 2.0945515 en 4 iteraciones.</p>`,
+  mirar: [
+    "En la tabla, f(xᵢ) se acerca a 0 y el error baja muy rápido de una fila a la siguiente; la fila 0 no tiene error porque x₀ se eligió a mano.",
+    "En el plano se ven la curva, los puntos (xᵢ, f(xᵢ)) de cada iteración y la raíz sobre el eje x. El recorrido muestra un paso a la vez, con la fórmula sustituida.",
+    "El punto inicial x₀ se puede arrastrar en el plano: el resultado se recalcula en vivo.",
+  ],
+  errores: [
+    "<strong>f′(xᵢ) = 0:</strong> la tangente es horizontal y no corta el eje. El aplicativo lo avisa y no sigue desde ahí.",
+    "<strong>Un x₀ mal elegido:</strong> la sucesión puede alejarse o ciclar. El ejercicio «Práctica · x³ − 2x + 2, el método cicla» salta 0 → 1 → 0 → 1 sin llegar a la raíz.",
+    "<strong>Raíz doble:</strong> f′ también se anula en la raíz y el método pierde su rapidez; en «Práctica · raíz doble (x − 1)²» el error solo se divide entre 2 en cada paso.",
+    "<strong>Fiarse solo de la tolerancia:</strong> el error mide cuánto se movió x entre dos filas, no cuán cerca de 0 está f(x). Conviene mirar también la columna f(xᵢ).",
+    "<strong>f no se puede evaluar</strong> en algún xᵢ (por ejemplo un logaritmo de un negativo): el método se alejó y el aplicativo lo informa como divergencia.",
+  ],
+});
+
+const VON_MISES = guia("vm", {
+  problema: "El mismo que Newton-Raphson: hallar una raíz de f(x) = 0 a partir de un valor inicial x₀.",
+  idea: "<strong>Von Mises es Newton-Raphson con la derivada congelada en x₀</strong>: f′ se evalúa una sola vez, antes de iterar, y se usa en todos los pasos. "
+    + "Geométricamente, en lugar de una tangente nueva por iteración se trazan paralelas a la primera tangente.",
+  formula: `${formulaDe("von-mises")}
+  <p>El denominador es f′(x₀), no f′(xᵢ): es lo único que cambia respecto de Newton-Raphson.</p>`,
+  pasos: [
+    "Escribir f(x) y x₀ (la derivada es opcional).",
+    "Calcular f′(x₀) <em>una sola vez</em>, antes de la primera fila; el aplicativo la anota como «derivada congelada».",
+    "En cada fila calcular f(xᵢ) y xᵢ₊₁ = xᵢ − f(xᵢ) / f′(x₀).",
+    "Medir el error entre xᵢ₊₁ y xᵢ.",
+    "Parar al alcanzar la tolerancia o las iteraciones máximas.",
+  ],
+  ejemplo: `<p>Con la misma f(x) = x³ − 2x − 5 y x₀ = 2, f′(2) = 10 se usa en todas las filas. La primera da lo mismo que Newton-Raphson, x₁ = 2.1, pero
+  la segunda ya difiere: x₂ = 2.1 − 0.061/10 = 2.0939 (Newton-Raphson: 2.0945681). Llega a 2.0945515 en 8 iteraciones, contra las 4 de Newton-Raphson.</p>`,
+  mirar: [
+    "La tabla tiene las mismas columnas que Newton-Raphson; la derivada no cambia, así que no hay una columna para ella: está en las notas, con su valor.",
+    "El error baja más despacio: cada fila reduce el error aproximadamente en un mismo factor, no al cuadrado.",
+    "En el plano los puntos (xᵢ, f(xᵢ)) se acercan a la raíz con más pasos que en Newton-Raphson.",
+  ],
+  errores: [
+    "<strong>No es el método de las potencias</strong> (el de los autovalores de una matriz): aquí no hay matrices.",
+    "<strong>Recalcular f′ en cada paso</strong> lo vuelve Newton-Raphson: sigue convergiendo y parece correcto, pero deja de coincidir con los números de clase.",
+    "<strong>f′(x₀) = 0:</strong> no se puede dividir y el método ni arranca; hay que elegir otro x₀.",
+    "<strong>Una pendiente congelada que ya no se parece a la real</strong> puede hacer que diverja. En «Docente · ejercicio divergente» (4x³ − 18x² + 12x − 6, x₀ = 1.165) f′(x₀) = −13.65, pero en la única raíz real f′ es positiva: el aplicativo lo informa como divergencia y explica la causa.",
+  ],
+});
+
+const INTERPOLACION_NEWTON = guia("in", {
+  problema: "Dados puntos (xᵢ, yᵢ) con las x distintas, hallar el polinomio de menor grado que pasa por todos y evaluarlo en un x.",
+  idea: "El polinomio se arma por términos: cada punto nuevo agrega un término, sin rehacer los anteriores. "
+    + "Los coeficientes aₖ son las diferencias divididas, que se leen en la diagonal de la tabla.",
+  formula: `${formulaDe("interpolacion-newton")}
+  <p>Con aₖ = f[x₀, …, xₖ], la diferencia dividida de orden k.</p>`,
+  pasos: [
+    "Escribir los puntos (al menos dos, con las x distintas) y, si se quiere, el x donde evaluar.",
+    "Armar la tabla: cada diferencia dividida f[xᵢ, …, xᵢ₊ₖ] = (f[xᵢ₊₁, …, xᵢ₊ₖ] − f[xᵢ, …, xᵢ₊ₖ₋₁]) / (xᵢ₊ₖ − xᵢ), puesta en la fila de su último punto.",
+    "Leer los aₖ sobre la diagonal de la tabla.",
+    "Escribir P(x) en forma de Newton y expandirlo.",
+    "Evaluar P en el x pedido.",
+  ],
+  ejemplo: `<p>Con (0, 1), (1, 3) y (2, 7): las diferencias de orden 1 son (3 − 1)/(1 − 0) = 2 y (7 − 3)/(2 − 1) = 4, y la de orden 2 es (4 − 2)/(2 − 0) = 1.
+  Entonces P(x) = 1 + 2(x − 0) + 1·(x − 0)(x − 1) = x² + x + 1, y P(1.5) = 4.75.</p>`,
+  mirar: [
+    "La tabla tiene x, f(x) y una columna por orden de diferencia; los aₖ están sobre la diagonal.",
+    "El resumen da el polinomio expandido y también en forma de Newton, tal como se escribe en el pizarrón.",
+    "En el plano los datos son círculos que se pueden arrastrar; se ven la curva del polinomio y el punto (x, P(x)).",
+  ],
+  errores: [
+    "<strong>Una x repetida:</strong> no hay polinomio que pase por dos puntos con la misma x y distinta y; el aplicativo la rechaza.",
+    "<strong>Variantes:</strong> divididas (la de clase, por omisión) y diferencias hacia adelante o hacia atrás, que exigen puntos equiespaciados. "
+      + "El polinomio es el mismo; cambia la tabla, y con diferencias finitas los aₖ no aparecen en una celda.",
+    "<strong>Cambiar el orden de los puntos</strong> no cambia P, pero sí la tabla y los aₖ.",
+    "<strong>Demasiados puntos equiespaciados</strong> dan un polinomio de grado alto que oscila entre los puntos (fenómeno de Runge).",
+    "<strong>Evaluar fuera del rango de los puntos</strong> es extrapolar y es poco fiable.",
+  ],
+});
+
+const INTERPOLACION_LAGRANGE = guia("il", {
+  problema: "El mismo que la interpolación de Newton: hallar el polinomio que pasa por todos los puntos (xᵢ, yᵢ) y evaluarlo en un x.",
+  idea: "Para cada punto se arma un polinomio base Lᵢ(x) que vale 1 en xᵢ y 0 en todos los demás puntos. "
+    + "El polinomio es la suma de cada f(xᵢ) multiplicado por su Lᵢ(x).",
+  formula: formulaDe("interpolacion-lagrange"),
+  pasos: [
+    "Escribir los puntos (al menos dos, con las x distintas) y, si se quiere, el x donde evaluar.",
+    "Para cada i, armar el numerador Π(x − xⱼ) y el denominador Π(xᵢ − xⱼ), con j ≠ i.",
+    "Dividir: Lᵢ(x) = numerador / denominador.",
+    "Calcular el término f(xᵢ)·Lᵢ(x).",
+    "Sumar los términos: es P(x); evaluarlo en el x pedido.",
+  ],
+  ejemplo: `<p>Con (0, 1), (1, 3) y (2, 7): L₀ = (x − 1)(x − 2)/2, L₁ = −x(x − 2) y L₂ = x(x − 1)/2. Entonces P = 1·L₀ + 3·L₁ + 7·L₂ = x² + x + 1.
+  En x = 1.5 las bases valen −0.125, 0.75 y 0.375, y P(1.5) = −0.125 + 2.25 + 2.625 = 4.75.</p>`,
+  mirar: [
+    "Aquí no hay iteraciones que converjan: cada fila es un paso del procedimiento, con su numerador, su denominador y su Lᵢ.",
+    "La columna «L_i evaluado» suma 1 (−0.125 + 0.75 + 0.375 en el ejemplo): sirve de comprobación.",
+    "En el plano, la fila elegida muestra su término f(xᵢ)·Lᵢ(x) junto a los datos y a la curva de P.",
+  ],
+  errores: [
+    "<strong>Una x repetida:</strong> el denominador se anula; el aplicativo la rechaza.",
+    "<strong>Confundir numerador y denominador:</strong> en el numerador va la variable x; en el denominador, el propio xᵢ.",
+    "<strong>Olvidar multiplicar Lᵢ por f(xᵢ)</strong> antes de sumar.",
+    "<strong>Esperar otro polinomio que el de Newton:</strong> es el mismo por otro camino. Si difieren, hay un error en algún lado.",
+    "<strong>Muchos puntos o extrapolar:</strong> valen las mismas advertencias que en Newton (oscilaciones, poca fiabilidad fuera de los puntos).",
+  ],
+});
+
+const TRAPECIO = guia("tr", {
+  problema: "Aproximar una integral definida ∫ₐᵇ f(x) dx cuando no se puede (o no conviene) buscar una primitiva.",
+  idea: "Se parte [a, b] en n subintervalos de ancho h y se unen con rectas los valores vecinos de f. "
+    + "El área bajo esa poligonal es la suma de n trapecios.",
+  formula: formulaDe("trapecio"),
+  pasos: [
+    "Escribir f(x), los extremos a y b, y el número de subintervalos n.",
+    "Calcular h = (b − a) / n.",
+    "Evaluar f en los n + 1 puntos x₀ = a, x₁, …, xₙ = b.",
+    "Darle peso 1 a los extremos y peso 2 a los puntos interiores.",
+    "Sumar peso · f(xᵢ) · h/2: esa suma acumulada es la aproximación.",
+  ],
+  ejemplo: `<p>Con f(x) = x² en [0, 2] y n = 2: h = 1, los puntos son 0, 1, 2 y f vale 0, 1, 4. Entonces I ≈ ½·[0 + 2·1 + 4] = 3.
+  La integral exacta es 8/3 ≈ 2.6667: el trapecio la sobreestima porque la curva es convexa y las cuerdas quedan por encima.</p>`,
+  mirar: [
+    "La tabla tiene n + 1 filas: xᵢ, f(xᵢ), el peso, el aporte peso·f(xᵢ)·Δx/2 y la suma acumulada. La última suma es la integral.",
+    "En el plano se sombrean los trapecios bajo la curva; al aumentar n se pegan más a ella.",
+    "La columna de error va vacía a propósito: es un método de malla fija. Para estimar la exactitud, se resuelve otra vez con el doble de subintervalos y se comparan los resultados.",
+  ],
+  errores: [
+    "<strong>Confundir n con el número de puntos:</strong> hay n subintervalos y n + 1 puntos.",
+    "<strong>Olvidar que los puntos interiores pesan 2</strong> y solo los extremos pesan 1.",
+    "<strong>Un n chico con una curva muy curvada:</strong> el error crece con la curvatura de f.",
+    "<strong>b menor o igual que a:</strong> el aplicativo pide b mayor que a; para la integral con signo cambiado, se intercambian los extremos.",
+  ],
+});
+
+const PUNTO_MEDIO = guia("pm", {
+  problema: "Aproximar una integral definida ∫ₐᵇ f(x) dx sumando áreas de rectángulos.",
+  idea: "Se parte [a, b] en n subintervalos y, en cada uno, la altura del rectángulo es el valor de f en el centro del subintervalo. "
+    + "Suele ser más precisa que los rectángulos que usan el extremo izquierdo o el derecho.",
+  formula: formulaDe("punto-medio"),
+  pasos: [
+    "Escribir f(x), los extremos a y b, y el número de subintervalos n.",
+    "Calcular Δx = (b − a) / n.",
+    "Calcular cada punto medio mᵢ = a + (i − ½)·Δx, para i = 1, …, n.",
+    "Evaluar f(mᵢ) y el área del rectángulo f(mᵢ)·Δx.",
+    "Sumar las n áreas: es la aproximación.",
+  ],
+  ejemplo: `<p>Con f(x) = x² en [0, 2] y n = 2: Δx = 1 y los puntos medios son 0.5 y 1.5, donde f vale 0.25 y 2.25.
+  Entonces I ≈ 1·(0.25 + 2.25) = 2.5. La exacta es 8/3 ≈ 2.6667; el trapecio da 3: los dos errores son de signo contrario.</p>`,
+  mirar: [
+    "La tabla tiene n filas, una por subintervalo (no n + 1): el punto medio, f en él, el área del rectángulo y la suma acumulada.",
+    "En el plano, cada rectángulo toca la curva en el centro de su base; por eso se corta un poco por encima y un poco por debajo.",
+    "La columna de error va vacía: es un método de malla fija, y la exactitud se estima resolviendo otra vez con más subintervalos.",
+  ],
+  errores: [
+    "<strong>Evaluar f en los extremos</strong> en vez del centro: eso son los rectángulos izquierdo o derecho, no el punto medio.",
+    "<strong>Contar n + 1 filas:</strong> aquí hay n puntos medios.",
+    "<strong>Olvidar multiplicar por Δx</strong> al final (la suma de las alturas no es el área).",
+    "<strong>b menor o igual que a:</strong> el aplicativo pide b mayor que a.",
+  ],
+});
+
+const SIMPSON = guia("si", {
+  problema: "Aproximar una integral definida ∫ₐᵇ f(x) dx con más exactitud que el trapecio cuando f es suave.",
+  idea: "En vez de unir los valores con rectas se usan arcos de parábola, uno por subintervalo, que pasan por sus dos extremos y por su punto medio. "
+    + "El área bajo cada arco se calcula exacta.",
+  formula: `${formulaDe("simpson")}
+  <p>Con n = 2 hay una sola parábola sobre [a, b]: I ≈ (b − a)/6 · [f(a) + 4 f((a + b)/2) + f(b)].</p>`,
+  pasos: [
+    "Escribir f(x), a, b y un n par.",
+    "Con n = 2 se usa una sola parábola sobre [a, b]. Con n > 2, [a, b] se parte en n subintervalos de ancho h = (b − a)/n.",
+    "Calcular el punto medio mᵢ de cada subintervalo.",
+    "Evaluar f en los extremos xᵢ y en los puntos medios mᵢ.",
+    "Pesar 1 los dos extremos de [a, b], 4 los puntos medios y 2 los xᵢ interiores; sumar el corchete.",
+    "Multiplicar el corchete por (b − a)/(6n).",
+  ],
+  ejemplo: `<p>Con f(x) = x² en [0, 2] y n = 2: el punto medio es 1 y el corchete vale f(0) + 4·f(1) + f(2) = 0 + 4 + 4 = 8.
+  Entonces I ≈ (2 − 0)/6 · 8 = 8/3 ≈ 2.6667, que es exacta: Simpson integra sin error los polinomios de grado 3 o menor.</p>`,
+  mirar: [
+    "La tabla nombra cada punto (x0, m1, x1, …) con su peso 1, 4 o 2, el producto peso·f(x) y la suma del corchete: el número que se escribe antes de multiplicar.",
+    "En el plano se sombrean los arcos de parábola; en una curva suave casi no se distinguen de f.",
+    "La columna de error va vacía: para estimar la exactitud se resuelve otra vez con más subintervalos y se comparan.",
+  ],
+  errores: [
+    "<strong>n impar:</strong> Simpson pide un número par de subintervalos y el aplicativo lo rechaza (n = 2, 4, 6, …).",
+    "<strong>Confundirlo con Simpson 1/3:</strong> es la misma regla, pero aquí n cuenta subintervalos con su punto medio propio. Con n par ≥ 4 da lo mismo que Simpson 1/3 con 2n.",
+    "<strong>Confundir los pesos:</strong> los puntos medios pesan 4 y los xᵢ interiores pesan 2.",
+    "<strong>Olvidar el factor (b − a)/(6n)</strong> y dar el corchete como resultado.",
+  ],
+});
+
+const SIMPSON_13 = guia("s13", {
+  problema: "Aproximar una integral definida ∫ₐᵇ f(x) dx con arcos de parábola, contando los puntos de la malla como en el pizarrón.",
+  idea: "Se parte [a, b] en n subintervalos iguales, con n par, y cada dos subintervalos seguidos se ajusta una parábola por tres puntos. "
+    + "El área bajo todas las parábolas da una fórmula con pesos 1, 4, 2, 4, …, 4, 1.",
+  formula: formulaDe("simpson-13"),
+  pasos: [
+    "Escribir f(x), a, b y un n par.",
+    "Calcular Δx = (b − a) / n.",
+    "Evaluar f en los n + 1 puntos x₀ = a, …, xₙ = b.",
+    "Pesar 1 los extremos, 4 los puntos de índice impar y 2 los de índice par interiores; sumar el corchete.",
+    "Multiplicar el corchete por Δx/3.",
+  ],
+  ejemplo: `<p>Con f(x) = x² en [0, 2] y n = 2: Δx = 1, los puntos son 0, 1, 2 y f vale 0, 1, 4. El corchete es 0 + 4·1 + 4 = 8 y I ≈ (1/3)·8 = 8/3 ≈ 2.6667,
+  la integral exacta, porque la regla integra sin error los polinomios de grado 3 o menor.</p>`,
+  mirar: [
+    "La tabla tiene n + 1 filas; los pesos alternan 4 y 2 entre dos extremos de peso 1, y la suma del corchete se multiplica por Δx/3.",
+    "En el plano se sombrea una parábola por cada dos subintervalos.",
+    "La columna de error va vacía: es un método de malla fija.",
+  ],
+  errores: [
+    "<strong>n impar:</strong> el aplicativo lo rechaza y sugiere Simpson 3/8 (n múltiplo de 3) o la combinación de 1/3 y 3/8 (n = 5, 7, …).",
+    "<strong>Invertir los pesos:</strong> el 4 va en los índices impares y el 2 en los pares interiores.",
+    "<strong>Olvidar el Δx/3</strong> y quedarse con el corchete.",
+    "<strong>Confundirlo con el método «Simpson» del aplicativo</strong>, que cuenta n de otra forma (con un punto medio por subintervalo).",
+  ],
+});
+
+const RUNGE_KUTTA = guia("rk", {
+  problema: "Resolver numéricamente y′ = f(x, y) con y(x₀) = y₀ (un problema de valor inicial) cuando no hay solución a mano. También resuelve sistemas de varias ecuaciones.",
+  idea: "Se avanza sobre una malla de paso h. En cada paso no se usa solo la pendiente del inicio: se promedian varias pendientes k tomadas dentro del paso. "
+    + "El orden 2 (Heun) usa dos pendientes y el orden 4, cuatro.",
+  formula: `<h4>Orden 4 (por omisión)</h4>${formulaDe("runge-kutta", () => "4")}
+  <h4>Orden 2 (Heun)</h4>${formulaDe("runge-kutta", () => "2")}`,
+  pasos: [
+    "Escribir f(x, y), x₀, y₀ y el orden (2 o 4).",
+    "Definir la malla con dos de estos datos: h y n, h y xf, o n y xf (con solo h también basta).",
+    "En cada paso calcular las pendientes k₁, k₂, … con las fórmulas de arriba.",
+    "Calcular yᵢ₊₁ a partir de yᵢ y de las pendientes, y avanzar xᵢ₊₁ = xᵢ + h.",
+    "Repetir hasta completar los n pasos.",
+  ],
+  ejemplo: `<p>Con y′ = y, y(0) = 1 y h = 0.1. Orden 4: k₁ = 1, k₂ = f(0.05, 1.05) = 1.05, k₃ = f(0.05, 1.0525) = 1.0525 y k₄ = f(0.1, 1.10525) = 1.10525, así que
+  y₁ = 1 + (0.1/6)·(1 + 2.1 + 2.105 + 1.10525) = 1.10517083; la solución exacta, e^0.1, es 1.10517092.
+  Orden 2: k₁ = 1, k₂ = f(0.1, 1.1) = 1.1 y y₁ = 1 + 0.05·(1 + 1.1) = 1.105.</p>`,
+  mirar: [
+    "La tabla tiene una fila por paso: x y y (en un sistema, una columna por componente, y₁, y₂, …). No hay columna de error, y es a propósito: estimarlo exige resolver otra vez con h/2 y comparar.",
+    "En el plano se ve la solución numérica sobre la malla; con un paso más chico los puntos siguen mejor a la curva verdadera.",
+    "Para juzgar la exactitud, resolver con h y con h/2 y comparar el y final.",
+  ],
+  errores: [
+    "<strong>Un paso h demasiado grande:</strong> la solución se aleja de la verdadera y puede dispararse.",
+    "<strong>Un orden distinto de 2 o 4:</strong> el aplicativo solo ofrece esos dos.",
+    "<strong>Una malla incompleta:</strong> hacen falta h y n, h y xf, o n y xf (o solo h); x₀ y xf no pueden ser iguales.",
+    "<strong>En un sistema:</strong> hace falta una ecuación por componente y una condición inicial por cada una (y₀ como lista). Las componentes se evalúan a la vez en cada etapa; resolver las ecuaciones por separado no es lo mismo.",
+    "<strong>Pensar que mayor orden siempre es mejor:</strong> también cuesta más evaluaciones de f por paso.",
+  ],
+});
+
+const TEORIAS = {
+  "newton-raphson": NEWTON_RAPHSON,
+  "von-mises": VON_MISES,
+  "interpolacion-newton": INTERPOLACION_NEWTON,
+  "interpolacion-lagrange": INTERPOLACION_LAGRANGE,
+  "punto-medio": PUNTO_MEDIO,
+  trapecio: TRAPECIO,
+  simpson: SIMPSON,
+  "simpson-13": SIMPSON_13,
+  "simpson-38": SIMPSON_38,
+  "runge-kutta": RUNGE_KUTTA,
+  "minimos-cuadrados": MINIMOS_CUADRADOS,
+};
 
 // HTML de la explicacion del metodo, o null si todavia no la tiene.
 export function teoriaPara(slug) {

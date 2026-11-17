@@ -273,3 +273,29 @@ test("con movimiento reducido las tarjetas no animan", async ({ page }) => {
   expect(await transicion("reduce")).toBe("0s");
   expect(await transicion("no-preference")).not.toBe("0s");
 });
+
+// ------------------------------------------------------------ la guia
+
+test("todo metodo de la API tiene su guia en la pestana Teoria", async ({ page }) => {
+  const metodos = await metodosDeLaApi(page);
+  expect(metodos.length).toBeGreaterThanOrEqual(11);
+  for (const m of metodos) {
+    await page.goto(`/#/metodo/${m.slug}`);
+    await expect(page.locator("#metodo-titulo")).toHaveText(m.name);
+    await expect(page.locator("#ver-teoria"), m.slug).toBeVisible();
+    await page.locator("#ver-teoria").click();
+    const teoria = page.locator("#panel-teoria");
+    await expect(teoria, m.slug).toBeVisible();
+    // Con formula, secciones y pasos numerados; las nueve guias breves traen
+    // ademas el ejemplo a mano, que mirar y los errores comunes.
+    expect(await teoria.getByRole("heading", { level: 3 }).count(), m.slug).toBeGreaterThanOrEqual(5);
+    expect(await teoria.locator("math").count(), m.slug).toBeGreaterThanOrEqual(1);
+    expect(await teoria.locator("ol li").count(), m.slug).toBeGreaterThanOrEqual(3);
+    if (!["simpson-38", "minimos-cuadrados"].includes(m.slug)) {
+      for (const titulo of ["Qué problema resuelve", "La idea", "Fórmula", "Pasos en el aplicativo",
+        "Ejemplo a mano", "Qué mirar en la tabla y en el plano", "Errores comunes"]) {
+        await expect(teoria.getByRole("heading", { level: 3, name: titulo }), `${m.slug}: ${titulo}`).toBeVisible();
+      }
+    }
+  }
+});
