@@ -304,6 +304,166 @@ Su grafica de tipo `integracion` lleva una curva y un `parabolas` por
 subintervalo, con `{x0, y0, xm, ym, x1, y1}`: la interfaz reconstruye con esos
 tres puntos la parabola aproximante y sombrea el area bajo ella.
 
+### simpson-13
+
+```json
+{ "fx": "exp(x^2)", "a": 0.0, "b": 1.0, "n": 10 }
+```
+
+La regla de Simpson 1/3 de `Simpson1.pdf` sustituye la curva por arcos de
+parabola que pasan por tres nodos equiespaciados, uno por cada **dos**
+subintervalos. `n` es el numero de subintervalos y **tiene que ser par**; con un
+`n` impar es `MethodError`, y el mensaje sugiere Simpson 3/8.
+
+```
+dx = (b - a) / n,  x_i = a + i*dx,  i = 0..n          (n + 1 puntos)
+integral(f, a, b) ~= (dx / 3) *
+  [f(x_0) + 4*f(x_1) + 2*f(x_2) + 4*f(x_3) + ... + 2*f(x_(n-2)) + 4*f(x_(n-1)) + f(x_n)]
+```
+
+Con `n = 2` es la regla simple, una sola parabola: `(b - a) * [f(x_0) + 4 f(x_1)
++ f(x_2)] / 6`.
+
+**Es la misma regla que `simpson`, contada de otra forma.** `simpson` con `n`
+subintervalos evalua ademas el punto medio de cada uno, asi que equivale a
+`simpson-13` con `2n` (para `n` par y `n >= 4`: con `sqrt(5 + x^3)` en `[0, 1]`,
+`simpson` con `n = 4` y `simpson-13` con `n = 8` dan el mismo corchete,
+`54.97136101`, y la misma integral, `2.290473375`). Con `n = 2` los dos son una
+sola parabola y dan igual con el mismo `n`.
+
+La tabla tiene una fila por punto, de `x_0` a `x_n`, con las columnas `xi`,
+`fxi`, `peso` (1, 4, 2, 4, ..., 4, 1), `ponderado` (`peso * f(x)`) y `suma`, la
+suma acumulada del corchete. Todas son numericas. `result`:
+
+```json
+{
+  "integral": 1.4626814000997972,
+  "corchete": 43.88044200299392,
+  "factor": 0.03333333333333333,
+  "delta_x": 0.1,
+  "a": 0.0, "b": 1.0, "n": 10
+}
+```
+
+`factor = dx / 3` e `integral = factor * corchete`. El ejercicio del docente
+(`Simpson1.pdf`) es el del ejemplo: el pizarron da corchete `43.880442` e
+integral `1.4626`, truncada; con todos los digitos es `1.46268140`. Esta en
+`tests/casos_referencia.py` (`SIMPSON_13_EXP_X2`). La grafica es de tipo
+`integracion` con `parabolas` (una por cada dos subintervalos), `nodes` y
+`arc_rows` (ver mas abajo).
+
+### simpson-38
+
+```json
+{ "fx": "0.2 + 25*x - 200*x^2 + 675*x^3 - 900*x^4 + 400*x^5", "a": 0.0, "b": 0.8, "n": 5 }
+```
+
+La regla de Simpson 3/8 sustituye la curva por arcos de cubica que pasan por
+cuatro nodos equiespaciados, uno por cada **tres** subintervalos. `n` es un
+entero de 3 o mas, salvo 4. Hay tres casos:
+
+```
+n = 3 (una cubica):    I ~= (b - a) * [f(x_0) + 3 f(x_1) + 3 f(x_2) + f(x_3)] / 8
+
+n multiplo de 3:       h = (b - a) / n,  x_i = a + i*h
+                       I ~= (3h / 8) * [f(x_0) + 3*sum(f(x_i), i no multiplo de 3)
+                            + 2*sum(f(x_i), i multiplo de 3 e interior) + f(x_n)]
+
+n no multiplo de 3:    la regla 1/3 cubre los primeros 2 subintervalos (si n mod 3 = 2)
+                       o los primeros 4 (si n mod 3 = 1) y la 3/8 el resto; cada regla
+                       lleva su corchete y su factor, y la integral es la suma
+```
+
+Con `n = 1`, `2` o `4` no queda un tramo de 3/8 y es `MethodError`; con `n = 4`
+el mensaje sugiere Simpson 1/3. Los nodos que unen dos tramos de 3/8 pesan
+`1 + 1 = 2`, asi que los pesos son `1, 3, 3, 2, 3, 3, 2, ..., 3, 3, 1`.
+
+La tabla sigue el corchete nodo por nodo y tiene dos columnas de **texto**
+(`numeric: false`): `nodo` (`x0`, `x1`, ...) y `regla` (`"1/3"` o `"3/8"`), mas
+`xi`, `fxi`, `peso`, `ponderado` y `suma`. Con `n` no multiplo de 3 el nodo de
+union aparece **dos veces**: como ultimo de la regla 1/3 y como primero de la 3/8,
+cada vez con peso 1, y la suma del corchete **arranca de cero** en cada regla (la
+ultima fila de un tramo muestra su corchete).
+
+`result` trae `integral`, `h`, `a`, `b`, `n` y `tramos`, una lista de objetos
+`{regla, desde, hasta, corchete, factor, integral}`, uno por regla aplicada (uno
+solo si `n` es multiplo de 3, dos si no). **`corchete` y `factor` solo estan en
+`result` cuando hay un unico tramo**: con dos reglas no hay un solo corchete ni
+un solo factor. `tramos` es una lista de diccionarios y no entra en el resumen de
+la interfaz; el CSV no la exporta y el PDF la imprime como JSON.
+
+Para el ejemplo (Chapra, ejemplo 21.6, valor exacto `1.640533`): tramo `1/3`
+de `0` a `0.32` con corchete `7.13106944`, factor `0.0533333` y aporte
+`0.3803237`; tramo `3/8` de `0.32` a `0.8` con corchete `21.07922432`, factor
+`0.06` y aporte `1.2647535`; integral `1.645077` (`1.6450772`). Esta en
+`tests/casos_referencia.py` (`SIMPSON_38_CHAPRA`). Su grafica es de tipo
+`integracion` con `parabolas` (las de la regla 1/3), `cubicas` (una por tramo de
+tres subintervalos), `nodes` y `arc_rows`.
+
+### minimos-cuadrados
+
+```json
+{ "points": [[1.0, 2.0], [1.5, 3.2], [2.0, 4.1], [2.5, 4.9], [3.0, 5.9]],
+  "modelo": "lineal", "x": 2.0 }
+```
+
+`points` es la tabla de datos (al menos dos, con dos `x` distintas; una `x`
+repetida es una medicion repetida y se admite). `modelo` es opcional y es uno de
+`lineal` (por defecto), `potencial`, `exponencial` o `logaritmica`; vacio o
+ausente es `lineal`. `x` es opcional: si viene, `result.valor` es la curva
+ajustada en ese punto. El campo `modelo` se declara con `choices` (ver mas
+abajo).
+
+La recta que minimiza la suma de los cuadrados de los residuos `d_i = m x_i + b
+- y_i` es
+
+```
+m = (n Sxy - Sx Sy) / (n Sxx - Sx^2)        b = (Sy - m Sx) / n
+r = (n Sxy - Sx Sy) / sqrt((n Sxx - Sx^2) (n Syy - Sy^2))
+```
+
+Los otros modelos se linealizan con `log` en base 10, como en clase, y se ajusta
+una recta `Y = s X + c` a los datos transformados: `potencial` `y = b x^m`
+(`log y = m log x + log b`), `exponencial` `y = b e^(m x)` (`log y = (m log e) x +
+log b`) y `logaritmica` `y = m log x + b`. Donde se toma el logaritmo los datos
+tienen que ser positivos, o es `MethodError`. Las sumas son **exactas**
+(fracciones sobre el decimal de cada dato): el ejercicio del docente da `m = 1.9`
+y no `1.8999999999999995`.
+
+La tabla es el procedimiento, no una convergencia: una fila por dato, con las
+columnas del pizarron (todas numericas), `xi`, `yi`, `xiyi`, `xi2` y `yi2`, que en
+un modelo linealizado se rotulan `log x_i`, `log y_i`, ... segun lo que se
+transforme. **La columna `error` de cada fila es el residuo al cuadrado**, no un
+error relativo. `result`:
+
+```json
+{
+  "ecuacion": "y = 1.9*x + 0.22",
+  "m": 1.9, "b": 0.22,
+  "r": 0.9976262076984157,
+  "suma_residuos": 0.043,
+  "valor": 4.02,
+  "n": 5,
+  "modelo": "lineal",
+  "totales": {"xi": 10.0, "yi": 20.1, "xiyi": 44.95, "xi2": 22.5, "yi2": 89.87, "error": 0.043}
+}
+```
+
+`r` vale `null` si todas las `y` (transformadas) son iguales y no hay
+correlacion que medir. `valor` solo esta si vino `x`. En los modelos no lineales,
+`m` y `b` son los del modelo original y `pendiente_lineal` y `ordenada_lineal`
+son los de la recta ajustada a los datos transformados; en `lineal` no estan.
+**`totales` es un objeto**: la interfaz lo dibuja como la fila **Total** de la
+tabla y no lo lista en el resumen; el CSV y el PDF lo escriben como una ultima
+fila `Total`, y el PDF no lo imprime como diccionario en la lista del resultado.
+
+El ejercicio del docente es el del ejemplo: `m = 1.90`, `b = 0.22`, `r = 0.9976`,
+totales `10.00`, `20.10`, `44.95`, `22.50`, `89.87` y `0.0430`, errores por fila
+`0.0144`, `0.0169`, `0.0064`, `0.0049`, `0.0004`. Esta en
+`tests/casos_referencia.py` (`MINIMOS_CUADRADOS_DOCENTE`); las pruebas exigen `m`,
+`b` y `r` a `1e-12`. Termina con `stop_reason = "ajuste_calculado"`, y su grafica
+es de tipo `ajuste`.
+
 ### runge-kutta
 
 Una sola ecuacion:
@@ -400,15 +560,23 @@ Reglas duras:
   En un sistema de Runge-Kutta cada k lleva el nombre de la componente:
   `k1_y1`, `k1_y2`, `k2_y1`, ... Los demas metodos mandan `{}`.
 - `stop_reason` es uno de: `tolerancia_alcanzada`, `n_iteraciones_completadas`,
-  `solucion_exacta`, `integracion_completada`, `divergio`, `fallo`.
+  `solucion_exacta`, `integracion_completada`, `ajuste_calculado`, `divergio`,
+  `fallo`.
 - **`integracion_completada`** es el final normal de un metodo de malla fija
-  (Runge-Kutta, Punto Medio, Trapecio o Simpson): recorrio sus pasos y ninguno perdio la finitud. No es un
-  aviso: la interfaz lo muestra en verde, igual que `tolerancia_alcanzada`.
+  (Runge-Kutta, Punto Medio, Trapecio y las tres reglas de Simpson): recorrio
+  sus pasos y ninguno perdio la finitud. No es un aviso: la interfaz lo muestra
+  en verde, igual que `tolerancia_alcanzada`.
+- **`ajuste_calculado`** es el final del ajuste por minimos cuadrados, que se
+  resuelve de una vez con las sumas de la tabla: no hay iteraciones que
+  converjan ni una malla que recorrer, asi que no es ni «solucion exacta» ni
+  `integracion_completada`. La interfaz lo muestra en verde como «Ajuste
+  calculado».
   `n_iteraciones_completadas` queda para los metodos iterativos que si
   persiguen una tolerancia y se quedaron sin iteraciones antes de alcanzarla.
 - **Un metodo de malla fija no reporta error por iteracion.** Runge-Kutta,
-  Punto Medio, Trapecio y Simpson mandan `error: null` en todas las filas y explican por
-  que en `notes`. La diferencia
+  Punto Medio, Trapecio y las tres reglas de Simpson mandan `error: null` en
+  todas las filas y explican por que en `notes`. (El ajuste por minimos
+  cuadrados si usa `error`: es el residuo al cuadrado de la fila.) La diferencia
   entre `y(i+1)` e `y(i)` mide cuanto cambio la solucion, no cuanto se equivoca,
   y con una solucion que cruza el cero llega a valores absurdos.
 - **Si el metodo diverge no hay raiz, tampoco en la grafica.** `result.raiz` y
@@ -454,7 +622,23 @@ Lo construye `core/plots.py`. La interfaz no lee otras claves que estas.
 | `interpolacion` | `{"points": [[x, y]], "curve": {"x": [], "y": []}, "evaluated": {"x", "y"} \| null}` | si |
 | `convergencia` | `{"n": [], "error": []}` (misma longitud; error admite null) | no |
 | `solucion_edo` | `{"solution": {"x": [], "components": [{"name", "y": []}]}, "exact": igual \| null}` | no |
-| `integracion` | `{"curve": {"x": [], "y": []}, "rectangles": [{"x0", "x1", "y"}], "trapezoids": [{"x0", "y0", "x1", "y1"}], "parabolas": [{"x0", "y0", "xm", "ym", "x1", "y1"}], "interval": {"a", "b"}, "integral"}` | si |
+| `integracion` | `{"curve": {"x": [], "y": []}, "rectangles": [{"x0", "x1", "y"}], "trapezoids": [{"x0", "y0", "x1", "y1"}], "parabolas": [{"x0", "y0", "xm", "ym", "x1", "y1"}], "cubicas": [{"x0", "y0", ..., "x3", "y3"}], "interval": {"a", "b"}, "integral", "nodes": [{"label", "x", "y"}], "arc_rows": [int]}` | si |
+| `ajuste` | `{"points": [[x, y]], "curve": {"x": [], "y": []}, "evaluated": {"x", "y"} \| null}` | si |
+
+`ajuste` tiene la misma forma que `interpolacion`; se distingue por el tipo
+para rotular la curva como ajuste y no como polinomio. Los `points` son los datos
+medidos, que se dibujan sueltos, y la curva es el modelo ajustado: el nucleo la
+muestrea con `plots.ajuste(points, xs, ys, evaluated, title, resample)`.
+
+En `integracion`, `cubicas` y los dos campos siguientes son los que sumo Simpson
+3/8; los metodos que no los usan mandan listas vacias. Cada cubica son sus cuatro
+nodos (`x0, y0, ..., x3, y3`). `nodes` son los puntos de la tabla en su orden,
+con el rotulo que lleva la tabla (`x0`, `x1`, ..., y el nodo de union repetido
+cuando una regla da paso a la otra), y `arc_rows` es la fila de la tabla donde
+termina cada arco: primero las parabolas y despues las cubicas. Sin ellos la
+interfaz rotula los de las parabolas como `x0, m1, x1, ...` (Simpson con punto
+medio) y supone la fila `2j + 2` para la parabola `j` y `3j + 3` para la cubica
+`j`. Simpson 1/3 y 3/8 los mandan siempre.
 
 `convergencia` y `solucion_edo` no remuestrean porque son **puntos discretos**:
 salieron de correr el metodo con un paso y un numero de iteraciones dados. No hay
@@ -532,6 +716,15 @@ exista, y la API la implementa sin esperar a la interfaz.
 | `POST /api/methods/{slug}/export/{formato}` | archivo, `formato` es `csv` o `pdf` |
 | `GET /` y estaticos | lo que hay en `web/` |
 
+Cada campo de un metodo (`inputs` en `MethodSummary`) lleva `name`, `label`,
+`kind`, `default`, `help`, `required`, `multiple` y **`choices`**. `choices` es
+una lista de textos (`list[str]` en el esquema, `tuple[str, ...]` en
+`InputField`, vacia por defecto): si no esta vacia, el campo es de texto y solo
+admite esos valores, y la interfaz lo dibuja como una **lista desplegable** en
+vez de una casilla libre. Hoy lo usa `modelo` de `minimos-cuadrados`
+(`lineal`, `potencial`, `exponencial`, `logaritmica`). Es una adicion compatible:
+un cliente que no la conozca la ignora y ve un campo de texto.
+
 ### Exportar
 
 Mismo cuerpo que `solve`. La API resuelve y devuelve el archivo, para que la
@@ -539,9 +732,13 @@ tabla exportada sea exactamente la que se calculo y no una copia que la interfaz
 haya rearmado por su cuenta.
 
 - `csv`: `text/csv`. Cabecera con `i`, las `columns` del metodo y `error`. Los
-  numeros van **sin redondear**; redondear es cosa de la pantalla.
+  numeros van **sin redondear**; redondear es cosa de la pantalla. Si
+  `result.totales` existe (el ajuste por minimos cuadrados), la ultima fila es
+  `Total`, con el total de cada columna y el de `error`.
 - `pdf`: `application/pdf`. Metodo, funcion, parametros, la tabla de iteraciones
-  y el resultado. Se genera con `fpdf2`, que ya esta en `pyproject.toml`.
+  y el resultado. Se genera con `fpdf2`, que ya esta en `pyproject.toml`. La
+  fila `Total` cierra la tabla, y `totales` no se imprime en la lista del
+  resultado; una lista como `result.tramos` de Simpson 3/8 se imprime como JSON.
 
 Los dos responden con `Content-Disposition: attachment` y un nombre de archivo
 que incluya el slug del metodo.
