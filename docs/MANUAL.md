@@ -111,6 +111,42 @@ programa.
 - **Newton-Raphson** deriva solo. Si se escribe la derivada en su casilla, usa
   esa. En las dos formas dice abajo cual uso.
 
+### Punto Medio
+
+Para aproximar una integral con rectangulos centrados, elegir **Integracion**
+y despues **Punto Medio**. El ejemplo del material del docente para el parcial
+1 se puede cargar con estos datos:
+
+| Campo | Valor |
+|---|---|
+| `f(x)` | `0.25*x^3 - x` |
+| Extremo inferior `a` | `-1.5` |
+| Extremo superior `b` | `2` |
+| Numero de subintervalos `n` | `7` |
+
+Pulsar **Resolver**. El ancho de cada subintervalo es `0.5` y el resultado es
+`-0.205078125`; al elegir cuatro decimales se ve **`-0.2051`**, como en la
+diapositiva del docente. El signo negativo indica que en este ejemplo pesan
+mas los aportes bajo el eje x.
+
+En **Iteraciones** aparecen siete filas, desde la 1. Cada una muestra el punto
+medio, `f(xi)`, el area con signo `f(xi) * dx` y la suma acumulada. Los puntos
+medios son `-1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75`; la ultima suma
+coincide con la integral del resumen. En **Plano** se ven la curva y los siete
+rectangulos, cada uno con la altura de la funcion en su centro.
+
+La insignia **Integracion completada** indica que recorrio todos los
+subintervalos. La columna de error va vacia porque el metodo no calcula una
+estimacion por fila. Para comparar la aproximacion, cambiar `n` de 7 a 14 y
+resolver otra vez. La integral analitica del ejemplo es `-0.19140625`;
+aumentar `n` permite acercarse a ella. Cambiar **Decimales** solo cambia la
+presentacion, no la precision del calculo.
+
+`a` tiene que ser menor que `b`, y `n` debe ser un entero entre 1 y 10000.
+La cantidad de rectangulos se cambia en ese campo del formulario: los ajustes
+de iteraciones maximas y tolerancia no definen esta malla. Si la funcion no
+esta definida en un punto medio, el aplicativo explica la causa.
+
 ## 3. Ajustar el calculo
 
 Los ajustes van plegados en **Ajustes de calculo**, debajo de los datos. El

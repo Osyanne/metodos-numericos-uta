@@ -172,7 +172,68 @@ Como `interpolacion-newton` y `interpolacion-lagrange` construyen el mismo
 polinomio por caminos distintos, hay una prueba que los corre sobre los mismos
 puntos y exige que coincidan. Si difieren, uno de los dos esta mal.
 
-Casos de referencia del docente en `tests/casos_referencia_lagrange.py`.
+Casos de referencia del docente en `tests/casos_referencia.py`.
+
+### punto-medio
+
+```json
+{ "fx": "0.25*x^3 - x", "a": -1.5, "b": 2.0, "n": 7 }
+```
+
+Los cuatro campos son obligatorios. `fx` es una expresion de `x`; `a` y `b`
+son numeros finitos con `a < b`, y `n` es un entero positivo de hasta 10000.
+Los booleanos no se aceptan como numeros. Una funcion vacia, extremos iguales
+o invertidos, un `n` fraccionario o fuera de rango y un ancho no finito o nulo
+producen `MethodError`. Si la funcion no se puede evaluar en un punto medio,
+se devuelve el error con la causa.
+
+```
+Delta_x = (b - a) / n
+m_i = a + (i - 1/2) * Delta_x, i = 1..n
+integral(f, a, b) ~= sum(f(m_i) * Delta_x, i = 1..n)
+```
+
+`result` lleva la suma sin redondear y los parametros de la malla:
+
+```json
+{
+  "integral": -0.205078125,
+  "delta_x": 0.5,
+  "a": -1.5,
+  "b": 2.0,
+  "n": 7
+}
+```
+
+La tabla tiene exactamente `n` filas, numeradas de 1 a `n`, sin fila inicial.
+Todas las columnas son numericas y aparecen en este orden:
+
+| key | etiqueta | que es |
+|-----|----------|--------|
+| `xi` | xi (punto medio) | `m_i`, el centro del subintervalo |
+| `fxi` | f(xi) | `f(m_i)` |
+| `area` | f(xi) * dx | `f(m_i) * Delta_x`, con su signo |
+| `suma` | suma acumulada | suma de las areas hasta esa fila |
+
+La ultima `suma` coincide con `result.integral`. Todas las filas tienen
+`error: null`; el metodo no estima error por iteracion. Al completar la malla
+manda `converged: true` y `stop_reason: "integracion_completada"`
+(`StopReason.COMPLETED`). `max_iterations`, la tolerancia y el criterio de
+error no cambian los `n` subintervalos; `decimals` solo indica el formato.
+`notes` incluye la integral con sus limites, el ancho de subintervalo y la
+aclaracion sobre el error: para comparar aproximaciones hay que resolver de
+nuevo con el doble de subintervalos.
+
+Su grafica de tipo `integracion` lleva la curva de `f(x)`, muestreada en 401
+puntos, `interval: {a, b}`, `integral` y `n` rectangulos en `rectangles`.
+Cada rectangulo es `{x0, x1, y}`, con los extremos de su subintervalo y la
+altura `y = f(m_i)`. `resample.expression` es la funcion y su dominio es
+`[a, b]`; el remuestreo cambia la curva, no los rectangulos calculados.
+
+El ejemplo docente del parcial 1 esta en `tests/casos_referencia.py`, como
+`PUNTO_MEDIO_RESUELTO`. Con los parametros anteriores da siete puntos medios,
+de `-1.25` a `1.75` con paso `0.5`, e integral `-0.205078125`, que a cuatro
+decimales es el `-0.2051` de la diapositiva.
 
 ### trapecio
 

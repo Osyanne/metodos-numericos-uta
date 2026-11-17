@@ -4,6 +4,8 @@ Unica fuente de verdad para validar los metodos. Si el aplicativo no
 reproduce estos numeros, esta mal aunque el algoritmo parezca correcto.
 
 No es un archivo de pruebas: es el dato que las pruebas consumen.
+Los puntos se guardan en el orden en que los escribe el docente: ese orden
+tambien fija las filas de las tablas de interpolacion.
 """
 from __future__ import annotations
 
@@ -70,10 +72,82 @@ NEWTON_DIVIDIDAS_RESUELTO = {
     "forma_de_newton": "2+[(-2)(X-1)]+[(-1)(X-1)(X-0)]",
     "polinomio": "-x^2 - x + 4",
     # Del polinomio expandido, de mayor a menor grado, como en
-    # casos_referencia_lagrange.py. No son los a_i.
+    # los casos de Lagrange de este modulo. No son los a_i.
     "coeficientes": (-1.0, -1.0, 4.0),
     "grado": 2,
     # Diapositiva 8.
     "x": -4.0,
     "valor": -8.0,
+}
+
+# INTERPOLACION DE LAGRANGE.pdf, diapositivas 5 a 7. Ejercicio resuelto en
+# clase, con la comprobacion grafica incluida.
+LAGRANGE_RESUELTO = {
+    "fuente": "INTERPOLACION DE LAGRANGE.pdf, diapositivas 5-7",
+    "puntos": [(0.0, 1.0), (1.0, 3.0), (2.0, 0.0)],
+    # L_i tal como quedan en la diapositiva, ya simplificados.
+    "bases_expandidas": [
+        "x**2/2 - 3*x/2 + 1",
+        "-x**2 + 2*x",
+        "x**2/2 - x/2",
+    ],
+    "polinomio": "-5/2 x^2 + 9/2 x + 1",
+    "coeficientes": (-2.5, 4.5, 1.0),
+    "grado": 2,
+    # Tabla de la diapositiva "GRAFICA".
+    "tabla_grafica": {
+        -2.0: -18.0,
+        -1.0: -6.0,
+        0.0: 1.0,
+        1.0: 3.0,
+        2.0: 0.0,
+        3.0: -8.0,
+    },
+}
+
+# INTERPOLACION DE LAGRANGE.pdf, diapositivas 8 y 9. Segundo ejercicio
+# resuelto, con el procedimiento de cinco pasos escrito completo.
+LAGRANGE_RESUELTO_2 = {
+    "fuente": "INTERPOLACION DE LAGRANGE.pdf, diapositivas 8-9",
+    "puntos": [(1.0, 3.0), (2.0, 5.0), (3.0, 1.0)],
+    "bases_expandidas": [
+        "x**2/2 - 5*x/2 + 3",
+        "-x**2 + 4*x - 3",
+        "x**2/2 - 3*x/2 + 1",
+    ],
+    "polinomio": "-3x^2 + 11x - 5",
+    "coeficientes": (-3.0, 11.0, -5.0),
+    "grado": 2,
+}
+
+# INTERPOLACION DE LAGRANGE.pdf, diapositiva 10. Ejercicio propuesto, sin
+# resolver en clase. El polinomio y el valor se calcularon a mano y se
+# verificaron punto por punto.
+LAGRANGE_EJERCICIO = {
+    "fuente": "INTERPOLACION DE LAGRANGE.pdf, diapositiva 10",
+    "puntos": [(1.0, 10.0), (-4.0, 10.0), (-7.0, 34.0)],
+    "polinomio": "x^2 + 3x + 6",
+    "coeficientes": (1.0, 3.0, 6.0),
+    "grado": 2,
+    "x": -3.0,
+    "valor": 6.0,
+}
+
+# Material del docente, ejemplo del parcial 1 de Punto Medio. El nombre del
+# PDF y el numero de diapositiva no quedaron registrados en la prueba original.
+# La diapositiva tabula f(m_i) con cuatro decimales y termina con I = -0.2051.
+# Se conservan por separado esa precision, la suma sin redondear y la integral
+# analitica, que se usa para comprobar el efecto de refinar la malla.
+PUNTO_MEDIO_RESUELTO = {
+    "fuente": "Material del docente, ejemplo del parcial 1 de Punto Medio",
+    "fx": "0.25*x^3 - x",
+    "a": -1.5,
+    "b": 2,
+    "n": 7,
+    "delta_x": 0.5,
+    "puntos_medios": [-1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75],
+    "valores_tabla": [0.7617, 0.6445, 0.2461, -0.2461, -0.6445, -0.7617, -0.4102],
+    "integral": -0.205078125,
+    "integral_diapositiva": -0.2051,
+    "integral_exacta": -0.19140625,
 }

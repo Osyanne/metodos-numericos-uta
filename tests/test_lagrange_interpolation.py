@@ -8,7 +8,7 @@ from core.config import SolveConfig
 from core.expression import parse
 from core.registry import all_methods, clear, get, load_methods
 from core.types import MethodError, PlotKind, StopReason
-from tests.casos_referencia_lagrange import (
+from tests.casos_referencia import (
     LAGRANGE_EJERCICIO,
     LAGRANGE_RESUELTO,
     LAGRANGE_RESUELTO_2,
