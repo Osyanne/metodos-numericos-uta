@@ -104,6 +104,17 @@ test("resolver no descarga pillow ni fpdf2: solo el PDF los necesita", async () 
   expect(descargados.filter(u => PILA_PDF.test(u))).toEqual([]);
 });
 
+test("ningun archivo de Pyodide ni codigo.zip se baja dos veces", async () => {
+  // Los adelantos del HTML y del puente tienen que ser los mismos pedidos que
+  // despues hace Pyodide; si no coinciden, el navegador baja todo por duplicado.
+  // El lock lo vuelve a pedir Pyodide con otras opciones (son 24 KB); el
+  // catalogo lo pide a proposito la prueba.
+  const repetidos = descargados.filter((u, i) =>
+    descargados.indexOf(u) !== i && !/pyodide-lock|catalogo\.json/.test(u));
+  expect(repetidos).toEqual([]);
+  expect(descargados.filter(u => /codigo\.zip/.test(u))).toHaveLength(1);
+});
+
 test("el zoom remuestrea en Python y corta la curva donde no esta definida", async () => {
   const { status, cuerpo } = await pedir("api/plot/sample", {
     expression: "1/x", x_min: -1, x_max: 1, points: 5,

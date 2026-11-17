@@ -77,3 +77,24 @@ def test_el_sitio_lleva_el_catalogo_que_da_la_api(tmp_path):
 def test_el_puente_contesta_la_lista_de_metodos_desde_el_catalogo():
     puente = (RAIZ / "pages" / "puente.js").read_text(encoding="utf-8")
     assert "catalogo.json" in puente
+
+
+def test_el_html_armado_adelanta_las_descargas(tmp_path):
+    """El navegador tiene que enterarse desde el HTML de lo que va a necesitar:
+    codigo.zip, Pyodide y los modulos de web/, que app.js importa en cascada."""
+    sitio = construir.construir(tmp_path / "sitio")
+    html = (sitio / "index.html").read_text(encoding="utf-8")
+    cabeza = html[: html.index("</head>")]
+
+    assert 'rel="preconnect" href="https://cdn.jsdelivr.net"' in cabeza
+    assert 'rel="preload" href="codigo.zip" as="fetch" crossorigin' in cabeza
+    for archivo in ("pyodide.js", "pyodide.asm.wasm", "python_stdlib.zip"):
+        assert re.search(rf'rel="preload" href="https://cdn\.jsdelivr\.net/pyodide/v[\d.]+/full/{re.escape(archivo)}"', cabeza)
+    # La version sale de puente.js: no hay otra escrita aparte.
+    version = re.search(r'var PYODIDE = "([^"]+)"', (RAIZ / "pages" / "puente.js").read_text(encoding="utf-8")).group(1)
+    assert f'href="{version}pyodide.asm.wasm"' in cabeza
+
+    # La lista de modulos sale de la carpeta: todos los .js de web/, ni mas ni menos.
+    esperados = sorted(archivo.name for archivo in (RAIZ / "web").glob("*.js"))
+    assert re.findall(r'rel="modulepreload" href="([^"]+)"', cabeza) == esperados
+    assert "modulepreload" not in (RAIZ / "web" / "index.html").read_text(encoding="utf-8")

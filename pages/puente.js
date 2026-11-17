@@ -72,20 +72,53 @@
     });
   }
 
+  // codigo.zip se pide ya, sin esperar a Pyodide: es de este sitio y mientras
+  // Pyodide compila su WebAssembly la red esta libre.
+  var codigo = fetchOriginal("codigo.zip").then(function (r) {
+    if (!r.ok) throw new Error("No se encontró codigo.zip (" + r.status + ")");
+    return r.arrayBuffer();
+  });
+  codigo.catch(function () {});
+
+  // Los paquetes de Pyodide se piden en cuanto se sabe cuales son (el lock
+  // ya viene precargado desde el HTML), en paralelo con Pyodide mismo, para
+  // que loadPackage los encuentre bajados.
+  function precargarPaquetes(nombres) {
+    return fetchOriginal(PYODIDE + "pyodide-lock.json")
+      .then(function (r) { return r.json(); })
+      .then(function (lock) {
+        var vistos = {};
+        function visitar(nombre) {
+          var clave = nombre.toLowerCase().replace(/[-_.]+/g, "-");
+          var paquete = lock.packages[clave];
+          if (!paquete || vistos[clave]) return;
+          vistos[clave] = true;
+          var enlace = document.createElement("link");
+          enlace.rel = "preload";
+          enlace.as = "fetch";
+          enlace.crossOrigin = "anonymous";
+          enlace.href = new URL(paquete.file_name, PYODIDE).href;
+          document.head.appendChild(enlace);
+          (paquete.depends || []).forEach(visitar);
+        }
+        nombres.forEach(visitar);
+      })
+      .catch(function () { /* es solo un adelanto: loadPackage los pide igual */ });
+  }
+
   async function arrancar() {
+    paso("Descargando Pyodide…");
+    precargarPaquetes(PAQUETES);
     await cargarScript(PYODIDE + "pyodide.js");
     paso("Iniciando Python…");
     var pyodide = await window.loadPyodide({ indexURL: PYODIDE });
 
     paso("Cargando SymPy y FastAPI…");
-    var codigo = fetchOriginal("codigo.zip").then(function (r) {
-      if (!r.ok) throw new Error("No se encontró codigo.zip (" + r.status + ")");
-      return r.arrayBuffer();
-    });
-    await pyodide.loadPackage(PAQUETES);
-
+    var paquetes = pyodide.loadPackage(PAQUETES);
+    // El zip ya esta bajado: descomprimirlo no espera a los paquetes.
     paso("Cargando los métodos…");
     pyodide.unpackArchive(await codigo, "zip", { extractDir: "/home/pyodide/aplicativo" });
+    await paquetes;
 
     await pyodide.runPythonAsync(`
 import asyncio, os, sys, traceback
