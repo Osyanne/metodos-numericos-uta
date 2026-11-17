@@ -13,11 +13,20 @@
   "use strict";
 
   var PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
-  var PAQUETES = ["sympy", "fastapi", "pydantic", "pillow", "fonttools", "micropip"];
+  var PAQUETES = ["sympy", "fastapi", "pydantic"];
+  // La pila de PDF solo se baja la primera vez que se exporta un PDF.
+  var PAQUETES_PDF = ["pillow", "fonttools", "micropip"];
   // fpdf2 no viene con Pyodide; es Python puro y se baja de PyPI.
   var DESDE_PYPI = ["fpdf2==2.8.9"];
 
   var fetchOriginal = window.fetch.bind(window);
+
+  // Segunda visita: el service worker guarda Pyodide, los paquetes y el sitio.
+  // Ruta relativa: bajo /metodos-numericos-uta/ una absoluta saldria del proyecto.
+  // Si no hay service workers (o falla), el sitio anda igual, solo mas lento.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
 
   // ------------------------------------------------------------ aviso
 
@@ -26,7 +35,7 @@
   aviso.setAttribute("role", "status");
   aviso.innerHTML =
     '<span class="puente-giro" aria-hidden="true"></span>' +
-    '<span><b>Preparando el núcleo de Python en tu navegador.</b> ' +
+    '<span><b id="puente-titulo">Preparando el núcleo de Python en tu navegador.</b> ' +
     '<span id="puente-paso">Descargando Pyodide…</span><br>' +
     '<small>La primera visita tarda unos segundos; después queda en la caché.</small></span>';
 
@@ -64,28 +73,71 @@
     return new Promise(function (resolver, rechazar) {
       var s = document.createElement("script");
       s.src = src;
+      // CORS, como el adelanto del HTML: asi la respuesta es guardable.
+      s.crossOrigin = "anonymous";
       s.onload = resolver;
       s.onerror = function () { rechazar(new Error("No se pudo descargar " + src)); };
       document.head.appendChild(s);
     });
   }
 
+  // codigo.zip se pide ya, sin esperar a Pyodide: es de este sitio y mientras
+  // Pyodide compila su WebAssembly la red esta libre.
+  var codigo = fetchOriginal("codigo.zip").then(function (r) {
+    if (!r.ok) throw new Error("No se encontró codigo.zip (" + r.status + ")");
+    return r.arrayBuffer();
+  });
+  codigo.catch(function () {});
+
+  // Los paquetes de Pyodide se piden en cuanto se sabe cuales son (el lock
+  // ya viene precargado desde el HTML), en paralelo con Pyodide mismo, para
+  // que loadPackage los encuentre bajados.
+  function precargarPaquetes(nombres) {
+    return fetchOriginal(PYODIDE + "pyodide-lock.json")
+      .then(function (r) { return r.json(); })
+      .then(function (lock) {
+        var vistos = {};
+        function visitar(nombre) {
+          var clave = nombre.toLowerCase().replace(/[-_.]+/g, "-");
+          var paquete = lock.packages[clave];
+          if (!paquete || vistos[clave]) return;
+          vistos[clave] = true;
+          var enlace = document.createElement("link");
+          enlace.rel = "preload";
+          enlace.as = "fetch";
+          enlace.crossOrigin = "anonymous";
+          enlace.href = new URL(paquete.file_name, PYODIDE).href;
+          document.head.appendChild(enlace);
+          (paquete.depends || []).forEach(visitar);
+        }
+        nombres.forEach(visitar);
+      })
+      .catch(function () { /* es solo un adelanto: loadPackage los pide igual */ });
+  }
+
+  // Python corre en el hilo de la pagina y, al iniciar, lo deja ocupado varios
+  // segundos: si arrancara antes de que la interfaz se pinte, la lista de
+  // metodos tardaria lo mismo que Python. Las descargas no esperan (ya van
+  // adelantadas); solo el arranque, hasta que se entrega la lista y se
+  // pinta un cuadro. El plazo cubre una pestana oculta, donde no hay cuadros.
+  var resolverInterfaz;
+  var interfaz = new Promise(function (r) { resolverInterfaz = r; });
+  setTimeout(resolverInterfaz, 3000);
+
   async function arrancar() {
+    paso("Descargando Pyodide…");
+    precargarPaquetes(PAQUETES);
     await cargarScript(PYODIDE + "pyodide.js");
+    await interfaz;
     paso("Iniciando Python…");
     var pyodide = await window.loadPyodide({ indexURL: PYODIDE });
 
     paso("Cargando SymPy y FastAPI…");
-    var codigo = fetchOriginal("codigo.zip").then(function (r) {
-      if (!r.ok) throw new Error("No se encontró codigo.zip (" + r.status + ")");
-      return r.arrayBuffer();
-    });
-    await pyodide.loadPackage(PAQUETES);
-    var micropip = pyodide.pyimport("micropip");
-    await micropip.install(DESDE_PYPI);
-
+    var paquetes = pyodide.loadPackage(PAQUETES);
+    // El zip ya esta bajado: descomprimirlo no espera a los paquetes.
     paso("Cargando los métodos…");
     pyodide.unpackArchive(await codigo, "zip", { extractDir: "/home/pyodide/aplicativo" });
+    await paquetes;
 
     await pyodide.runPythonAsync(`
 import asyncio, os, sys, traceback
@@ -107,8 +159,9 @@ RAIZ = "/home/pyodide/aplicativo"
 os.makedirs(os.path.join(RAIZ, "web"), exist_ok=True)
 sys.path.insert(0, RAIZ)
 
-from api.main import create_app
-_app = create_app()
+# Importar api.main ya construye la aplicacion y carga los metodos: se
+# reutiliza, llamar create_app() otra vez repetiria esa carga.
+from api.main import app as _app
 
 async def atender(metodo, ruta, consulta, cuerpo):
     scope = {
@@ -151,13 +204,13 @@ async def atender(metodo, ruta, consulta, cuerpo):
         dict_converter=Object.fromEntries,
     )
 `);
-    return pyodide.globals.get("atender");
+    return { pyodide: pyodide, atender: pyodide.globals.get("atender") };
   }
 
   var listo = arrancar().then(
-    function (atender) {
+    function (python) {
       aviso.remove();
-      return atender;
+      return python;
     },
     function (error) {
       aviso.classList.add("puente-mal");
@@ -167,6 +220,10 @@ async def atender(metodo, ruta, consulta, cuerpo):
       throw error;
     },
   );
+
+  // La lista de metodos ya no espera a Python: si la carga falla, nadie esta
+  // pidiendo `listo` todavia y el rechazo saldria como error sin atender.
+  listo.catch(function () {});
 
   // ------------------------------------------------------------ fetch
 
@@ -185,12 +242,55 @@ async def atender(metodo, ruta, consulta, cuerpo):
     };
   }
 
+  // Una sola promesa para todos los pedidos de PDF. Si falla se descarta, para
+  // que el siguiente intento vuelva a probar; el resto del sitio no se entera.
+  var pila = null;
+  function cargarPilaPdf(pyodide) {
+    if (!pila) {
+      pila = (async function () {
+        avisarPdf("Descargando lo necesario para el PDF…");
+        await pyodide.loadPackage(PAQUETES_PDF);
+        await pyodide.pyimport("micropip").install(DESDE_PYPI);
+      })().then(
+        function () { aviso.remove(); },
+        function (error) {
+          pila = null;
+          aviso.remove();
+          throw new Error("No se pudo preparar la exportación a PDF (" + error.message + "). Revisa la conexión y vuelve a intentarlo.");
+        },
+      );
+    }
+    return pila;
+  }
+
+  function avisarPdf(texto) {
+    if (!aviso.isConnected) document.body.appendChild(aviso);
+    document.getElementById("puente-titulo").textContent = "Preparando la exportación a PDF.";
+    paso(texto);
+  }
+
   window.fetch = async function (entrada, opciones) {
     var api = rutaApi(entrada);
     if (!api) return fetchOriginal(entrada, opciones);
 
-    var atender = await listo;
     var metodo = ((opciones && opciones.method) || "GET").toUpperCase();
+    // La lista de metodos sale del catalogo armado junto con el sitio: la
+    // interfaz se pinta sin esperar a Python. Si no esta, responde Python.
+    if (metodo === "GET" && api.ruta === "/api/methods" && !api.consulta) {
+      var estatico = await fetchOriginal("catalogo.json").catch(function () { return null; });
+      if (estatico && estatico.ok) {
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(resolverInterfaz);
+        });
+        return estatico;
+      }
+    }
+
+    var python = await listo;
+    var atender = python.atender;
+    if (/^\/api\/methods\/[^/]+\/export\/pdf$/i.test(api.ruta)) {
+      await cargarPilaPdf(python.pyodide);
+    }
     var cuerpo = (opciones && typeof opciones.body === "string") ? opciones.body : "";
     var r = await atender(metodo, api.ruta, api.consulta, cuerpo);
     return new Response(r.body, { status: r.status, headers: r.headers });
