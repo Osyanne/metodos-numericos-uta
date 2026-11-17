@@ -75,6 +75,8 @@ async function conMetodoX(page) {
     await route.fulfill({ response: r, json: m });
   });
   await page.goto("/");
+  // La app abre en la portada: se entra al primer metodo, como antes.
+  await page.locator("a.tarjeta-metodo").first().click();
 }
 
 test("familias en el orden de la API, solo sus chips, y recuerda el último", async ({ page }) => {

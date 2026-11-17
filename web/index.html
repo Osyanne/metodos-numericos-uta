@@ -17,21 +17,66 @@
 <body>
 
 <header class="cabecera">
-  <div class="marca">
+  <!-- Vuelve a la portada desde cualquier vista. -->
+  <a id="inicio" class="marca" href="#/" aria-label="Métodos numéricos: ir a la portada">
     <span class="logo" data-icono="funcion"></span>
-    <div>
-      <h1>Métodos numéricos</h1>
-      <p class="subtitulo">UTA · FISEI · Software · Nivel 3</p>
-    </div>
-  </div>
+    <span class="marca-texto">
+      <span class="titulo">Métodos numéricos</span>
+      <span class="subtitulo">UTA · FISEI · Software · Nivel 3</span>
+    </span>
+  </a>
   <button id="tema" class="boton-icono" type="button" aria-label="Cambiar a tema oscuro">
     <span data-icono="moon"></span>
   </button>
 </header>
 
+<!-- Portada: una tarjeta por metodo, armada con lo que da la API. -->
+<main id="portada" class="portada" hidden>
+  <section class="portada-intro">
+    <h1 id="portada-titulo" tabindex="-1">Resuelve métodos numéricos viendo cada iteración</h1>
+    <p class="portada-frase">
+      Elige un método, carga un ejercicio o escribe tus datos, y mira cómo se llega al
+      resultado: la fórmula, la tabla paso a paso y una gráfica que se mueve contigo.
+    </p>
+  </section>
+
+  <section class="como" aria-labelledby="como-titulo">
+    <h2 id="como-titulo">Cómo se usa</h2>
+    <ol class="como-pasos">
+      <li>
+        <span class="paso" aria-hidden="true">1</span>
+        <div><strong>Datos.</strong> Abre un método, elige un ejercicio de ejemplo o escribe
+        los tuyos. Los ajustes de cálculo (iteraciones, tolerancia) están plegados.</div>
+      </li>
+      <li>
+        <span class="paso" aria-hidden="true">2</span>
+        <div><strong>Resolver.</strong> Pulsa Resolver: aparecen el resultado y la fórmula.
+        «Decimales» solo cambia cómo se escriben los números.</div>
+      </li>
+      <li>
+        <span class="paso" aria-hidden="true">3</span>
+        <div><strong>Gráfica, tabla y recorrido.</strong> Mira el plano, la tabla de
+        iteraciones y recórrelas una a una. La pestaña Teoría explica el método.</div>
+      </li>
+    </ol>
+    <p class="campo-ayuda">
+      Además: arrastra en el plano los datos que se ven como círculos de color y el
+      resultado se recalcula en vivo; «Comparar métodos» resuelve el mismo problema con
+      varios métodos a la vez, y «Exportar» guarda la tabla en CSV o PDF.
+    </p>
+  </section>
+
+  <section aria-labelledby="metodos-titulo">
+    <h2 id="metodos-titulo">Métodos</h2>
+    <div id="rejilla" class="rejilla"></div>
+  </section>
+</main>
+
+<div id="vista-metodo" hidden>
 <nav class="selector" aria-label="Elegir método">
   <div id="familia" class="familias" role="radiogroup" aria-label="Familia de métodos"></div>
   <div id="metodo" class="chips" role="radiogroup" aria-label="Método"></div>
+  <h1 id="metodo-titulo" class="metodo-titulo" tabindex="-1"></h1>
   <p id="descripcion" class="campo-ayuda"></p>
 </nav>
 
@@ -182,6 +227,7 @@
   </section>
 
 </main>
+</div>
 
 <script type="module" src="app.js"></script>
 </body>
