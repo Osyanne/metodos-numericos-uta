@@ -311,12 +311,13 @@ const SIMPSON_38 = `
     <li>Calcula el ancho h = (b − a)/n.</li>
     <li>Arma los nodos xᵢ = a + i·h, para i = 0, 1, …, n.</li>
     <li>Evalúa f(xᵢ) en cada nodo.</li>
-    <li>Si n es múltiplo de 3, todo el intervalo es de la regla 3/8. Si no (n = 5 o más, salvo 4), la regla 1/3
+    <li>Si n es múltiplo de 3, todo el intervalo es de la regla 3/8. Si no (n = 5 o más), la regla 1/3
     toma los primeros 2 subintervalos (n deja resto 2 al dividir entre 3) o los primeros 4 (resto 1) y la 3/8 el resto.</li>
-    <li>En cada regla asigna los pesos: 1 en los extremos del tramo; en la 3/8, 2 en los nodos de unión
-    entre cúbicas (x₃, x₆, …) y 3 en los demás; en la 1/3, 4 en los nodos impares y 2 en los pares interiores.</li>
+    <li>En cada regla asigna los pesos: 1 en los extremos del tramo; en la 3/8, 2 en los nodos donde se unen dos
+    cúbicas (x₃, x₆, … cuando n es múltiplo de 3) y 3 en los demás; en la 1/3, 4 en los nodos impares y 2 en los pares interiores.</li>
     <li>Suma el corchete S = Σ pesoᵢ · f(xᵢ) de cada regla.</li>
-    <li>Multiplica cada corchete por su factor, 3h/8 en la 3/8 y h/3 en la 1/3, y suma los resultados: I ≈ (3h/8)·S.</li>
+    <li>Multiplica cada corchete por su factor y suma: con solo la 3/8, I ≈ (3h/8)·S; combinadas,
+    I ≈ (h/3)·S de la 1/3 + (3h/8)·S de la 3/8.</li>
   </ol>
 </section>
 
@@ -452,7 +453,7 @@ const SIMPSON_38 = `
       <tr><th scope="row">Puntos por tramo</th><td>2</td><td>3</td><td>4</td></tr>
       <tr><th scope="row">Subintervalos por tramo</th><td>1</td><td>2</td><td>3</td></tr>
       <tr><th scope="row">Polinomio por tramo</th><td>recta (grado 1)</td><td>parábola (grado 2)</td><td>cúbica (grado 3)</td></tr>
-      <tr><th scope="row">Condición sobre n</th><td>ninguna</td><td>n par</td><td>n múltiplo de 3; si no, se combina con la 1/3 (n = 5 o más, salvo 4)</td></tr>
+      <tr><th scope="row">Condición sobre n</th><td>ninguna</td><td>n par</td><td>n múltiplo de 3; si no, se combina con la 1/3 (n = 5 o más)</td></tr>
       <tr><th scope="row">Exacta hasta grado</th><td>1</td><td>3</td><td>3</td></tr>
       <tr><th scope="row">Error simple</th><td>−(b − a)³/12 · f″(ξ)</td><td>−(b − a)⁵/2880 · f⁽⁴⁾(ξ)</td><td>−(b − a)⁵/6480 · f⁽⁴⁾(ξ)</td></tr>
       <tr><th scope="row">Error compuesto</th><td>−(b − a)/12 · h² · f″(ξ)</td><td>−(b − a)/180 · h⁴ · f⁽⁴⁾(ξ)</td><td>−(b − a)/80 · h⁴ · f⁽⁴⁾(ξ)</td></tr>
@@ -479,8 +480,8 @@ const SIMPSON_38 = `
   <h4>Ventajas</h4>
   <ul>
     <li>Con la misma malla es mucho más exacta que el Trapecio: error de orden h⁴ en lugar de h², y exacta hasta cúbicas.</li>
-    <li>Cubre los n que Simpson 1/3 no admite: sola, con n = 3, 6, 9, …, y combinada con la 1/3, con cualquier n de 5 en adelante
-    (salvo 4).</li>
+    <li>Cubre los n impares, que Simpson 1/3 no admite: sola, con n = 3, 9, 15, …, y combinada con la 1/3, con cualquier
+    n impar de 5 en adelante.</li>
     <li>Los pesos son enteros pequeños (1, 3, 3, 2, 3, 3, …, 1), así que el corchete se arma y se revisa a mano.</li>
   </ul>
   <h4>Desventajas</h4>
@@ -568,7 +569,7 @@ const MINIMOS_CUADRADOS = `
   <ul>
     <li><strong>r = 1</strong>: correlación perfecta y directa (todos los puntos sobre una recta que sube).</li>
     <li><strong>r = −1</strong>: correlación perfecta e inversa (sobre una recta que baja).</li>
-    <li><strong>r = 0</strong>: no hay correlación: los datos no siguen ninguna recta.</li>
+    <li><strong>r = 0</strong>: no hay correlación lineal: los datos no siguen ninguna recta (pueden seguir una curva).</li>
   </ul>
   <p>El signo de r es el de la pendiente m. Cuanto más cerca de ±1, mejor describe la recta a los datos.
   Si todas las y son iguales, r no está definida (el aplicativo lo avisa).</p>
