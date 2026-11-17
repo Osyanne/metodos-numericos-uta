@@ -139,3 +139,12 @@ test("cargar otro preset reemplaza todos los datos y limpia el resultado", async
   expect(recibido.columns.map(c => c.key)).toEqual(["x", "y"]);
   expect(recibido.iterations).toHaveLength(6);
 });
+
+test("el resumen de Simpson 3/8 no lista los tramos: son una lista de objetos", async ({ page }) => {
+  await cargar(page, "simpson-38", "simpson-38-chapra-n5");
+  await resolver(page, "simpson-38");
+  const claves = await page.locator("#resumen dl.resultado dt").allTextContents();
+  expect(claves).toContain("integral");
+  expect(claves).not.toContain("tramos");
+  await expect(page.locator("#resumen dl.resultado")).not.toContainText("-, —");
+});

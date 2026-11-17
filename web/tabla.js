@@ -170,9 +170,11 @@ export function dibujarResumen(contenedor, resultado, decimales, familia) {
   contenedor.append(estado);
 
   // Sin clave principal (familia desconocida), manda la primera.
-  // Un objeto (los totales del ajuste) tiene su lugar en la tabla, no aca.
+  // Un objeto (los totales del ajuste) tiene su lugar en la tabla, no aca, y
+  // una lista de objetos (los tramos de Simpson 3/8) tampoco: no cabe en una celda.
   const pares = Object.entries(resultado.result ?? {})
-    .filter(([, valor]) => valor === null || typeof valor !== "object" || Array.isArray(valor));
+    .filter(([, valor]) => valor === null || typeof valor !== "object"
+      || (Array.isArray(valor) && valor.every((v) => typeof v !== "object" || v === null)));
   const indice = Math.max(0, pares.findIndex(([clave]) => clave === PRINCIPAL[familia]));
   pares.unshift(...pares.splice(indice, 1));
 
