@@ -72,7 +72,8 @@ def adelantos(modulos: list[str]) -> str:
     origen = re.match(r"https?://[^/]+", cdn).group(0)
 
     lineas = [f'<link rel="preconnect" href="{origen}" crossorigin>']
-    lineas.append('<link rel="preload" href="codigo.zip" as="fetch" crossorigin>')
+    for propio in ("codigo.zip", CATALOGO):
+        lineas.append(f'<link rel="preload" href="{propio}" as="fetch" crossorigin>')
     for archivo, como in DESCARGAS_PYODIDE:
         # Sin crossorigin el preload no se reutiliza y se baja dos veces.
         extra = " crossorigin"

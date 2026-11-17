@@ -115,10 +115,20 @@
       .catch(function () { /* es solo un adelanto: loadPackage los pide igual */ });
   }
 
+  // Python corre en el hilo de la pagina y, al iniciar, lo deja ocupado varios
+  // segundos: si arrancara antes de que la interfaz se pinte, la lista de
+  // metodos tardaria lo mismo que Python. Las descargas no esperan (ya van
+  // adelantadas); solo el arranque, hasta que se entrega la lista y se
+  // pinta un cuadro. El plazo cubre una pestana oculta, donde no hay cuadros.
+  var resolverInterfaz;
+  var interfaz = new Promise(function (r) { resolverInterfaz = r; });
+  setTimeout(resolverInterfaz, 3000);
+
   async function arrancar() {
     paso("Descargando Pyodide…");
     precargarPaquetes(PAQUETES);
     await cargarScript(PYODIDE + "pyodide.js");
+    await interfaz;
     paso("Iniciando Python…");
     var pyodide = await window.loadPyodide({ indexURL: PYODIDE });
 
@@ -268,7 +278,12 @@ async def atender(metodo, ruta, consulta, cuerpo):
     // interfaz se pinta sin esperar a Python. Si no esta, responde Python.
     if (metodo === "GET" && api.ruta === "/api/methods" && !api.consulta) {
       var estatico = await fetchOriginal("catalogo.json").catch(function () { return null; });
-      if (estatico && estatico.ok) return estatico;
+      if (estatico && estatico.ok) {
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(resolverInterfaz);
+        });
+        return estatico;
+      }
     }
 
     var python = await listo;
