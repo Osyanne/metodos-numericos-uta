@@ -184,3 +184,61 @@ def test_importar_la_exportacion_no_carga_fpdf():
         capture_output=True, text=True, check=True,
     )
     assert salida.stdout.strip() == "False"
+
+
+MINIMOS_REQUEST = {
+    "params": {
+        "points": [[1.0, 2.0], [1.5, 3.2], [2.0, 4.1], [2.5, 4.9], [3.0, 5.9]],
+        "modelo": "lineal",
+    },
+    "decimals": 2,
+}
+
+SIMPSON_38_REQUEST = {
+    "params": {"fx": "exp(x^2)", "a": 0.0, "b": 1.0, "n": 5},
+    "decimals": 2,
+}
+
+
+def test_csv_de_minimos_cuadrados_cierra_con_la_fila_total(client: TestClient):
+    response = client.post(
+        "/api/methods/minimos-cuadrados/export/csv", json=MINIMOS_REQUEST
+    )
+
+    assert response.status_code == 200, response.text
+    rows = list(csv.reader(io.StringIO(response.content.decode("utf-8"))))
+    assert rows[0] == ["i", "xi", "yi", "xiyi", "xi2", "yi2", "error"]
+    assert len(rows) == 1 + 5 + 1
+    total = rows[-1]
+    assert total[0] == "Total"
+    # Totales del docente: 10.00, 20.10, 44.95, 22.50, 89.87 y suma de residuos 0.0430.
+    assert [round(float(v), 4) for v in total[1:]] == [10.0, 20.1, 44.95, 22.5, 89.87, 0.043]
+
+
+def test_pdf_de_minimos_cuadrados_no_imprime_el_diccionario_de_totales(client: TestClient):
+    response = client.post(
+        "/api/methods/minimos-cuadrados/export/pdf", json=MINIMOS_REQUEST
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.content.startswith(b"%PDF-")
+    assert b"Total" in response.content
+    assert b"totales" not in response.content
+
+
+def test_csv_y_pdf_de_simpson_38_con_tramos_y_columnas_de_texto(client: TestClient):
+    csv_response = client.post(
+        "/api/methods/simpson-38/export/csv", json=SIMPSON_38_REQUEST
+    )
+    pdf_response = client.post(
+        "/api/methods/simpson-38/export/pdf", json=SIMPSON_38_REQUEST
+    )
+
+    assert csv_response.status_code == 200, csv_response.text
+    rows = list(csv.reader(io.StringIO(csv_response.content.decode("utf-8"))))
+    assert rows[0][:4] == ["i", "nodo", "xi", "fxi"]
+    assert "regla" in rows[0]
+    reglas = {fila[rows[0].index("regla")] for fila in rows[1:]}
+    assert reglas == {"1/3", "3/8"}
+    assert pdf_response.status_code == 200, pdf_response.text
+    assert pdf_response.content.startswith(b"%PDF-")

@@ -34,6 +34,9 @@ def csv_bytes(result: MethodResult) -> bytes:
             ]
         )
 
+    if (total := _fila_total(result)) is not None:
+        writer.writerow(total)
+
     return output.getvalue().encode("utf-8")
 
 
@@ -91,7 +94,8 @@ def pdf_bytes(
     )
     pdf.set_font("Helvetica", size=9)
     for key, value in result.result.items():
-        _multi_line(pdf, f"{key}: {_value_text(value)}")
+        if key != "totales":  # va como la fila Total de la tabla
+            _multi_line(pdf, f"{key}: {_value_text(value)}")
 
     _multi_line(
         pdf,
@@ -147,6 +151,34 @@ def _write_iterations_table(pdf: FPDF, result: MethodResult) -> None:
                 new_x=XPos.LMARGIN if index == len(values) - 1 else XPos.RIGHT,
                 new_y=YPos.NEXT if index == len(values) - 1 else YPos.TOP,
             )
+
+    if (total := _fila_total(result)) is not None:
+        pdf.set_font("Helvetica", style="B", size=font_size)
+        for index, value in enumerate(total):
+            pdf.cell(
+                cell_width,
+                row_height,
+                text=_latin1(value),
+                border=1,
+                new_x=XPos.LMARGIN if index == len(total) - 1 else XPos.RIGHT,
+                new_y=YPos.NEXT if index == len(total) - 1 else YPos.TOP,
+            )
+
+
+def _fila_total(result: MethodResult) -> list[str] | None:
+    """La fila Total de la tabla (minimos cuadrados), o None si no hay.
+
+    `result["totales"]` es un objeto con la clave de cada columna y `error`
+    para la ultima.
+    """
+    totales = result.result.get("totales")
+    if not isinstance(totales, dict):
+        return None
+    return [
+        "Total",
+        *(_number_text(totales.get(column.key)) for column in result.columns),
+        _number_text(totales.get("error")),
+    ]
 
 
 def _multi_line(pdf: FPDF, text: str, *, height: float = 5) -> None:
