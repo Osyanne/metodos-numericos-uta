@@ -65,6 +65,9 @@ class InputField:
     help: str = ""
     required: bool = True
     multiple: bool = False
+    # Valores permitidos de un campo de texto. La interfaz lo dibuja como una
+    # lista desplegable en vez de una casilla libre; vacio es texto libre.
+    choices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -112,6 +115,7 @@ class PlotKind(str, Enum):
     CONVERGENCE = "convergencia"
     ODE_SOLUTION = "solucion_edo"
     INTEGRATION = "integracion"
+    AJUSTE = "ajuste"
 
 
 @dataclass(frozen=True)

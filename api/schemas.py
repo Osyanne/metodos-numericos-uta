@@ -19,6 +19,7 @@ class FieldSchema(BaseModel):
     help: str = ""
     required: bool = True
     multiple: bool = False
+    choices: list[str] = []
 
 
 class MethodSummary(BaseModel):

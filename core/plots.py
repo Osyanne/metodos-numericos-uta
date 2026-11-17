@@ -61,6 +61,36 @@ def interpolation(
     )
 
 
+def ajuste(
+    points: Sequence[tuple[float, float]],
+    xs: Sequence[float],
+    ys: Sequence[float | None],
+    evaluated: tuple[float, float] | None = None,
+    title: str = "",
+    resample: Resample | None = None,
+) -> PlotSpec:
+    """series = {points: [[x, y]], curve: {x, y}, evaluated: {x, y} | None}
+
+    Los puntos son los datos medidos, que se dibujan sueltos (dispersion), y la
+    curva es el ajuste que el nucleo muestrea. Tiene la misma forma que la
+    interpolacion; se distingue por el tipo para rotular la curva como ajuste y
+    no como polinomio.
+    """
+    return PlotSpec(
+        kind=PlotKind.AJUSTE,
+        series={
+            "points": [[float(x), float(y)] for x, y in points],
+            "curve": {"x": list(xs), "y": list(ys)},
+            "evaluated": (
+                None if evaluated is None
+                else {"x": evaluated[0], "y": evaluated[1]}
+            ),
+        },
+        title=title,
+        resample=resample,
+    )
+
+
 def convergence(
     ns: Sequence[int],
     errors: Sequence[float | None],

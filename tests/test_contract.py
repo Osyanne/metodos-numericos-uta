@@ -163,6 +163,7 @@ def test_el_desplegable_sigue_el_orden_de_la_clase(registro_limpio):
         "simpson-13",
         "simpson-38",
         "runge-kutta",
+        "minimos-cuadrados",
     ]
 
 
@@ -494,6 +495,11 @@ CASOS_POR_METODO = {
     "simpson": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 4},
     "simpson-13": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 4},
     "simpson-38": {"fx": "x^2", "a": 0.0, "b": 1.0, "n": 6},
+    "minimos-cuadrados": {
+        "points": [[1.0, 2.0], [1.5, 3.2], [2.0, 4.1], [2.5, 4.9], [3.0, 5.9]],
+        "modelo": "exponencial",
+        "x": 2.0,
+    },
 }
 
 
