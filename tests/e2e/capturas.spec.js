@@ -11,6 +11,12 @@ import { test, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import { esperarDesplegable, elegirMetodo } from "./desplegable.js";
 
+// Entra al primer metodo por su tarjeta, como la persona.
+async function abrirPrimero(page) {
+  await page.locator("a.tarjeta-metodo").first().click();
+  await expect(page.locator("#vista-metodo")).toBeVisible();
+}
+
 const DESTINO = fileURLToPath(new URL("../../docs/capturas/", import.meta.url));
 
 test.skip(!process.env.CAPTURAS, "solo a pedido: CAPTURAS=1");
@@ -44,7 +50,13 @@ async function puntoDelPlano(page, cual) {
 
 test("capturas del manual", async ({ page }) => {
   await page.goto("/");
-  await esperarDesplegable(page);
+  // La app abre en la portada: una tarjeta por metodo, agrupadas por familia.
+  await esperarDesplegable(page, { portada: true });
+  await expect(page.locator("#portada")).toBeVisible();
+  await page.waitForTimeout(500);
+  await arriba(page);
+  await page.screenshot({ path: `${DESTINO}06-portada.png` });
+  await abrirPrimero(page);
 
   // Un caso que se explica solo: el ejercicio resuelto del docente.
   await elegirMetodo(page, "von-mises");
@@ -112,4 +124,26 @@ test("capturas del manual", async ({ page }) => {
   await page.waitForTimeout(600);
   await page.locator("#tarjeta-plano").screenshot({ path: `${DESTINO}05-arrastre.png` });
   await page.mouse.up();
+});
+
+// Simpson 3/8 con n = 5 (1/3 en los dos primeros subintervalos y 3/8 en el
+// resto) y su pestana Teoria, que se lee sin resolver.
+test("capturas de Simpson 3/8", async ({ page }) => {
+  await page.goto("/");
+  await esperarDesplegable(page);
+  await elegirMetodo(page, "simpson-38");
+  await page.locator("#preset").selectOption("simpson-38-chapra-n5");
+  await page.locator("#resolver").click();
+  await expect(page.locator("#resumen .estado")).toBeVisible();
+  await dibujoTerminado(page);
+  await arriba(page);
+  await page.screenshot({ path: `${DESTINO}07-simpson-38.png` });
+
+  await page.locator("#ver-teoria").click();
+  await expect(page.locator("#panel-teoria")).toBeVisible();
+  // La pestana vive en la tarjeta de abajo: se lleva su borde superior al
+  // borde de la ventana para que la captura empiece en la barra de pestanas.
+  await page.locator("#tarjeta-plano").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 8));
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `${DESTINO}08-teoria-simpson-38.png` });
 });
