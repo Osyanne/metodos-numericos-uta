@@ -838,9 +838,12 @@ $("#reiniciar-vista").addEventListener("click", () => plano.reiniciarVista());
 const PANELES = { "ver-plano": "panel-plano", "ver-tabla": "panel-tabla", "ver-teoria": "panel-teoria" };
 
 function elegirPestana(id) {
-  for (const b of document.querySelectorAll(".pestana")) b.classList.remove("activa");
+  for (const b of document.querySelectorAll(".pestana")) {
+    b.classList.toggle("activa", b.id === id);
+    // La clase sola no le dice a un lector de pantalla cual esta elegida.
+    b.setAttribute("aria-pressed", b.id === id);
+  }
   for (const p of document.querySelectorAll(".panel")) p.hidden = true;
-  $(`#${id}`).classList.add("activa");
   $(`#${PANELES[id]}`).hidden = false;
   // El recorrido de filas no tiene nada que mover en la teoria.
   $("#tarjeta-plano").dataset.pestana = id;
