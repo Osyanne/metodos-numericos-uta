@@ -175,7 +175,7 @@ register(
             "de cubica que pasan por cuatro nodos equiespaciados, uno por "
             "cada tramo de tres subintervalos, y sumando el area bajo ellos. "
             "Simple (n = 3): (b - a) * [f(x0) + 3f(x1) + 3f(x2) + f(x3)] / 8. "
-            "Si n no es multiplo de 3 (n = 5 o mas, salvo 4) combina las dos "
+            "Si n no es multiplo de 3 (n = 5 o mas) combina las dos "
             "reglas de Simpson: la 1/3 en los primeros subintervalos y la "
             "3/8 en el resto, como en la aplicacion multiple del docente. "
             "Con la misma malla, Simpson 1/3 pide n par."
@@ -184,7 +184,7 @@ register(
             "n = 3: (b - a) * [f(x0) + 3f(x1) + 3f(x2) + f(x3)] / 8, "
             "Et = -(b - a)^5/6480 * f''''(xi). Compuesta: (3h/8) * [f(x0) "
             "+ 3*sum(f(xi), i no multiplo de 3) + 2*sum(f(xi), i multiplo de 3) "
-            "+ f(xn)], h = (b - a)/n, n multiplo de 3. n impar: 1/3 + 3/8"
+            "+ f(xn)], h = (b - a)/n, n multiplo de 3. Otro n (5, 7, 8, ...): 1/3 + 3/8"
         ),
         inputs=[
             InputField(

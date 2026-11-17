@@ -171,7 +171,7 @@ export const FORMULAS = {
     ),
     fila(h, mo("="), ancho, mo(","), separa, `<mtext>n múltiplo de 3</mtext>`),
     fila(i, mo("="), uno, mo(","), mo("…"), mo(","), n, mo("−"), uno, mo(","), separa, `<mtext>k entero</mtext>`),
-    mtext("n impar: regla 1/3 al inicio y 3/8"),
+    mtext("otro n: regla 1/3 al inicio y 3/8"),
   ),
 
   // Ajuste por minimos cuadrados: N, Dx y Dy son las tres piezas que el
@@ -404,8 +404,10 @@ const SUSTITUCIONES = {
     igual(rotulo("suma del corchete"), num(it.values.suma)),
   ],
 
+  // El nodo de union sale en dos filas: el subindice es el del nodo, no el de la fila.
   "simpson-38": ({ it, num }) => [
-    igual(fila(rotulo("peso"), por, f(sub(x, mn(it.n)))), num(it.values.peso), por, num(it.values.fxi)),
+    igual(fila(rotulo("peso"), por, f(sub(x, mn(String(it.values.nodo ?? it.n).replace(/^x/, ""))))),
+      num(it.values.peso), por, num(it.values.fxi)),
     igual(rotulo("suma del corchete"), num(it.values.suma)),
   ],
 
