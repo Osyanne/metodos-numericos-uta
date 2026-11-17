@@ -21,6 +21,37 @@ Docentes: Ing. Henry Cumbal, Dr. Victor Penafiel.
 | R9 | Runge-Kutta debe resolver **sistemas de ecuaciones**, y aceptar tanto el paso `h` como el numero de pasos. |
 | R10 | Newton-Raphson: **la app deriva sola**, pero el usuario tambien puede escribir la derivada. |
 | R11 | Los **tres criterios de error** implementados y **configurables**. |
+| R15 | **Simpson 1/3 (U1)**, de `Simpson1.pdf`: parabolas por tres nodos equiespaciados, con `n` par y los pesos `1, 4, 2, 4, ..., 4, 1`. El ejercicio del material es `exp(x^2)` en `[0, 1]` con `n = 10`. Es la misma regla que Simpson con `2n`. |
+| R16 | **Simpson 3/8 (U1)**: cubicas por cuatro nodos equiespaciados, con `n = 3` o multiplo de 3, y la **aplicacion multiple** (1/3 mas 3/8) cuando `n` no es multiplo de 3, como en el ejemplo 21.6 de Chapra. Cada regla muestra su corchete y su factor. |
+| R17 | **Ajuste por minimos cuadrados (U4)**: la recta `y = m x + b` con su correlacion `r`, la tabla del docente con su fila de totales, y los modelos potencial, exponencial y logaritmico. El ejercicio del docente da `m = 1.90`, `b = 0.22` y `r = 0.9976`. |
+
+### Decisiones del equipo sobre la interfaz
+
+No las pidio el docente; se dejan escritas porque tienen pruebas.
+
+| # | Requisito |
+|---|-----------|
+| R18 | La aplicacion abre en una **portada** con una tarjeta por metodo, y la ruta vive en la direccion de la pagina: `#/` es la portada y `#/metodo/<slug>` un metodo. Atras, Adelante y los enlaces directos funcionan. |
+| R19 | Cada metodo tiene una pestana **Teoria**, que se lee sin resolver, con la explicacion, la formula, los pasos y un ejemplo a mano verificado. |
+
+## Los metodos
+
+Los once que hay hoy, en el orden del desplegable (el campo `orden` de cada
+`MethodSpec`; una prueba de `tests/test_contract.py` fija la lista completa):
+
+| orden | Metodo | slug | Unidad | Familia | Material |
+|---|---|---|---|---|---|
+| 1 | Newton-Raphson | `newton-raphson` | U1 | raices | ejercicios de clase |
+| 2 | Von Mises | `von-mises` | U1 | raices | `VON MISES.pdf` |
+| 3 | Interpolacion de Newton | `interpolacion-newton` | U1 | interpolacion | `Interpolacion del metodo de Newton.pdf` |
+| 4 | Interpolacion de Lagrange | `interpolacion-lagrange` | U1 | interpolacion | `INTERPOLACION DE LAGRANGE.pdf` |
+| 5 | Punto Medio | `punto-medio` | U1 | integracion | ejemplo del parcial 1 |
+| 6 | Metodo del Trapecio | `trapecio` | U1 | integracion | material de integracion numerica |
+| 7 | Metodo de Simpson | `simpson` | U1 | integracion | `Método de Simpson.pdf` |
+| 8 | Simpson 1/3 | `simpson-13` | U1 | integracion | `Simpson1.pdf` |
+| 9 | Simpson 3/8 | `simpson-38` | U1 | integracion | `Simpson 1/3 y 3/8.pdf` y Chapra 21.6 |
+| 10 | Runge-Kutta | `runge-kutta` | U3 | edo | pedido del docente: sistemas, paso h o numero de pasos |
+| 11 | Ajuste por minimos cuadrados | `minimos-cuadrados` | U4 | ajuste | ejercicio del docente |
 
 ## Von Mises: no es el metodo de las potencias
 
@@ -54,7 +85,10 @@ hoy no los consume nadie.
 
 - **R3** — `core/types.py` define `MethodSpec` y `core/registry.py` el registro.
   Agregar un metodo es crear un archivo en `core/methods/`. No se toca ningun
-  archivo existente. El formulario se dibuja solo desde los `InputField`.
+  archivo existente del nucleo ni de la API. El formulario se dibuja solo desde
+  los `InputField`. La interfaz pide ademas la formula del metodo en
+  `web/formulas.js` y su teoria en `web/teoria.js`, y su familia en `FAMILIAS` de
+  `web/app.js` si es nueva.
 - **R4** — `core/precision.py`, rango 2..12, por defecto 6.
 - **R5** — `SolveConfig.max_iterations`. Con `stop_on_tolerance=False` corre
   exactamente n iteraciones aunque ya haya convergido.
@@ -67,8 +101,8 @@ hoy no los consume nadie.
 
 ## Casos de referencia
 
-En `tests/casos_referencia.py` y `tests/casos_referencia_lagrange.py`, sacados
-del material del docente. Son la vara para medir si un metodo esta bien:
+En `tests/casos_referencia.py`, sacados del material del docente (Von Mises,
+Newton, Lagrange, Punto Medio, Simpson 1/3, Simpson 3/8 y minimos cuadrados). Son la vara para medir si un metodo esta bien:
 reproducir estos numeros o esta mal.
 
 `f(x) = e^-x - ln(x)`, `x0 = 1`, derivada congelada `f'(1) = -1.36787944`:
@@ -97,8 +131,8 @@ interfaz ya sabia dibujarlo, pero la serializacion y el esquema HTTP solo
 admitian numeros, asi que las celdas simbolicas llegaban vacias. Ver
 `docs/CONTRATO.md`, seccion "Respuesta".
 
-Casos de referencia en `tests/casos_referencia_lagrange.py`: los dos ejercicios
-resueltos en clase y el propuesto.
+Casos de referencia en `tests/casos_referencia.py` (`LAGRANGE_RESUELTO` y
+`LAGRANGE_EJERCICIO`): los dos ejercicios resueltos en clase y el propuesto.
 
 ## Preguntas que siguen abiertas
 
