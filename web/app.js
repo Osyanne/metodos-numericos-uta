@@ -10,6 +10,7 @@ import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
 import { ICONOS } from "./iconos.js";
 import { formulaPara, sustitucionPara } from "./formulas.js";
+import { teoriaPara } from "./teoria.js";
 import { asasDe, mover, campoDe, describir } from "./asas.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -215,6 +216,7 @@ function seleccionarMetodo(slug) {
   formulario.dibujar(estado.metodo);
   mostrarVistaIntegral();
   mostrarFormula();
+  mostrarTeoria();
   limpiarPantalla();
   avisar("");
 }
@@ -246,6 +248,16 @@ function mostrarFormula() {
 }
 
 $("#formulario").addEventListener("input", mostrarFormula);
+
+// La pestana Teoria aparece solo si el metodo tiene explicacion, y desde que se
+// elige, antes de resolver. Un metodo sin ella devuelve a Plano si se estaba
+// leyendo la teoria del anterior.
+function mostrarTeoria() {
+  const teoria = estado.metodo ? teoriaPara(estado.metodo.slug) : null;
+  $("#panel-teoria").innerHTML = teoria ? `<div class="teoria">${teoria}</div>` : "";
+  $("#ver-teoria").hidden = !teoria;
+  if (!teoria && $("#ver-teoria").classList.contains("activa")) elegirPestana("ver-plano");
+}
 
 // ------------------------------------------------------------ presets
 
@@ -739,13 +751,19 @@ $("#resolver").addEventListener("click", resolver);
 $("#encuadrar").addEventListener("click", () => plano.encuadrar());
 $("#reiniciar-vista").addEventListener("click", () => plano.reiniciarVista());
 
-for (const [id, panel] of [["ver-plano", "panel-plano"], ["ver-tabla", "panel-tabla"]]) {
-  $(`#${id}`).addEventListener("click", () => {
-    for (const b of document.querySelectorAll(".pestana")) b.classList.remove("activa");
-    for (const p of document.querySelectorAll(".panel")) p.hidden = true;
-    $(`#${id}`).classList.add("activa");
-    $(`#${panel}`).hidden = false;
-  });
+const PANELES = { "ver-plano": "panel-plano", "ver-tabla": "panel-tabla", "ver-teoria": "panel-teoria" };
+
+function elegirPestana(id) {
+  for (const b of document.querySelectorAll(".pestana")) b.classList.remove("activa");
+  for (const p of document.querySelectorAll(".panel")) p.hidden = true;
+  $(`#${id}`).classList.add("activa");
+  $(`#${PANELES[id]}`).hidden = false;
+  // El recorrido de filas no tiene nada que mover en la teoria.
+  $("#tarjeta-plano").dataset.pestana = id;
+}
+
+for (const id of Object.keys(PANELES)) {
+  $(`#${id}`).addEventListener("click", () => elegirPestana(id));
 }
 
 for (const formato of ["csv", "pdf"]) {
