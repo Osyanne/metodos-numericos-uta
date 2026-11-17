@@ -91,6 +91,9 @@ export class Plano {
   //           dibujo viene de un remuestreo (ahi ya se vio la animacion).
   //           { conservarVista } — ni encuadrar ni animar: el resultado nuevo
   //           de un dato que se esta arrastrando, sobre la vista que ya se mira.
+  //           { remuestrear: false } — con conservarVista, sin pedir el
+  //           remuestreo: mientras dura el arrastre llegan respuestas en
+  //           vivo y se pide uno solo al terminar.
   mostrar(capas, resample = null, etiquetas = {}, opciones = {}) {
     this._invalidarRemuestreo();
     this.paso = null;
@@ -101,7 +104,7 @@ export class Plano {
     if (opciones.conservarVista) {
       this._cancelarAnimacion();
       this._pintar();
-      this._pedirRemuestreo();
+      if (opciones.remuestrear !== false) this._pedirRemuestreo();
       return;
     }
     this.encuadrar();
@@ -267,6 +270,9 @@ export class Plano {
     this.cursor = null;
     this.asas = null;
     this.asaActiva = null;
+    // Un gesto cortado desde afuera no deja un asa tomada: la capa que llegue
+    // despues no puede quedar pegada al puntero viejo.
+    this._asaTomada = null;
     this.atenuado = false;
     this._pintar();
   }
@@ -463,6 +469,13 @@ export class Plano {
       if (arrastrando?.asa) {
         if (!this._asaTomada && Math.hypot(px - arrastrando.x, py - arrastrando.y) >= UMBRAL_CLIC) {
           const asa = this.asas?.asas.find((a) => a.id === arrastrando.asa);
+          if (!asa) {
+            // Las asas cambiaron entre bajar el puntero y moverlo: no hay
+            // nada que arrastrar.
+            arrastrando = null;
+            c.classList.remove("arrastrando");
+            return;
+          }
           this._asaTomada = { id: asa.id, x: asa.x, y: asa.eje === "x" ? null : asa.y };
           this.asaActiva = asa.id;
           c.classList.add("arrastrando");
@@ -509,6 +522,9 @@ export class Plano {
     };
     c.addEventListener("pointerup", soltar);
     c.addEventListener("pointercancel", soltar);
+    // Perder la captura (otra pestana, el elemento quitado) termina el gesto
+    // igual que soltar; tras un pointerup normal ya no hay nada que terminar.
+    c.addEventListener("lostpointercapture", soltar);
     c.addEventListener("pointerleave", () => {
       this.cursor = null;
       if (!arrastrando) {

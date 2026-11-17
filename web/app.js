@@ -213,6 +213,7 @@ function seleccionarMetodo(slug) {
   // numeros correctos atribuidos al metodo equivocado, que es peor que no
   // mostrar nada.
   estado.resultado = null;
+  estado.params = null;
   estado.corrida += 1;
 
   $("#descripcion").textContent = estado.metodo.description ?? "";
@@ -314,6 +315,7 @@ function aplicarPreset(id) {
   actualizarResumenAjustes();
 
   estado.resultado = null;
+  estado.params = null;
   estado.corrida += 1;
   limpiarPantalla();
   avisar("");
@@ -529,7 +531,7 @@ async function enviarArrastre(arrastre, params, final) {
 
 function pintarEnVivo() {
   const { capas, resample } = capasDesdePlot(estado.resultado.plot, estado.resultado.iterations);
-  plano.mostrar(capas, resample, {}, { conservarVista: true });
+  plano.mostrar(capas, resample, {}, { conservarVista: true, remuestrear: false });
   dibujarResumen($("#resumen"), estado.resultado, Number($("#decimales").value), estado.metodo.family);
 }
 
@@ -742,6 +744,12 @@ rotularTema();
 $("#decimales").addEventListener("input", () => {
   $("#decimales-valor").textContent = $("#decimales").value;
   if (!estado.resultado) return;
+  // Con un arrastre en curso la tabla y el recorrido esperan a soltar: el
+  // resultado en vivo solo toca el resumen, y la tabla nueva llega con la final.
+  if (estado.arrastre) {
+    dibujarResumen($("#resumen"), estado.resultado, Number($("#decimales").value), estado.metodo.family);
+    return;
+  }
   formatearResultado();
   // El recorrido sigue donde estaba: se reescriben la tabla, la franja y la sustitucion.
   if (recorrido.activo) mostrarFila(recorrido.k);
