@@ -21,6 +21,13 @@
 
   var fetchOriginal = window.fetch.bind(window);
 
+  // Segunda visita: el service worker guarda Pyodide, los paquetes y el sitio.
+  // Ruta relativa: bajo /metodos-numericos-uta/ una absoluta saldria del proyecto.
+  // Si no hay service workers (o falla), el sitio anda igual, solo mas lento.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+
   // ------------------------------------------------------------ aviso
 
   var aviso = document.createElement("div");
@@ -66,6 +73,8 @@
     return new Promise(function (resolver, rechazar) {
       var s = document.createElement("script");
       s.src = src;
+      // CORS, como el adelanto del HTML: asi la respuesta es guardable.
+      s.crossOrigin = "anonymous";
       s.onload = resolver;
       s.onerror = function () { rechazar(new Error("No se pudo descargar " + src)); };
       document.head.appendChild(s);

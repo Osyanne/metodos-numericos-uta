@@ -14,6 +14,8 @@ web/ no se modifica: el script se inserta en la copia de index.html.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import shutil
 import sys
@@ -23,6 +25,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 WEB = RAIZ / "web"
 PUENTE = RAIZ / "pages" / "puente.js"
+SERVICE_WORKER = RAIZ / "pages" / "sw.js"
 PAQUETES = ("core", "api")
 CATALOGO = "catalogo.json"
 
@@ -30,7 +33,8 @@ ETIQUETA_APP = '<script type="module" src="app.js"></script>'
 # Pyodide se baja de un CDN con la version fija que declara puente.js; de ahi
 # se lee para que el adelanto de descargas y el puente no se desincronicen.
 PATRON_PYODIDE = re.compile(r'var PYODIDE = "([^"]+)";')
-# (archivo de Pyodide, como se baja): el script es un <script>; el resto, fetch.
+# (archivo de Pyodide, como se baja): el script es un <script crossorigin>; el
+# resto, fetch. Todos son CORS, y el preload tiene que serlo igual para reusarse.
 DESCARGAS_PYODIDE = (
     ("pyodide.js", "script"),
     ("pyodide.asm.wasm", "fetch"),
@@ -70,12 +74,28 @@ def adelantos(modulos: list[str]) -> str:
     lineas = [f'<link rel="preconnect" href="{origen}" crossorigin>']
     lineas.append('<link rel="preload" href="codigo.zip" as="fetch" crossorigin>')
     for archivo, como in DESCARGAS_PYODIDE:
-        # fetch() de otro origen es una peticion CORS: sin crossorigin el
-        # preload no se reutiliza y el archivo se baja dos veces.
-        extra = " crossorigin" if como == "fetch" else ""
+        # Sin crossorigin el preload no se reutiliza y se baja dos veces.
+        extra = " crossorigin"
         lineas.append(f'<link rel="preload" href="{cdn}{archivo}" as="{como}"{extra}>')
     lineas.extend(f'<link rel="modulepreload" href="{m}">' for m in modulos)
     return "".join(f"  {linea}\n" for linea in lineas)
+
+
+def archivos_del_sitio(destino: Path) -> list[str]:
+    """Todo lo armado salvo el propio sw.js, con rutas relativas y ordenadas."""
+    return sorted(
+        a.relative_to(destino).as_posix()
+        for a in destino.rglob("*")
+        if a.is_file() and a.name != "sw.js"
+    )
+
+
+def version_del_sitio(destino: Path) -> str:
+    """Huella del contenido: el nombre de la cache del service worker."""
+    huella = hashlib.sha256()
+    for nombre in archivos_del_sitio(destino):
+        huella.update(nombre.encode() + b"\0" + (destino / nombre).read_bytes() + b"\0")
+    return huella.hexdigest()[:12]
 
 
 def construir(destino: Path) -> Path:
@@ -105,13 +125,24 @@ def construir(destino: Path) -> Path:
     shutil.copy2(PUENTE, destino / "puente.js")
     (destino / CATALOGO).write_bytes(catalogo())
 
+    # Fecha fija en cada entrada: el zip sale igual si el codigo es el mismo, y
+    # la version del sitio (abajo) no cambia en cada armado.
     with zipfile.ZipFile(destino / "codigo.zip", "w", zipfile.ZIP_DEFLATED) as zf:
         for paquete in PAQUETES:
             for archivo in sorted((RAIZ / paquete).rglob("*.py")):
-                zf.write(archivo, archivo.relative_to(RAIZ).as_posix())
+                entrada = zipfile.ZipInfo(archivo.relative_to(RAIZ).as_posix(), (2020, 1, 1, 0, 0, 0))
+                entrada.compress_type = zipfile.ZIP_DEFLATED
+                entrada.external_attr = 0o644 << 16
+                zf.writestr(entrada, archivo.read_bytes())
 
     # Sin esto Pages pasa el sitio por Jekyll, que ignora lo que empieza con _.
     (destino / ".nojekyll").write_text("", encoding="utf-8")
+
+    # Va al final: lleva la lista y la huella de todo lo anterior.
+    sw = SERVICE_WORKER.read_text(encoding="utf-8")
+    sw = sw.replace("__VERSION__", version_del_sitio(destino))
+    sw = sw.replace("__ARCHIVOS__", json.dumps(["./", *archivos_del_sitio(destino)]))
+    (destino / "sw.js").write_text(sw, encoding="utf-8")
     return destino
 
 

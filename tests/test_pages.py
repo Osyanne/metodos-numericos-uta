@@ -98,3 +98,33 @@ def test_el_html_armado_adelanta_las_descargas(tmp_path):
     esperados = sorted(archivo.name for archivo in (RAIZ / "web").glob("*.js"))
     assert re.findall(r'rel="modulepreload" href="([^"]+)"', cabeza) == esperados
     assert "modulepreload" not in (RAIZ / "web" / "index.html").read_text(encoding="utf-8")
+
+
+def test_el_service_worker_guarda_todo_el_sitio_con_la_version_del_armado(tmp_path):
+    """sw.js lleva la lista de archivos y un nombre de cache que cambia con el
+    contenido: tras un despliegue no se puede seguir sirviendo lo anterior."""
+    sitio = construir.construir(tmp_path / "a")
+    sw = (sitio / "sw.js").read_text(encoding="utf-8")
+    assert "__" not in sw, "quedo un marcador sin reemplazar"
+
+    archivos = json.loads(re.search(r"var ARCHIVOS = (\[.*?\]);", sw, re.S).group(1))
+    presentes = {
+        archivo.relative_to(sitio).as_posix()
+        for archivo in sitio.rglob("*")
+        if archivo.is_file() and archivo.name != "sw.js"
+    }
+    assert set(archivos) - {"./"} == presentes
+    assert "./" in archivos
+
+    # Mismo contenido, misma version; otro contenido, otra version.
+    version = re.search(r'var VERSION = "([0-9a-f]+)"', sw).group(1)
+    otra = construir.construir(tmp_path / "b")
+    assert re.search(r'var VERSION = "([0-9a-f]+)"', (otra / "sw.js").read_text(encoding="utf-8")).group(1) == version
+    (otra / "app.js").write_text("// cambio", encoding="utf-8")
+    assert construir.version_del_sitio(otra) != version
+
+
+def test_el_puente_registra_el_service_worker_con_ruta_relativa():
+    """Bajo /metodos-numericos-uta/ una ruta absoluta apuntaria a la raiz del dominio."""
+    puente = (RAIZ / "pages" / "puente.js").read_text(encoding="utf-8")
+    assert 'register("sw.js")' in puente

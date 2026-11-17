@@ -172,6 +172,34 @@ test("arrastrar x₀ de Newton-Raphson recalcula con Python en el navegador", as
   await expect(page.locator("#paso-siguiente")).toBeEnabled();
 });
 
+test("tras la segunda visita el sitio funciona sin red, desde el service worker", async ({ browser }) => {
+  const ctx = await browser.newContext();
+  const p = await ctx.newPage();
+  const sinAviso = () => expect(p.locator("#puente-aviso")).toHaveCount(0, { timeout: 240_000 });
+  try {
+    // Primera visita: instala el service worker y guarda lo que alcance.
+    await p.goto("./", { waitUntil: "domcontentloaded" });
+    await expect(p.locator("#puente-aviso")).toBeVisible();
+    await sinAviso();
+    await p.evaluate(() => navigator.serviceWorker.ready);
+    // Segunda: ya controlada, completa lo que la primera pidio antes de que
+    // el service worker tomara el control.
+    await p.reload({ waitUntil: "domcontentloaded" });
+    await sinAviso();
+    expect(await p.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
+
+    await ctx.setOffline(true);
+    await p.reload({ waitUntil: "domcontentloaded" });
+    await expect(p.locator(SELECTOR_METODOS)).toHaveCount(catalogo.length);
+    await sinAviso();
+    await p.locator("#resolver").click();
+    await expect(p.locator("#resumen")).not.toBeEmpty({ timeout: 60_000 });
+    await expect(p.locator("#aviso")).toBeHidden();
+  } finally {
+    await ctx.close();
+  }
+});
+
 test("no quedan errores en la consola", async () => {
   expect(errores).toEqual([]);
 });
