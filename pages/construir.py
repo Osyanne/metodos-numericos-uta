@@ -7,6 +7,8 @@ El sitio es la interfaz de web/ tal cual, mas dos piezas:
 - `codigo.zip` con los paquetes `core` y `api`, que Pyodide descomprime y
   ejecuta en el navegador. Es el mismo codigo que sirve uvicorn en local.
 - `puente.js`, que carga Pyodide y le pasa a FastAPI cada pedido a `api/`.
+- `catalogo.json`, la respuesta de GET api/methods sacada de la misma
+  aplicacion FastAPI al armar, para pintar la interfaz sin esperar a Python.
 
 web/ no se modifica: el script se inserta en la copia de index.html.
 """
@@ -21,9 +23,25 @@ RAIZ = Path(__file__).resolve().parents[1]
 WEB = RAIZ / "web"
 PUENTE = RAIZ / "pages" / "puente.js"
 PAQUETES = ("core", "api")
+CATALOGO = "catalogo.json"
 
 ETIQUETA_APP = '<script type="module" src="app.js"></script>'
 ETIQUETA_PUENTE = '<script src="puente.js"></script>'
+
+
+def catalogo() -> bytes:
+    """Lo que contesta GET api/methods, pedido a la aplicacion de verdad."""
+    sys.path.insert(0, str(RAIZ))
+    from fastapi.testclient import TestClient
+
+    from api.main import create_app
+
+    # create_app() recarga el registro: no depende de lo que haya dejado antes
+    # otro codigo en este mismo proceso (las pruebas lo vacian).
+    respuesta = TestClient(create_app()).get("/api/methods")
+    if respuesta.status_code != 200:
+        raise SystemExit(f"GET /api/methods dio {respuesta.status_code}")
+    return respuesta.content
 
 
 def construir(destino: Path) -> Path:
@@ -45,6 +63,7 @@ def construir(destino: Path) -> Path:
     )
 
     shutil.copy2(PUENTE, destino / "puente.js")
+    (destino / CATALOGO).write_bytes(catalogo())
 
     with zipfile.ZipFile(destino / "codigo.zip", "w", zipfile.ZIP_DEFLATED) as zf:
         for paquete in PAQUETES:

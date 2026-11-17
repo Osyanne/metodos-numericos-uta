@@ -168,6 +168,10 @@ async def atender(metodo, ruta, consulta, cuerpo):
     },
   );
 
+  // La lista de metodos ya no espera a Python: si la carga falla, nadie esta
+  // pidiendo `listo` todavia y el rechazo saldria como error sin atender.
+  listo.catch(function () {});
+
   // ------------------------------------------------------------ fetch
 
   // Solo las rutas api/ del propio sitio van a Python; todo lo demas
@@ -216,12 +220,19 @@ async def atender(metodo, ruta, consulta, cuerpo):
     var api = rutaApi(entrada);
     if (!api) return fetchOriginal(entrada, opciones);
 
+    var metodo = ((opciones && opciones.method) || "GET").toUpperCase();
+    // La lista de metodos sale del catalogo armado junto con el sitio: la
+    // interfaz se pinta sin esperar a Python. Si no esta, responde Python.
+    if (metodo === "GET" && api.ruta === "/api/methods" && !api.consulta) {
+      var estatico = await fetchOriginal("catalogo.json").catch(function () { return null; });
+      if (estatico && estatico.ok) return estatico;
+    }
+
     var python = await listo;
     var atender = python.atender;
     if (/^\/api\/methods\/[^/]+\/export\/pdf$/i.test(api.ruta)) {
       await cargarPilaPdf(python.pyodide);
     }
-    var metodo = ((opciones && opciones.method) || "GET").toUpperCase();
     var cuerpo = (opciones && typeof opciones.body === "string") ? opciones.body : "";
     var r = await atender(metodo, api.ruta, api.consulta, cuerpo);
     return new Response(r.body, { status: r.status, headers: r.headers });

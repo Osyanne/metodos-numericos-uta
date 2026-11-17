@@ -47,6 +47,33 @@ function leerRuta(objeto, ruta) {
   return ruta.split(".").reduce((a, k) => (a == null ? undefined : a[k]), objeto);
 }
 
+test("la interfaz se pinta antes de que Python este listo y Resolver espera", async ({ browser }) => {
+  // Se frena todo lo que sale a jsDelivr (Pyodide) hasta soltarlo.
+  let soltar;
+  const frenado = new Promise(r => { soltar = r; });
+  const p = await browser.newPage();
+  await p.route("https://cdn.jsdelivr.net/**", async route => {
+    await frenado;
+    await route.continue();
+  });
+  try {
+    await p.goto("./", { waitUntil: "domcontentloaded" });
+    await expect(p.locator(SELECTOR_METODOS)).toHaveCount(catalogo.length);
+    await expect(p.locator("#puente-aviso")).toBeVisible();
+    await expect(p.locator("#preset option").first()).toBeAttached();
+    await expect(p.locator("#formulario input").first()).toBeVisible();
+    await p.locator("#resolver").click();
+    await p.waitForTimeout(500);
+    await expect(p.locator("#resumen")).toBeEmpty();
+    soltar();
+    await expect(p.locator("#resumen")).not.toBeEmpty({ timeout: 240_000 });
+    await expect(p.locator("#puente-aviso")).toHaveCount(0);
+  } finally {
+    soltar();
+    await p.close();
+  }
+});
+
 test("cada ejercicio del desplegable se resuelve con Python en el navegador", async () => {
   for (const preset of PRESETS) {
     // Por la interfaz, como el usuario: si falla, aparece el aviso.

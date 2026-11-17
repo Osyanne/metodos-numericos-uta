@@ -8,6 +8,7 @@ lo que, si se rompe, deja el sitio en blanco sin que falle nada en local.
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import zipfile
 from pathlib import Path
@@ -56,3 +57,23 @@ def test_la_interfaz_no_usa_rutas_absolutas():
     for archivo in web.glob("*.js"):
         texto = archivo.read_text(encoding="utf-8")
         assert not re.findall(r'["`]/api/', texto), f"{archivo.name} pide /api/ absoluto"
+
+
+def test_el_sitio_lleva_el_catalogo_que_da_la_api(tmp_path):
+    """La lista de metodos se pinta desde este archivo mientras Python carga:
+    tiene que ser lo que contesta GET api/methods, no una copia a mano."""
+    from fastapi.testclient import TestClient
+
+    from api.main import create_app
+
+    sitio = construir.construir(tmp_path / "sitio")
+    estatico = json.loads((sitio / "catalogo.json").read_text(encoding="utf-8"))
+    en_vivo = TestClient(create_app(), raise_server_exceptions=False).get("/api/methods")
+    assert en_vivo.status_code == 200
+    assert estatico == en_vivo.json()
+    assert len(estatico) > 0
+
+
+def test_el_puente_contesta_la_lista_de_metodos_desde_el_catalogo():
+    puente = (RAIZ / "pages" / "puente.js").read_text(encoding="utf-8")
+    assert "catalogo.json" in puente
