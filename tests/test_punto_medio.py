@@ -1,13 +1,4 @@
-"""Pruebas del metodo del Punto Medio para integracion numerica.
-
-El caso canonico viene del material del docente (ejemplo del parcial 1):
-
-    I = integral de -1.5 a 2 de (0.25*x^3 - x) dx  con  n = 7
-
-que da Delta_x = 0.5 y los puntos medios -1.25, -0.75, -0.25, 0.25, 0.75,
-1.25, 1.75. La suma f(m_i) * Delta_x reproduce el resultado -0.2051 que
-aparece en la diapositiva.
-"""
+"""Pruebas de Punto Medio contra los casos de referencia del docente."""
 from __future__ import annotations
 
 import math
@@ -17,6 +8,7 @@ import pytest
 from core.config import SolveConfig
 from core.registry import all_methods, clear, get, load_methods
 from core.types import MethodError, PlotKind, StopReason
+from tests.casos_referencia import PUNTO_MEDIO_RESUELTO as DOCENTE
 
 
 @pytest.fixture
@@ -33,6 +25,11 @@ def resolver(metodo, params, **config):
     return metodo.solve(params, SolveConfig(**valores))
 
 
+def resolver_docente(metodo, **params):
+    valores = {clave: DOCENTE[clave] for clave in ("fx", "a", "b", "n")}
+    return resolver(metodo, {**valores, **params})
+
+
 def test_registra_el_metodo_con_todas_sus_entradas(metodo):
     assert metodo in all_methods()
     assert [campo.name for campo in metodo.inputs] == ["fx", "a", "b", "n"]
@@ -45,46 +42,36 @@ def test_reproduce_el_ejemplo_del_docente_con_siete_rectangulos(metodo):
     f(m_i). Con aritmetica de punto flotante el numero se afina un poco,
     pero al redondearlo a cuatro decimales tiene que dar exactamente eso.
     """
-    resultado = resolver(
-        metodo,
-        {"fx": "0.25*x^3 - x", "a": -1.5, "b": 2, "n": 7},
-    )
+    resultado = resolver_docente(metodo)
 
-    assert resultado.result["integral"] == pytest.approx(-0.205078125, abs=1e-12)
-    assert round(resultado.result["integral"], 4) == -0.2051
-    assert resultado.result["delta_x"] == pytest.approx(0.5, abs=1e-12)
-    assert resultado.result["a"] == -1.5
-    assert resultado.result["b"] == 2
-    assert resultado.result["n"] == 7
+    assert resultado.result["integral"] == pytest.approx(DOCENTE["integral"], abs=1e-12)
+    assert round(resultado.result["integral"], 4) == DOCENTE["integral_diapositiva"]
+    assert resultado.result["delta_x"] == pytest.approx(DOCENTE["delta_x"], abs=1e-12)
+    assert resultado.result["a"] == DOCENTE["a"]
+    assert resultado.result["b"] == DOCENTE["b"]
+    assert resultado.result["n"] == DOCENTE["n"]
 
 
 def test_las_filas_de_la_tabla_coinciden_con_las_del_docente(metodo):
     """Cada fila muestra el punto medio y f(m_i) que el PDF tabula."""
-    resultado = resolver(
-        metodo,
-        {"fx": "0.25*x^3 - x", "a": -1.5, "b": 2, "n": 7},
-    )
+    resultado = resolver_docente(metodo)
 
-    # Puntos medios del docente: -1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75.
-    esperados_x = [-1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75]
+    esperados_x = DOCENTE["puntos_medios"]
     obtenidos_x = [it.values["xi"] for it in resultado.iterations]
     assert obtenidos_x == pytest.approx(esperados_x, abs=1e-12)
 
     # Valores de la funcion tal como los tabula el docente (redondeados a
     # cuatro decimales en el PDF; se comparan con la misma precision).
-    esperados_f = [0.7617, 0.6445, 0.2461, -0.2461, -0.6445, -0.7617, -0.4102]
+    esperados_f = DOCENTE["valores_tabla"]
     obtenidos_f = [round(it.values["fxi"], 4) for it in resultado.iterations]
     assert obtenidos_f == esperados_f
 
     # Numeracion desde i = 1, como en el PDF.
-    assert [it.n for it in resultado.iterations] == list(range(1, 8))
+    assert [it.n for it in resultado.iterations] == list(range(1, DOCENTE["n"] + 1))
 
 
 def test_la_suma_acumulada_termina_igual_al_resultado(metodo):
-    resultado = resolver(
-        metodo,
-        {"fx": "0.25*x^3 - x", "a": -1.5, "b": 2, "n": 7},
-    )
+    resultado = resolver_docente(metodo)
 
     assert resultado.iterations[-1].values["suma"] == pytest.approx(
         resultado.result["integral"], abs=1e-12
@@ -142,17 +129,13 @@ def test_refinar_la_malla_mejora_la_aproximacion(metodo):
     """Con mas subintervalos, el resultado se acerca al valor exacto.
 
     El valor exacto de la integral del PDF es -0.1914 (aparece con esa
-    precision en la diapositiva). Con n = 100 tiene que quedar mucho mas
+    precision en la diapositiva). Con n = 1000 tiene que quedar mucho mas
     cerca de eso que con n = 7.
     """
-    exacto = -0.19140625  # integral analitica de (0.25 x^3 - x) de -1.5 a 2
+    exacto = DOCENTE["integral_exacta"]
 
-    con_pocos = resolver(
-        metodo, {"fx": "0.25*x^3 - x", "a": -1.5, "b": 2, "n": 7}
-    )
-    con_muchos = resolver(
-        metodo, {"fx": "0.25*x^3 - x", "a": -1.5, "b": 2, "n": 1000}
-    )
+    con_pocos = resolver_docente(metodo)
+    con_muchos = resolver_docente(metodo, n=1000)
 
     error_pocos = abs(con_pocos.result["integral"] - exacto)
     error_muchos = abs(con_muchos.result["integral"] - exacto)
