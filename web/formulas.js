@@ -56,6 +56,28 @@ const iDesde1 = fila(i, mo("="), uno);
 // Las piezas de MathML, para quien arme una formula suelta (web/teoria.js).
 export const mml = { mi, mn, mo, fila, sub, frac, paren, f, suma, resta, tabla, separa };
 
+const sigma = mo("∑");
+const cuadrado = (base) => `<msup>${base}${mn("2")}</msup>`;
+const logaritmo = (t) => fila(mi("log"), t);
+const sumaDe = (...partes) => fila(sigma, ...partes);
+
+// Las formulas del ajuste, con la ecuacion del modelo arriba y, si hay
+// transformacion, una linea que dice que son x_i e y_i en la tabla.
+function ajuste(id, modelo, transformados) {
+  const xy = sumaDe(xi, yi);
+  return math(
+    id,
+    ...modelo,
+    ...(transformados ? [mtext(transformados)] : []),
+    fila(mi("N"), mo("="), n, xy, mo("−"), sumaDe(xi), sumaDe(yi)),
+    fila(sub(mi("D"), x), mo("="), n, sumaDe(cuadrado(xi)), mo("−"), cuadrado(paren(sumaDe(xi)))),
+    fila(sub(mi("D"), mi("y")), mo("="), n, sumaDe(cuadrado(yi)), mo("−"), cuadrado(paren(sumaDe(yi)))),
+    fila(mi("m"), mo("="), frac(mi("N"), sub(mi("D"), x)), mo(","), separa,
+      mi("b"), mo("="), frac(fila(sumaDe(yi), mo("−"), mi("m"), sumaDe(xi)), n)),
+    fila(mi("r"), mo("="), frac(mi("N"), `<msqrt>${fila(sub(mi("D"), x), sub(mi("D"), mi("y")))}</msqrt>`)),
+  );
+}
+
 export const FORMULAS = {
   "newton-raphson": math(
     "newton-raphson",
@@ -152,6 +174,29 @@ export const FORMULAS = {
     mtext("n impar: regla 1/3 al inicio y 3/8"),
   ),
 
+  // Ajuste por minimos cuadrados: N, Dx y Dy son las tres piezas que el
+  // pizarron repite en m, b y r. Con un modelo linealizado, x_i e y_i son los
+  // datos ya transformados con log (base 10).
+  "minimos-cuadrados": {
+    campo: "modelo",
+    defecto: "lineal",
+    texto: true,
+    variantes: {
+      lineal: ajuste("minimos-cuadrados", [fila(mi("y"), mo("="), mi("m"), x, mo("+"), mi("b"))]),
+      potencial: ajuste("minimos-cuadrados-potencial", [
+        fila(mi("y"), mo("="), mi("b"), `<msup>${x}${mi("m")}</msup>`),
+        fila(logaritmo(mi("y")), mo("="), mi("m"), logaritmo(x), mo("+"), logaritmo(mi("b"))),
+      ], "x_i = log x_i, y_i = log y_i"),
+      exponencial: ajuste("minimos-cuadrados-exponencial", [
+        fila(mi("y"), mo("="), mi("b"), `<msup>${mi("e")}${fila(mi("m"), x)}</msup>`),
+        fila(logaritmo(mi("y")), mo("="), paren(mi("m"), logaritmo(mi("e"))), x, mo("+"), logaritmo(mi("b"))),
+      ], "y_i = log y_i"),
+      logaritmica: ajuste("minimos-cuadrados-logaritmica", [
+        fila(mi("y"), mo("="), mi("m"), logaritmo(x), mo("+"), mi("b")),
+      ], "x_i = log x_i"),
+    },
+  },
+
   "runge-kutta": {
     campo: "orden",
     defecto: "4",
@@ -184,7 +229,9 @@ export function formulaPara(slug, valorDe) {
   if (entrada === undefined) return null;
   if (typeof entrada === "string") return entrada;
   // Se compara el numero, no el texto: "2.0" es el orden 2 que el nucleo calcula.
-  return entrada.variantes[String(Number(valorDe(entrada.campo)))]
+  // Con `texto` la variante es la palabra misma (el modelo del ajuste).
+  const valor = valorDe(entrada.campo);
+  return entrada.variantes[entrada.texto ? valor : String(Number(valor))]
     ?? entrada.variantes[entrada.defecto];
 }
 
@@ -276,6 +323,43 @@ function interpolacionNewton({ filas, it, k, res, num }) {
   ];
 }
 
+// Una fila del ajuste y las sumas que arman m, b y r: el nucleo da cada numero
+// (la fila, los totales, el resultado) y aca solo se acomodan en la formula.
+// Con un modelo linealizado la recta ajustada es la de los datos transformados.
+// Los renglones son cortos a proposito: tienen que caber en una tarjeta de 375 px.
+function ajusteMinimosCuadrados({ it, res, num }) {
+  const r = res.result ?? {};
+  const t = r.totales ?? {};
+  const modelo = r.modelo;
+  const m = modelo === "exponencial" ? fila(mi("m"), por, logaritmo(mi("e"))) : mi("m");
+  const b = modelo === "potencial" || modelo === "exponencial" ? logaritmo(mi("b")) : mi("b");
+  const pendiente = r.pendiente_lineal ?? r.m;
+  const ordenada = r.ordenada_lineal ?? r.b;
+  const cuenta = mn(String(r.n));
+  const di = sub(mi("d"), i);
+  const dx = sub(mi("D"), x);
+  const dy = sub(mi("D"), mi("y"));
+  const entre = (a, c) => fila(a, por, c);
+  const alCuadrado = (t2) => cuadrado(paren(t2));
+  return [
+    igual(fila(xi, por, yi), entre(num(it.values.xi), num(it.values.yi))),
+    igual(fila(), num(it.values.xiyi)),
+    igual(di, entre(num(pendiente), num(it.values.xi))),
+    fila(mo("+"), num(ordenada), mo("−"), num(it.values.yi)),
+    igual(cuadrado(di), num(it.error)),
+    igual(mi("N"), entre(cuenta, num(t.xiyi))),
+    fila(mo("−"), entre(num(t.xi), num(t.yi))),
+    igual(dx, entre(cuenta, num(t.xi2))),
+    fila(mo("−"), alCuadrado(num(t.xi))),
+    igual(dy, entre(cuenta, num(t.yi2))),
+    fila(mo("−"), alCuadrado(num(t.yi))),
+    igual(m, frac(mi("N"), dx), mo("="), num(pendiente)),
+    igual(b, frac(fila(num(t.yi), mo("−"), num(pendiente), por, num(t.xi)), cuenta)),
+    igual(fila(), num(ordenada)),
+    igual(mi("r"), frac(mi("N"), `<msqrt>${fila(dx, por, dy)}</msqrt>`), mo("="), num(r.r)),
+  ];
+}
+
 const SUSTITUCIONES = {
   "newton-raphson": raiz("dfxi"),
 
@@ -324,6 +408,8 @@ const SUSTITUCIONES = {
     igual(fila(rotulo("peso"), por, f(sub(x, mn(it.n)))), num(it.values.peso), por, num(it.values.fxi)),
     igual(rotulo("suma del corchete"), num(it.values.suma)),
   ],
+
+  "minimos-cuadrados": ajusteMinimosCuadrados,
 };
 
 // La variante de Runge-Kutta sale del orden que uso el nucleo, no del formulario.

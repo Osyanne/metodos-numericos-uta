@@ -60,6 +60,17 @@ _Y = {True: "log y_i", False: "y_i"}
 
 def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
     """Ajusta el modelo y devuelve la tabla del docente con sus totales."""
+    try:
+        return _ajustar(params, config)
+    except OverflowError as exc:
+        # Las sumas son exactas y no desbordan; el desborde es pasarlas a float.
+        raise MethodError(
+            "Los datos son tan grandes que sus cuadrados no caben en un numero "
+            "de punto flotante; hay que escalarlos."
+        ) from exc
+
+
+def _ajustar(params: dict[str, Any], config: SolveConfig) -> MethodResult:
     puntos = _validar_puntos(params.get("points"))
     modelo = _validar_modelo(params.get("modelo"))
     x_evaluado = _validar_x(params.get("x"), modelo)
@@ -85,9 +96,13 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
     ordenada = (sy - pendiente * sx) / n
 
     denominador_y = n * syy - sy * sy
+    # r^2 = N^2 / (Dx Dy) esta entre 0 y 1 aunque N, Dx y Dy sean enormes.
     r = (
         None if denominador_y == 0
-        else max(-1.0, min(1.0, float(numerador) / math.sqrt(float(denominador_x * denominador_y))))
+        else math.copysign(
+            math.sqrt(min(1.0, float(numerador**2 / (denominador_x * denominador_y)))),
+            numerador,
+        )
     )
 
     residuos2 = [(pendiente * x + ordenada - y) ** 2 for x, y in zip(xs, ys, strict=True)]
@@ -372,7 +387,7 @@ SPEC = register(
             ),
             InputField(
                 "x",
-                "x a evaluar (opcional)",
+                "x a evaluar",
                 FieldKind.NUMBER,
                 required=False,
             ),

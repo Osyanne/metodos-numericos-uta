@@ -25,6 +25,7 @@
   --interpolacion: #0f6e56; --interpolacion-bg: #e1f5ee;
   --integracion: #854f0b;   --integracion-bg: #faeeda;
   --edo: #993c1d;           --edo-bg: #faece7;
+  --ajuste: #a02d63;        --ajuste-bg: #fbeaf0;
   --otros: #5f5e5a;         --otros-bg: #f1efe8;
 
   /* Plano: la curva tiene color fijo; el resto son capas y series. */
@@ -64,6 +65,7 @@
   --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
   --integracion: #ef9f27;   --integracion-bg: #412402;
   --edo: #f0997b;           --edo-bg: #4a1b0c;
+  --ajuste: #ed93b1;        --ajuste-bg: #4b1528;
   --otros: #b4b2a9;         --otros-bg: #2c2c2a;
   --curva:       #85b7eb;
   --iteraciones: #f0997b;
@@ -100,6 +102,7 @@
     --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
     --integracion: #ef9f27;   --integracion-bg: #412402;
     --edo: #f0997b;           --edo-bg: #4a1b0c;
+    --ajuste: #ed93b1;        --ajuste-bg: #4b1528;
     --otros: #b4b2a9;         --otros-bg: #2c2c2a;
     --curva:       #85b7eb;
     --iteraciones: #f0997b;
@@ -770,6 +773,14 @@ output { font-family: var(--mono); color: var(--accent); }
 .iteraciones tbody tr.actual td { background: var(--accent-bg); }
 .iteraciones tbody tr.actual td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 
+/* La fila de totales del ajuste: el cierre de la tabla, no un dato mas. */
+.iteraciones tfoot td {
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--surface-2);
+  border-top: 1px solid var(--rule-firm);
+}
+
 .col-n { text-align: left !important; color: var(--ink-faint); }
 .col-error { color: var(--warn); }
 
@@ -804,12 +815,14 @@ body[data-familia="raices"]        { --accent: var(--raices);        --accent-bg
 body[data-familia="interpolacion"] { --accent: var(--interpolacion); --accent-bg: var(--interpolacion-bg); }
 body[data-familia="integracion"]   { --accent: var(--integracion);   --accent-bg: var(--integracion-bg); }
 body[data-familia="edo"]           { --accent: var(--edo);           --accent-bg: var(--edo-bg); }
+body[data-familia="ajuste"]        { --accent: var(--ajuste);        --accent-bg: var(--ajuste-bg); }
 body[data-familia="otros"]         { --accent: var(--otros);         --accent-bg: var(--otros-bg); }
 
 .familia[data-familia="raices"]        { --c: var(--raices);        --c-bg: var(--raices-bg); }
 .familia[data-familia="interpolacion"] { --c: var(--interpolacion); --c-bg: var(--interpolacion-bg); }
 .familia[data-familia="integracion"]   { --c: var(--integracion);   --c-bg: var(--integracion-bg); }
 .familia[data-familia="edo"]           { --c: var(--edo);           --c-bg: var(--edo-bg); }
+.familia[data-familia="ajuste"]        { --c: var(--ajuste);        --c-bg: var(--ajuste-bg); }
 .familia[data-familia="otros"]         { --c: var(--otros);         --c-bg: var(--otros-bg); }
 
 .familias, .chips { display: flex; flex-wrap: wrap; gap: 6px; }

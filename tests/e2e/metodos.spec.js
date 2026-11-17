@@ -11,6 +11,7 @@ const casos = [
   ["simpson-13", "simpson-13-docente", ["i", "x", "f(x)", "peso", "peso * f(x)", "suma del corchete", "error"]],
   ["simpson-38", "simpson-38-chapra-n5", ["i", "nodo", "x", "f(x)", "regla", "peso", "peso * f(x)", "suma del corchete", "error"]],
   ["runge-kutta", "runge-kutta-escalar", ["i", "x", "y", "error"]],
+  ["minimos-cuadrados", "ajuste-docente", ["i", "x_i", "y_i", "x_i*y_i", "x_i^2", "y_i^2", "error"]],
 ];
 
 async function cargar(page, metodo, preset) {

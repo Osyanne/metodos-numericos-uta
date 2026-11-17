@@ -149,6 +149,7 @@ for (const [metodo, preset, clave] of [
   ["simpson-13", "simpson-13-docente", "integral"],
   ["simpson-38", "simpson-38-chapra-n5", "integral"],
   ["runge-kutta", "runge-kutta-escalar", "y"],
+  ["minimos-cuadrados", "ajuste-docente", "ecuacion"],
 ]) {
   test(`${metodo}: el valor principal es ${clave}`, async ({ page }) => {
     await elegirMetodo(page, metodo);

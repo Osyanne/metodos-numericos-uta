@@ -66,7 +66,27 @@ export function dibujarTabla(contenedor, resultado, decimales) {
   }
 
   tabla.append(thead, tbody);
+  const totales = resultado.result?.totales;
+  if (totales) tabla.append(pieDeTotales(resultado.columns, totales, decimales));
   contenedor.append(tabla);
+}
+
+// La fila "Total" del pizarron del ajuste: una suma por columna (la de error
+// incluida), que el nucleo entrega aparte porque no es un dato mas.
+function pieDeTotales(columnas, totales, decimales) {
+  const tfoot = document.createElement("tfoot");
+  const tr = document.createElement("tr");
+  tr.className = "fila-total";
+  const celdas = [["Total", "col-n"], ...columnas.map((c) => [formatear(totales[c.key], decimales)]),
+    [formatear(totales.error, decimales), "col-error"]];
+  for (const [texto, clase] of celdas) {
+    const td = document.createElement("td");
+    td.textContent = texto;
+    if (clase) td.className = clase;
+    tr.append(td);
+  }
+  tfoot.append(tr);
+  return tfoot;
 }
 
 // Resalta la fila k del recorrido (null: ninguna). Con `desplazar` la trae a la
@@ -134,6 +154,7 @@ export const PRINCIPAL = {
   interpolacion: "polinomio",
   integracion: "integral",
   edo: "y",
+  ajuste: "ecuacion",
 };
 
 export function dibujarResumen(contenedor, resultado, decimales, familia) {
@@ -148,7 +169,9 @@ export function dibujarResumen(contenedor, resultado, decimales, familia) {
   contenedor.append(estado);
 
   // Sin clave principal (familia desconocida), manda la primera.
-  const pares = Object.entries(resultado.result ?? {});
+  // Un objeto (los totales del ajuste) tiene su lugar en la tabla, no aca.
+  const pares = Object.entries(resultado.result ?? {})
+    .filter(([, valor]) => valor === null || typeof valor !== "object" || Array.isArray(valor));
   const indice = Math.max(0, pares.findIndex(([clave]) => clave === PRINCIPAL[familia]));
   pares.unshift(...pares.splice(indice, 1));
 

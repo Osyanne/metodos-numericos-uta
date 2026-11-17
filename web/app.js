@@ -41,6 +41,7 @@ const FAMILIAS = {
   interpolacion: { nombre: "Interpolación", icono: "chart-dots" },
   integracion: { nombre: "Integración", icono: "chart-area-line" },
   edo: { nombre: "EDO", icono: "wave-sine" },
+  ajuste: { nombre: "Ajuste", icono: "trending-up" },
   otros: { nombre: "Otros", icono: "funcion" },
 };
 

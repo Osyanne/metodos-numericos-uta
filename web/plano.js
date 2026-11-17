@@ -1291,8 +1291,9 @@ export function capasDesdePlot(plot, filas = []) {
     return { capas, resample: plot.resample ?? null };
   }
 
-  if (plot.kind === "interpolacion") {
-    const capas = [{ tipo: "curva", nombre: "polinomio", color: "--curva", xs: s.curve.x, ys: s.curve.y }];
+  if (plot.kind === "interpolacion" || plot.kind === "ajuste") {
+    const nombreCurva = plot.kind === "ajuste" ? "ajuste" : "polinomio";
+    const capas = [{ tipo: "curva", nombre: nombreCurva, color: "--curva", xs: s.curve.x, ys: s.curve.y }];
     capas.push({
       tipo: "puntos", nombre: "datos", color: "--datos",
       puntos: (s.points ?? []).map(([x, y]) => ({ x, y })),

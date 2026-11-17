@@ -36,6 +36,7 @@ const EJERCICIOS = [
   ["runge-kutta", "runge-kutta-escalar", 1],
   ["runge-kutta", "runge-kutta-heun", 1],
   ["runge-kutta", "runge-kutta-sistema", 1],
+  ["minimos-cuadrados", "ajuste-docente", 1],
 ];
 
 async function irAlPaso(page, k) {

@@ -21,6 +21,7 @@ test("asasDe da un asa por dato arrastrable de cada familia", async ({ page }) =
       trapecio: m.asasDe(metodo("trapecio"), { fx: "x", a: 0, b: 1, n: 4 }),
       simpson13: m.asasDe(metodo("simpson-13"), { fx: "x", a: 0, b: 1, n: 4 }),
       simpson38: m.asasDe(metodo("simpson-38"), { fx: "x", a: 0, b: 1, n: 5 }),
+      ajuste: m.asasDe(metodo("minimos-cuadrados"), { points: [[1, 2], [3, 5]], modelo: "lineal", x: 2 }),
       rk: m.asasDe(metodo("runge-kutta"), { fxy: "y", x0: 0, y0: 1, h: 0.1, n: 5 }),
       sinX0: m.asasDe(metodo("newton-raphson"), { fx: "x^2 - 2", x0: null }),
     };
@@ -34,6 +35,9 @@ test("asasDe da un asa por dato arrastrable de cada familia", async ({ page }) =
   for (const s of [r.simpson13, r.simpson38]) {
     expect(s.asas.map((a) => [a.id, a.x, a.eje])).toEqual([["a", 0, "x"], ["b", 1, "x"]]);
   }
+  expect(r.ajuste.asas.map((a) => [a.id, a.etiqueta, a.eje])).toEqual(
+    [["p:0", "P₀", "xy"], ["p:1", "P₁", "xy"], ["x", "x", "x"]],
+  );
   expect(r.rk).toEqual({ tipo: "asas", asas: [{ id: "y0:0", x: 0, y: 1, eje: "xy", etiqueta: "y₀" }] });
   expect(r.sinX0).toBeNull();
 });
