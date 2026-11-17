@@ -146,6 +146,8 @@ for (const [metodo, preset, clave] of [
   ["von-mises", "von-mises-docente", "raiz"],
   ["interpolacion-lagrange", "lagrange-docente", "polinomio"],
   ["simpson", "simpson-docente", "integral"],
+  ["simpson-13", "simpson-13-docente", "integral"],
+  ["simpson-38", "simpson-38-chapra-n5", "integral"],
   ["runge-kutta", "runge-kutta-escalar", "y"],
 ]) {
   test(`${metodo}: el valor principal es ${clave}`, async ({ page }) => {

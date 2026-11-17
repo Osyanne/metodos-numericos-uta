@@ -31,6 +31,8 @@ const EJERCICIOS = [
   ["punto-medio", "punto-medio-docente", 0],
   ["trapecio", "trapecio-docente", 1],
   ["simpson", "simpson-docente", 1],
+  ["simpson-13", "simpson-13-docente", 1],
+  ["simpson-38", "simpson-38-chapra-n5", 3],
   ["runge-kutta", "runge-kutta-escalar", 1],
   ["runge-kutta", "runge-kutta-heun", 1],
   ["runge-kutta", "runge-kutta-sistema", 1],

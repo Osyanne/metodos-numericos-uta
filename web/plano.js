@@ -29,6 +29,10 @@ const ANCHO_MAXIMO = 1e12;
 // tener que pestanear, y sigue siendo cancelable con cualquier interaccion.
 const DURACION_ANIMACION = 2000;
 
+// Con la preferencia de movimiento reducido el dibujo aparece ya completo.
+const sinMovimiento = () =>
+  Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+
 // Un clic mueve menos de UMBRAL_CLIC px entre bajar y soltar; un punto es
 // elegible a menos de RADIO_ELEGIR px del puntero.
 const UMBRAL_CLIC = 4;
@@ -101,7 +105,8 @@ export class Plano {
       return;
     }
     this.encuadrar();
-    if (opciones.animar !== false) this._iniciarAnimacion();
+    if (opciones.animar !== false && !sinMovimiento()) this._iniciarAnimacion();
+    else this._cancelarAnimacion();
   }
 
   // capa: { tipo: "asas", asas: [{ id, x, y, eje: "x" | "xy", etiqueta }] } o
@@ -303,6 +308,14 @@ export class Plano {
         for (const y of [p.y0, p.ym, p.y1]) if (Number.isFinite(y)) ys.push(y);
         ys.push(0);
       }
+      // shortcut: igual con las cubicas, por sus cuatro nodos.
+      for (const c of capa.cubicas ?? []) {
+        for (const j of [0, 1, 2, 3]) {
+          if (Number.isFinite(c[`x${j}`])) xs.push(c[`x${j}`]);
+          if (Number.isFinite(c[`y${j}`])) ys.push(c[`y${j}`]);
+        }
+        ys.push(0);
+      }
     }
     if (!xs.length || !ys.length) {
       this.vista = { x0: -5, x1: 5, y0: -5, y1: 5 };
@@ -378,8 +391,12 @@ export class Plano {
     const [wx] = this._aMundo(px, py);
     for (const capa of this.capas) {
       if (!capa.aparece) continue;
-      const franjas = capa.rectangulos ?? capa.trapecios ?? capa.parabolas;
-      const i = franjas?.findIndex((f) => wx >= Math.min(f.x0, f.x1) && wx <= Math.max(f.x0, f.x1));
+      const franjas = capa.rectangulos ?? capa.trapecios ?? capa.parabolas ?? capa.cubicas;
+      // Una cubica va de x0 a x3; las demas, de x0 a x1.
+      const i = franjas?.findIndex((f) => {
+        const fin = f.x3 ?? f.x1;
+        return wx >= Math.min(f.x0, fin) && wx <= Math.max(f.x0, fin);
+      });
       if (i >= 0) return capa.aparece[i];
     }
     return null;
@@ -618,6 +635,7 @@ export class Plano {
         if (capa.tipo === "rectangulos") this._rectangulos(capa);
         else if (capa.tipo === "trapecios") this._trapecios(capa);
         else if (capa.tipo === "parabolas") this._parabolas(capa);
+        else if (capa.tipo === "cubicas") this._cubicas(capa);
       }
       for (const capa of this.capas) {
         if (capa.tipo === "curva") this._curva(capa);
@@ -1050,21 +1068,77 @@ export class Plano {
       region.lineTo(px1, pyBase);
       region.closePath();
 
-      // Arriba del eje el relleno es mas intenso que abajo, como en los
-      // trapecios. Recortar por semiplano evita partir la region a mano
-      // cuando el arco cruza el eje.
-      for (const [y, alto, relleno] of [
-        [a.arriba, pyBase - a.arriba, 0.16 * alfa],
-        [pyBase, a.abajo - pyBase, 0.10 * alfa],
-      ]) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(a.izq, y, a.der - a.izq, alto);
-        ctx.clip();
-        ctx.globalAlpha = relleno;
-        ctx.fill(region);
-        ctx.restore();
-      }
+      this._sombrear(region, pyBase, alfa);
+      ctx.globalAlpha = alfa;
+      ctx.lineWidth = estado === "actual" ? 2 : 1;
+      ctx.stroke(region);
+    }
+    ctx.restore();
+  }
+
+  // Arriba del eje el relleno es mas intenso que abajo, como en los trapecios.
+  // Recortar por semiplano evita partir la region a mano cuando el arco cruza
+  // el eje. El color de relleno ya esta puesto por quien llama.
+  _sombrear(region, pyBase, alfa) {
+    const { ctx } = this;
+    const a = this._area;
+    for (const [y, alto, relleno] of [
+      [a.arriba, pyBase - a.arriba, 0.16 * alfa],
+      [pyBase, a.abajo - pyBase, 0.10 * alfa],
+    ]) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(a.izq, y, a.der - a.izq, alto);
+      ctx.clip();
+      ctx.globalAlpha = relleno;
+      ctx.fill(region);
+      ctx.restore();
+    }
+  }
+
+  _cubicas(capa) {
+    // Simpson 3/8 aproxima f por la cubica que pasa por los cuatro nodos de
+    // cada tramo de tres subintervalos. Se sombrea el area entre ese arco y el
+    // eje, apareciendo de izquierda a derecha como las parabolas.
+    const { ctx } = this;
+    const a = this._area;
+    if (!capa.cubicas?.length) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a.izq, a.arriba, a.der - a.izq, a.abajo - a.arriba);
+    ctx.clip();
+    ctx.strokeStyle = this._color(capa.color);
+    ctx.fillStyle = this._color(capa.color);
+
+    const total = capa.cubicas.length;
+    const posicion = total * this.animacion.progreso;
+    const enteros = Math.floor(posicion);
+    const fraccion = posicion - enteros;
+    const [, pyBase] = this._aPantalla(0, 0);
+
+    for (let i = 0; i < total; i++) {
+      if (i > enteros) break;
+      const factor = i < enteros ? 1 : fraccion;
+      if (factor <= 0) continue;
+      const c = capa.cubicas[i];
+      if (![0, 1, 2, 3].every((j) => Number.isFinite(c[`x${j}`]) && Number.isFinite(c[`y${j}`]))) continue;
+      const estado = this._estado(capa, i);
+      const alfa = estado === "tenue" ? 0.25 : 1;
+      const p = [0, 1, 2, 3].map((j) => this._aPantalla(c[`x${j}`], c[`y${j}`] * factor));
+
+      // Con los nodos equiespaciados en x, el arco es exactamente una Bezier
+      // cubica: sus controles salen de pedirle que pase por p1 (t = 1/3) y p2
+      // (t = 2/3). El navegador la traza nitida a cualquier zoom.
+      const c1 = [0, 1].map((e) => (-5 * p[0][e] + 18 * p[1][e] - 9 * p[2][e] + 2 * p[3][e]) / 6);
+      const c2 = [0, 1].map((e) => (2 * p[0][e] - 9 * p[1][e] + 18 * p[2][e] - 5 * p[3][e]) / 6);
+      const region = new Path2D();
+      region.moveTo(p[0][0], pyBase);
+      region.lineTo(p[0][0], p[0][1]);
+      region.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], p[3][0], p[3][1]);
+      region.lineTo(p[3][0], pyBase);
+      region.closePath();
+
+      this._sombrear(region, pyBase, alfa);
       ctx.globalAlpha = alfa;
       ctx.lineWidth = estado === "actual" ? 2 : 1;
       ctx.stroke(region);
@@ -1275,14 +1349,27 @@ export function capasDesdePlot(plot, filas = []) {
         ...aparece(s.trapezoids.length, (i) => i + 1),
       });
     }
-    if ((s.parabolas ?? []).length) {
+    // Los metodos de Simpson con nodos consecutivos dicen en que fila acaba cada
+    // arco (parabolas primero, despues cubicas): la tabla repite el nodo donde
+    // la regla 1/3 da paso a la 3/8. Sin ese dato, 2j+2 y 3j+3.
+    const filasArco = s.arc_rows ?? [];
+    const nParabolas = (s.parabolas ?? []).length;
+    if (nParabolas) {
       capas.push({
         tipo: "parabolas",
-        nombre: "parabolas",
+        nombre: "parábolas (regla 1/3)",
         color: "--area",
         parabolas: s.parabolas,
-        // la parabola j termina en la fila 2j+2
-        ...aparece(s.parabolas.length, (i) => 2 * i + 2),
+        ...aparece(nParabolas, (i) => filasArco[i] ?? 2 * i + 2),
+      });
+    }
+    if ((s.cubicas ?? []).length) {
+      capas.push({
+        tipo: "cubicas",
+        nombre: "cúbicas (regla 3/8)",
+        color: "--datos",
+        cubicas: s.cubicas,
+        ...aparece(s.cubicas.length, (i) => filasArco[nParabolas + i] ?? 3 * i + 3),
       });
     }
     capas.push({
@@ -1324,7 +1411,17 @@ export function capasDesdePlot(plot, filas = []) {
       });
     }
     const parabolas = s.parabolas ?? [];
-    if (parabolas.length) {
+    const nodos = s.nodes ?? [];
+    if (nodos.length) {
+      // Un punto por fila de la tabla, con su rotulo (x0, x1, ...).
+      capas.push({
+        tipo: "marcas",
+        nombre: "nodos",
+        color: "--iteraciones",
+        puntos: nodos.map((p) => ({ x: p.x, y: p.y, etiqueta: p.label })),
+        ...aparece(nodos.length),
+      });
+    } else if (parabolas.length) {
       // Mismos nombres que la columna "punto" de la tabla: x0, m1, x1, ...
       const puntos = [{ x: parabolas[0].x0, y: parabolas[0].y0, etiqueta: "x0" }];
       parabolas.forEach((p, i) => {

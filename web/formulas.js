@@ -12,6 +12,7 @@ const sub = (base, indice) => `<msub>${base}${indice}</msub>`;
 const frac = (arriba, abajo) => `<mfrac>${arriba}${abajo}</mfrac>`;
 const paren = (...partes) => fila(mo("("), ...partes, mo(")"));
 const f = (...args) => fila(mi("f"), paren(...args.flatMap((a, i) => (i ? [mo(","), a] : [a]))));
+const mtext = (t) => `<mtext>${t}</mtext>`;
 const separa = '<mspace width="1em"></mspace>';
 const suma = (desde, hasta) =>
   `<munderover>${mo("∑")}${desde}${hasta}</munderover>`;
@@ -51,6 +52,9 @@ const resta = (a, b) => fila(a, mo("−"), b);
 const ancho = frac(resta(mi("b"), mi("a")), n);
 const medio = (m) => fila(sub(mi("m"), i), mo("="), frac(fila(xAnt, mo("+"), xi), dos), m ?? "");
 const iDesde1 = fila(i, mo("="), uno);
+
+// Las piezas de MathML, para quien arme una formula suelta (web/teoria.js).
+export const mml = { mi, mn, mo, fila, sub, frac, paren, f, suma, resta, tabla, separa };
 
 export const FORMULAS = {
   "newton-raphson": math(
@@ -106,6 +110,46 @@ export const FORMULAS = {
       mo("+"), dos, suma(iDesde1, fila(n, mo("−"), uno)), f(xi), mo("+"), f(xn), mo("]"),
     ),
     medio(),
+  ),
+
+  // Simpson1.pdf: (dx/3)[f(x0) + 4 sum_{i impar} f(xi) + 2 sum_{i par} f(xi) + f(xn)].
+  "simpson-13": math(
+    "simpson-13",
+    fila(
+      mi("I"), mo("≈"), frac(mi("Δx"), mn("3")),
+      mo("["), f(x0), mo("+"), mn("4"),
+      `<munder>${mo("∑")}${fila(i, mtext("impar"))}</munder>`, f(xi),
+    ),
+    fila(
+      mo("+"), dos,
+      `<munder>${mo("∑")}${fila(i, mtext("par"))}</munder>`, f(xi),
+      mo("+"), f(xn), mo("]"),
+    ),
+    fila(mi("Δx"), mo("="), ancho, mo(","), separa, mtext("n par")),
+    fila(i, mo("="), uno, mo(","), mo("…"), mo(","), n, mo("−"), uno),
+  ),
+
+  // (3h/8)[f(x0) + 3 sum_{i != 3k} f(xi) + 2 sum_{i = 3k} f(xi) + f(xn)], con
+  // h = (b - a)/n y n multiplo de 3.
+  "simpson-38": math(
+    "simpson-38",
+    fila(
+      mi("I"), mo("≈"), frac(resta(mi("b"), mi("a")), mn("8")), mo("["), f(x0), mo("+"), mn("3"), f(x1),
+      mo("+"), mn("3"), f(sub(x, dos)), mo("+"), f(sub(x, mn("3"))), mo("]"),
+    ),
+    fila(
+      mi("I"), mo("≈"), frac(fila(mn("3"), h), mn("8")),
+      mo("["), f(x0), mo("+"), mn("3"),
+      `<munder>${mo("∑")}${fila(i, mo("≠"), mn("3"), mi("k"))}</munder>`, f(xi),
+    ),
+    fila(
+      mo("+"), dos,
+      `<munder>${mo("∑")}${fila(i, mo("="), mn("3"), mi("k"))}</munder>`, f(xi),
+      mo("+"), f(xn), mo("]"),
+    ),
+    fila(h, mo("="), ancho, mo(","), separa, `<mtext>n múltiplo de 3</mtext>`),
+    fila(i, mo("="), uno, mo(","), mo("…"), mo(","), n, mo("−"), uno, mo(","), separa, `<mtext>k entero</mtext>`),
+    mtext("n impar: regla 1/3 al inicio y 3/8"),
   ),
 
   "runge-kutta": {
@@ -268,6 +312,16 @@ const SUSTITUCIONES = {
 
   simpson: ({ it, num }) => [
     igual(fila(rotulo("peso"), por, f(x)), num(it.values.peso), por, num(it.values.fxi)),
+    igual(rotulo("suma del corchete"), num(it.values.suma)),
+  ],
+
+  "simpson-13": ({ it, num }) => [
+    igual(fila(rotulo("peso"), por, f(sub(x, mn(it.n)))), num(it.values.peso), por, num(it.values.fxi)),
+    igual(rotulo("suma del corchete"), num(it.values.suma)),
+  ],
+
+  "simpson-38": ({ it, num }) => [
+    igual(fila(rotulo("peso"), por, f(sub(x, mn(it.n)))), num(it.values.peso), por, num(it.values.fxi)),
     igual(rotulo("suma del corchete"), num(it.values.suma)),
   ],
 };
