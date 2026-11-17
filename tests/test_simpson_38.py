@@ -231,8 +231,9 @@ def test_grafica_trae_una_cubica_por_tramo_de_tres_subintervalos(metodo):
     nodos = [(i * h, (i * h) ** 2) for i in range(7)]
     assert len(series["cubicas"]) == 2
     for tramo, c in enumerate(series["cubicas"]):
-        esperados = nodos[3 * tramo: 3 * tramo + 4]
-        obtenidos = [(c[f"x{j}"], c[f"y{j}"]) for j in range(4)]
+        # Listas planas: approx solo compara tuplas anidadas si hay numpy instalado.
+        esperados = [v for nodo in nodos[3 * tramo: 3 * tramo + 4] for v in nodo]
+        obtenidos = [c[f"{eje}{j}"] for j in range(4) for eje in "xy"]
         assert obtenidos == pytest.approx(esperados, abs=1e-15)
 
 
