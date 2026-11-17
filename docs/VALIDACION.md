@@ -7,15 +7,17 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual: **339 pruebas de Python**, **218 de navegador** y
-**6 del sitio de GitHub Pages**, todas en verde. La referencia historica de 2026-09-18, previa a Trapecio,
-tenia 275 y 39 respectivamente. En el total de navegador no entra la prueba de
-las capturas del manual, que solo corre a pedido (`CAPTURAS=1`).
+Verificacion local actual, con los once metodos: **503 pruebas de Python**,
+**324 de navegador** y **10 del sitio de GitHub Pages**, todas en verde. La
+referencia historica de 2026-09-18, previa a Trapecio, tenia 275 y 39
+respectivamente. En el total de navegador no entran las dos pruebas que
+regeneran las capturas del manual, que solo corren a pedido (`CAPTURAS=1`): la
+suite lista 326 y dice «324 passed, 2 skipped».
 
 ```bash
-pytest --ignore=tests/e2e     # 339
-npx playwright test           # 218
-npx playwright test --config playwright.pages.config.js   # 6, necesita internet
+python -m pytest tests/ --ignore=tests/e2e                # 503 passed
+npx playwright test --workers=1 --timeout=120000          # 324 passed, 2 skipped
+npx playwright test --config playwright.pages.config.js   # 10 passed, necesita internet
 ```
 
 ## De donde salen los numeros
@@ -24,7 +26,7 @@ Esta es la distincion que mas importa, porque cambia el peso de cada prueba.
 
 | Origen | Que significa | Donde |
 |---|---|---|
-| **Material del docente** | Tablas y ejercicios resueltos de `VON MISES.pdf`, las diapositivas de interpolacion y los materiales de integracion. El aplicativo los reproduce digito por digito. Si estos numeros no dan, el metodo esta mal. | `tests/casos_referencia.py`, `tests/casos_referencia_lagrange.py`, `tests/test_punto_medio.py`, `tests/test_trapecio.py` y `tests/test_simpson.py` |
+| **Material del docente** | Tablas y ejercicios resueltos de `VON MISES.pdf`, las diapositivas de interpolacion y los materiales de integracion. El aplicativo los reproduce digito por digito. Si estos numeros no dan, el metodo esta mal. | `tests/casos_referencia.py` (Von Mises, Newton, Lagrange, Punto Medio, minimos cuadrados, Simpson 1/3 y Simpson 3/8), `tests/test_trapecio.py` y `tests/test_simpson.py` |
 | **Solucion analitica** | El resultado exacto se conoce por matematica, no por haberlo corrido. Se compara contra el, con una tolerancia declarada. | `test_rk4_aproxima_una_solucion_analitica_conocida`, `test_el_oscilador_no_muestra_errores_absurdos_al_cruzar_el_cero` |
 | **Resuelto a mano** | Ejercicio calculado a mano en papel antes de escribir el codigo. | `test_caso_resuelto_a_mano_devuelve_polinomio_expandido` |
 | **Propiedad** | No fija un numero: fija una relacion que tiene que cumplirse siempre. | `test_las_cuatro_variantes_dan_el_mismo_polinomio`, `test_la_forma_de_newton_es_el_mismo_polinomio_que_el_expandido` |
@@ -59,7 +61,7 @@ Cada requisito de `ESPECIFICACION.md`, con la prueba que lo respalda.
 
 | # | Requisito | Como se comprueba | Evidencia |
 |---|---|---|---|
-| R1 | Alrededor de 10 metodos en el semestre | Los seis del parcial, mas Trapecio y Simpson como extension de U1, con la arquitectura ejercitada para seguir creciendo | `test_los_cuatro_metodos_del_parcial_siguen_estando` |
+| R1 | Alrededor de 10 metodos en el semestre | Los seis del parcial, mas Trapecio, Simpson, Simpson 1/3, Simpson 3/8 y el ajuste por minimos cuadrados: once, con la lista fijada en `tests/test_contract.py` y la arquitectura ejercitada para seguir creciendo | `test_los_cuatro_metodos_del_parcial_siguen_estando` |
 | R2 | Los seis del primer parcial | Cada uno con su archivo de pruebas | `test_newton_raphson.py`, `test_von_mises.py`, `test_newton_interpolation.py`, `test_lagrange_interpolation.py`, `test_punto_medio.py`, `test_runge_kutta.py` |
 | R3 | La arquitectura se expande | Se escribe un metodo nuevo en disco y aparece en el registro, en la API y con sus campos, **sin tocar ningun archivo existente** | `test_extensibilidad.py` (3 pruebas) |
 | R4 | 6 decimales por defecto, ajustable | Rango 2..12, recorte de valores invalidos, y que cambiar decimales **no cambie el calculo** | `test_decimales_por_defecto_son_seis`, `test_decimales_se_recortan_al_rango_permitido`, `test_los_decimales_no_cambian_los_valores_calculados` |
@@ -70,6 +72,11 @@ Cada requisito de `ESPECIFICACION.md`, con la prueba que lo respalda.
 | R12 | Interpolacion de Lagrange | Los tres ejercicios de las diapositivas, cada `L_i` por separado, y que coincida con Newton sobre los mismos puntos | `test_lagrange_interpolation.py` (25 pruebas), `test_coincide_con_la_interpolacion_de_newton` |
 | R13 | Metodo del Trapecio (U1) | El ejemplo del material con `exp(x^4)`, `[-1, 1]`, `n = 5`; puntos, pesos, suma y trapecios de la grafica | `test_trapecio.py` |
 | R14 | Metodo de Simpson (U1) | Los dos casos del material con `sqrt(5 + x^3)` en `[0, 1]` (`n = 2` y `n = 4`), corchete e integral; puntos, pesos y parabolas de la grafica; y que coincida con `(Trapecio + 2 * Punto Medio) / 3` sobre la misma malla | `test_simpson.py`, `test_coincide_con_trapecio_y_punto_medio_combinados` |
+| R15 | Simpson 1/3 (U1) | El ejercicio de `Simpson1.pdf` (`exp(x^2)`, `[0, 1]`, `n = 10`: corchete `43.880442`, integral `1.4626814`); los pesos `1, 4, 2, ..., 4, 1`; que `n` impar se rechace y sugiera Simpson 3/8; y que Simpson con punto medio y `n` sea Simpson 1/3 con `2n` | `test_ejercicio_del_docente_exp_x_cuadrado_con_n_10`, `test_el_corchete_del_pizarron_son_las_11_evaluaciones_con_pesos_1_4_2`, `test_rechaza_un_n_impar_y_sugiere_simpson_3_8`, `test_simpson_con_punto_medio_y_n_es_simpson_1_3_con_2n`, `test_con_n_2_simpson_es_una_sola_parabola_igual_a_simpson_1_3_con_n_2` (`test_simpson_13.py`, 48 pruebas) |
+| R16 | Simpson 3/8 (U1) | La cubica simple (`n = 3`, `1/x` en `[1, 2]`: `0.69375`), los pesos `1, 3, 3, 2, ..., 3, 3, 1`, la aplicacion multiple de Chapra 21.6 con `n = 5` (tramos `0.3803237` y `1.2647535`, suma `1.6450772`) y los `n` que no se pueden (1, 2 y 4) | `test_caso_simple_n_3_con_fracciones_exactas`, `test_chapra_n_5_combina_1_3_en_dos_subintervalos_y_3_8_en_tres`, `test_chapra_n_3_es_una_sola_cubica`, `test_la_tabla_lleva_los_pesos_1_3_3_2_3_3_1`, `test_con_n_igual_a_4_no_queda_tramo_de_3_8_y_sugiere_simpson_1_3` (`test_simpson_38.py`, 60 pruebas) y `test_el_tramo_1_3_de_simpson_3_8_es_simpson_1_3_sobre_ese_tramo` |
+| R17 | Ajuste por minimos cuadrados (U4) | El ejercicio del docente: `m = 1.9`, `b = 0.22` y `r` con tolerancia `1e-12`, la tabla fila por fila y la fila Total; los modelos potencial, exponencial y logaritmico contra leyes exactas; `r` en las rectas perfectas y sin definir cuando todas las `y` son iguales | `test_ejercicio_del_docente_m_b_y_r`, `test_ejercicio_del_docente_la_tabla_es_la_del_pizarron`, `test_ejercicio_del_docente_la_fila_total`, `test_el_modelo_potencial_recupera_una_ley_exacta`, `test_con_todas_las_y_iguales_r_no_esta_definida_y_se_explica` (`test_minimos_cuadrados.py`, 44 pruebas) y `tests/e2e/minimos-cuadrados.spec.js` (15) |
+| R18 | Portada y ruta por hash | Una tarjeta por metodo de la API, abrir por la tarjeta, enlace directo, Atras y Adelante, slug desconocido, teclado, y a 320, 360 y 375 px sin desborde | `tests/e2e/portada.spec.js` (17 pruebas) |
+| R19 | Pestana Teoria | Todo metodo de la API tiene su guia, se lee sin resolver, no rompe el plano ni el recorrido, y no desborda a 320 y 375 px ni pierde contraste en los dos temas | `todo metodo de la API tiene su guia en la pestana Teoria` y `tests/e2e/teoria.spec.js` (8 pruebas) |
 | R9 | Runge-Kutta con sistemas, y h o n | Sistema de dos EDO contra la solucion analitica; las formas de definir la malla | `test_resuelve_un_sistema_evaluando_las_componentes_simultaneamente`, `test_acepta_las_formas_del_contrato_para_h_n_y_xf` |
 | R10 | La app deriva sola o acepta la derivada | Las dos vias dan el mismo resultado, y el aplicativo dice cual derivada uso | `test_deriva_sola_y_lo_dice`, `test_la_derivada_a_mano_da_el_mismo_resultado` |
 | R11 | Los tres criterios de error, configurables | Los tres implementados; el porcentual reproduce la columna del docente | `test_error_absoluto_y_relativo`, `test_error_relativo_porcentual_reproduce_la_tabla_del_docente` |
@@ -121,7 +128,7 @@ la derivada congelada: `test_la_derivada_congelada_vale_lo_que_dice_el_docente`.
 `4x³ − 18x² + 12x − 6 = 0` con `x₀ = 1.165`, de la diapositiva 10.
 
 **Diverge, y es correcto que diverja.** La unica raiz real esta en 3.81699684.
-Ahi `f'` vale +49.6, contra los −13.65 congelados en el punto inicial: el factor
+Ahi `f'` vale +49.42, contra los −13.65 congelados en el punto inicial: el factor
 de amplificacion por iteracion queda cerca de 4.6, muy por encima de 1, asi que
 la sucesion se aleja en vez de acercarse.
 
@@ -160,10 +167,11 @@ entrega. La columna va vacia y una nota lo explica en pantalla.
 
 ## Comprobado desde el navegador
 
-Las 129 pruebas de Playwright manejan la interfaz de verdad contra el servidor
-real (mas una que solo regenera las capturas del manual, a pedido). Cubren lo que romperia la demostracion:
+Las 324 pruebas de Playwright manejan la interfaz de verdad contra el servidor
+real (mas dos que solo regeneran las capturas del manual, a pedido). Cubren lo que romperia la demostracion:
 
-- Resolver los siete metodos y ver la tabla con sus columnas.
+- Resolver los once metodos y ver la tabla con sus columnas.
+- La portada, la ruta por hash y la pestana Teoria de cada metodo.
 - **Cargar y resolver cada ejercicio del desplegable** por la interfaz. Los
   de practica se comparan ademas contra su valor esperado, sacado de una
   formula cerrada o de la regla aplicada a mano (`presets.spec.js`). Cada
@@ -176,11 +184,13 @@ real (mas una que solo regenera las capturas del manual, a pedido). Cubren lo qu
   vacia.
 - Exportar CSV y PDF de verdad, incluida la descarga.
 - Zoom, paneo, teclado, y que el remuestreo le pida los puntos al nucleo.
-- Que los siete formularios y el plano entren a 320 y a 360 px.
+- Que los once formularios y el plano entren a 320 y a 360 px.
+- Que el resumen de Simpson 3/8 no liste sus tramos (una lista de objetos no
+  cabe en una celda) y que el ajuste dibuje su fila Total en la tabla.
 
 ## La interfaz por tarjetas
 
-`tests/e2e/interfaz.spec.js` (21 pruebas) fija lo que la persona ve y toca en
+`tests/e2e/interfaz.spec.js` (27 pruebas) fija lo que la persona ve y toca en
 la pantalla nueva:
 
 - Las familias salen en el orden de la API, cada pestana muestra solo sus
@@ -238,7 +248,12 @@ cada publicacion, `tests/pages/sitio.spec.js` arma el sitio, lo sirve como
 archivos estaticos bajo `/metodos-numericos-uta/` (la misma subcarpeta que usa
 Pages) y verifica con Python corriendo en el navegador:
 
-- Los 56 ejercicios del desplegable, por la interfaz, con sus valores esperados.
+- Los 97 ejercicios del desplegable, por la interfaz, con sus valores esperados.
+- Que la lista de metodos se pinte antes de que Python este listo, y que
+  Resolver espere hasta que lo este.
+- Que resolver no baje la pila del PDF (pillow, fonttools, micropip, fpdf2), y
+  que ningun archivo de Pyodide ni `codigo.zip` se baje dos veces.
+- Que tras la segunda visita el sitio funcione sin red, desde el service worker.
 - El remuestreo del zoom, incluido el hueco de `1/x` en cero.
 - Los errores con el mismo codigo y mensaje que en local: 422 de un metodo,
   404 de un metodo inexistente y 422 de un pedido invalido.
@@ -265,7 +280,7 @@ entorno virgen, con la version de los seis metodos:
 | Importar las seis dependencias | todas |
 | `pytest --ignore=tests/e2e` | **275 en verde** |
 | `GET /` | 200, con la interfaz |
-| Los ocho archivos de `web/` | 200 cada uno |
+| Los ocho archivos de `web/` de esa version | 200 cada uno (hoy son 15, con `teoria.js`, `vista-integral.js` y los demas) |
 | `GET /api/methods` | 200, 6 metodos |
 | `POST solve` sobre el caso del docente | 200, `x₁ = 1.26894142` |
 | `POST solve` sobre el ejercicio de Newton | 200, `P(-4) = -8` |
@@ -288,5 +303,9 @@ Se dejan escritas en vez de esconderlas.
 3. **Interpolacion de Newton trae cuatro variantes** aunque el docente usa solo
    diferencias divididas, que son el default. El polinomio es el mismo en todas;
    cambia la tabla.
-4. **Quedan metodos por incorporar hasta completar la decena.** La arquitectura
-   para agregarlos esta ejercitada con una prueba.
+4. **Los once metodos pasan de la decena que pidio el docente**, y no queda
+   ninguno anunciado sin hacer. La arquitectura para agregar otros esta
+   ejercitada con una prueba; para la interfaz, un metodo nuevo tambien necesita
+   su formula en `web/formulas.js` y su teoria en `web/teoria.js`.
+5. **La Teoria es contenido fijo.** Los ejemplos citan un ejercicio de la lista
+   y su prueba los verifica; el texto de alrededor lo mantiene una persona.
