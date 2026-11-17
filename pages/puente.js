@@ -13,7 +13,9 @@
   "use strict";
 
   var PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
-  var PAQUETES = ["sympy", "fastapi", "pydantic", "pillow", "fonttools", "micropip"];
+  var PAQUETES = ["sympy", "fastapi", "pydantic"];
+  // La pila de PDF solo se baja la primera vez que se exporta un PDF.
+  var PAQUETES_PDF = ["pillow", "fonttools", "micropip"];
   // fpdf2 no viene con Pyodide; es Python puro y se baja de PyPI.
   var DESDE_PYPI = ["fpdf2==2.8.9"];
 
@@ -26,7 +28,7 @@
   aviso.setAttribute("role", "status");
   aviso.innerHTML =
     '<span class="puente-giro" aria-hidden="true"></span>' +
-    '<span><b>Preparando el núcleo de Python en tu navegador.</b> ' +
+    '<span><b id="puente-titulo">Preparando el núcleo de Python en tu navegador.</b> ' +
     '<span id="puente-paso">Descargando Pyodide…</span><br>' +
     '<small>La primera visita tarda unos segundos; después queda en la caché.</small></span>';
 
@@ -81,8 +83,6 @@
       return r.arrayBuffer();
     });
     await pyodide.loadPackage(PAQUETES);
-    var micropip = pyodide.pyimport("micropip");
-    await micropip.install(DESDE_PYPI);
 
     paso("Cargando los métodos…");
     pyodide.unpackArchive(await codigo, "zip", { extractDir: "/home/pyodide/aplicativo" });
@@ -151,13 +151,13 @@ async def atender(metodo, ruta, consulta, cuerpo):
         dict_converter=Object.fromEntries,
     )
 `);
-    return pyodide.globals.get("atender");
+    return { pyodide: pyodide, atender: pyodide.globals.get("atender") };
   }
 
   var listo = arrancar().then(
-    function (atender) {
+    function (python) {
       aviso.remove();
-      return atender;
+      return python;
     },
     function (error) {
       aviso.classList.add("puente-mal");
@@ -185,11 +185,42 @@ async def atender(metodo, ruta, consulta, cuerpo):
     };
   }
 
+  // Una sola promesa para todos los pedidos de PDF. Si falla se descarta, para
+  // que el siguiente intento vuelva a probar; el resto del sitio no se entera.
+  var pila = null;
+  function cargarPilaPdf(pyodide) {
+    if (!pila) {
+      pila = (async function () {
+        avisarPdf("Descargando lo necesario para el PDF…");
+        await pyodide.loadPackage(PAQUETES_PDF);
+        await pyodide.pyimport("micropip").install(DESDE_PYPI);
+      })().then(
+        function () { aviso.remove(); },
+        function (error) {
+          pila = null;
+          aviso.remove();
+          throw new Error("No se pudo preparar la exportación a PDF (" + error.message + "). Revisa la conexión y vuelve a intentarlo.");
+        },
+      );
+    }
+    return pila;
+  }
+
+  function avisarPdf(texto) {
+    if (!aviso.isConnected) document.body.appendChild(aviso);
+    document.getElementById("puente-titulo").textContent = "Preparando la exportación a PDF.";
+    paso(texto);
+  }
+
   window.fetch = async function (entrada, opciones) {
     var api = rutaApi(entrada);
     if (!api) return fetchOriginal(entrada, opciones);
 
-    var atender = await listo;
+    var python = await listo;
+    var atender = python.atender;
+    if (/^\/api\/methods\/[^/]+\/export\/pdf$/i.test(api.ruta)) {
+      await cargarPilaPdf(python.pyodide);
+    }
     var metodo = ((opciones && opciones.method) || "GET").toUpperCase();
     var cuerpo = (opciones && typeof opciones.body === "string") ? opciones.body : "";
     var r = await atender(metodo, api.ruta, api.consulta, cuerpo);

@@ -9,16 +9,23 @@ import { elegirMetodo, SELECTOR_METODOS } from "../e2e/desplegable.js";
 test.describe.configure({ mode: "serial" });
 
 let page;
+let catalogo;
 const errores = [];
+const descargados = [];
+const PILA_PDF = /pillow|fonttools|micropip|fpdf2/i;
 
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
   page.on("pageerror", e => errores.push(e.message));
   page.on("console", m => { if (m.type() === "error") errores.push(m.text()); });
+  page.on("request", r => descargados.push(r.url()));
   await page.goto("./");
   await expect(page.locator("#puente-aviso")).toBeVisible();
-  await expect(page.locator(SELECTOR_METODOS)).toHaveCount(8, { timeout: 240_000 });
-  await expect(page.locator("#puente-aviso")).toHaveCount(0);
+  await expect(page.locator(SELECTOR_METODOS).first()).toBeAttached({ timeout: 240_000 });
+  await expect(page.locator("#puente-aviso")).toHaveCount(0, { timeout: 240_000 });
+  // La interfaz tiene que ofrecer todo lo que da la API, sea cuantos sean.
+  catalogo = (await pedir("api/methods")).cuerpo;
+  await expect(page.locator(SELECTOR_METODOS)).toHaveCount(catalogo.length);
 });
 
 test.afterAll(async () => {
@@ -66,6 +73,10 @@ test("cada ejercicio del desplegable se resuelve con Python en el navegador", as
   }
 });
 
+test("resolver no descarga pillow ni fpdf2: solo el PDF los necesita", async () => {
+  expect(descargados.filter(u => PILA_PDF.test(u))).toEqual([]);
+});
+
 test("el zoom remuestrea en Python y corta la curva donde no esta definida", async () => {
   const { status, cuerpo } = await pedir("api/plot/sample", {
     expression: "1/x", x_min: -1, x_max: 1, points: 5,
@@ -91,7 +102,9 @@ test("los errores llegan con el mismo codigo y mensaje que en local", async () =
 test("exporta CSV y PDF desde los botones", async () => {
   await elegirMetodo(page, "von-mises");
   await page.locator("#preset").selectOption("von-mises-docente");
-  for (const [formato, inicio] of [["csv", "i,xi,fxi,xi_sig,error"], ["pdf", "%PDF-"]]) {
+  for (const [formato, inicio] of [["csv", "i,xi,fxi,xi_sig,error"], ["pdf", "%PDF-"], ["pdf", "%PDF-"]]) {
+    // El CSV no necesita la pila de PDF; el primer PDF la baja y el segundo la reusa.
+    const antes = descargados.filter(u => PILA_PDF.test(u)).length;
     const descarga = page.waitForEvent("download");
     await page.locator(`#exportar-${formato}`).click();
     const archivo = await descarga;

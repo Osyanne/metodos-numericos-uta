@@ -4,13 +4,16 @@ from __future__ import annotations
 import csv
 import json
 from io import StringIO
-from typing import Any
-
-from fpdf import FPDF
-from fpdf.enums import XPos, YPos
+from typing import TYPE_CHECKING, Any
 
 from core.serialization import finite_or_none
 from core.types import MethodResult, MethodSpec
+
+if TYPE_CHECKING:
+    from fpdf import FPDF
+
+# fpdf2 (y en Pages, pillow y fonttools) solo se importa al armar un PDF: el
+# CSV y el resto de la API no lo necesitan para arrancar.
 
 
 def csv_bytes(result: MethodResult) -> bytes:
@@ -40,6 +43,9 @@ def pdf_bytes(
     result: MethodResult,
 ) -> bytes:
     """Genera un informe PDF autocontenido de la corrida."""
+    from fpdf import FPDF
+    from fpdf.enums import XPos, YPos
+
     pdf = FPDF(orientation="L", unit="mm", format="A4")
     pdf.set_compression(False)
     pdf.set_auto_page_break(auto=True, margin=12)
@@ -96,6 +102,8 @@ def pdf_bytes(
 
 
 def _write_iterations_table(pdf: FPDF, result: MethodResult) -> None:
+    from fpdf.enums import XPos, YPos
+
     headers = ["i", *(column.label for column in result.columns), "error"]
     page_width = pdf.w - pdf.l_margin - pdf.r_margin
     cell_width = page_width / len(headers)
@@ -142,6 +150,8 @@ def _write_iterations_table(pdf: FPDF, result: MethodResult) -> None:
 
 
 def _multi_line(pdf: FPDF, text: str, *, height: float = 5) -> None:
+    from fpdf.enums import XPos, YPos
+
     pdf.multi_cell(
         0,
         height,

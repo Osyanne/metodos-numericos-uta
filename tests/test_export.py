@@ -171,3 +171,16 @@ def test_la_api_devuelve_detalle_y_el_csv_no_lo_exporta(client: TestClient):
 
     csv_ = client.post("/api/methods/von-mises/export/csv", json=VON_MISES_REQUEST)
     assert "dfx0" not in csv_.content.decode("utf-8")
+
+
+def test_importar_la_exportacion_no_carga_fpdf():
+    """En Pages fpdf2 (con pillow y fonttools) se baja solo al pedir un PDF;
+    si api.export lo importara arriba, la API no podria arrancar sin eso."""
+    import subprocess
+    import sys
+
+    salida = subprocess.run(
+        [sys.executable, "-c", "import sys, api.export; print('fpdf' in sys.modules)"],
+        capture_output=True, text=True, check=True,
+    )
+    assert salida.stdout.strip() == "False"
