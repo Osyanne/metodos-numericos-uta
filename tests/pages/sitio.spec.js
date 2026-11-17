@@ -43,6 +43,16 @@ async function pedir(ruta, cuerpo) {
   }, [ruta, cuerpo]);
 }
 
+// La app abre en la portada: para ver el formulario hay que entrar a un metodo
+// por su tarjeta, como lo haria la persona.
+async function abrirPrimero(p) {
+  const portada = p.locator("#portada");
+  const vista = p.locator("#vista-metodo");
+  await expect.poll(async () => (await portada.isVisible()) || (await vista.isVisible())).toBe(true);
+  if (await portada.isVisible()) await p.locator("a.tarjeta-metodo").first().click();
+  await expect(vista).toBeVisible();
+}
+
 function leerRuta(objeto, ruta) {
   return ruta.split(".").reduce((a, k) => (a == null ? undefined : a[k]), objeto);
 }
@@ -60,6 +70,7 @@ test("la interfaz se pinta antes de que Python este listo y Resolver espera", as
     await p.goto("./", { waitUntil: "domcontentloaded" });
     await expect(p.locator(SELECTOR_METODOS)).toHaveCount(catalogo.length);
     await expect(p.locator("#puente-aviso")).toBeVisible();
+    await abrirPrimero(p);
     await expect(p.locator("#preset option").first()).toBeAttached();
     await expect(p.locator("#formulario input").first()).toBeVisible();
     await p.locator("#resolver").click();
@@ -192,6 +203,7 @@ test("tras la segunda visita el sitio funciona sin red, desde el service worker"
     await p.reload({ waitUntil: "domcontentloaded" });
     await expect(p.locator(SELECTOR_METODOS)).toHaveCount(catalogo.length);
     await sinAviso();
+    await abrirPrimero(p);
     await p.locator("#resolver").click();
     await expect(p.locator("#resumen")).not.toBeEmpty({ timeout: 60_000 });
     await expect(p.locator("#aviso")).toBeHidden();
