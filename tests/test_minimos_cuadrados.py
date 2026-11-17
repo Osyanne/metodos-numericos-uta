@@ -363,3 +363,13 @@ def test_la_api_ofrece_los_modelos_y_resuelve_el_ejercicio_del_docente():
         assert cuerpo["result"]["totales"]["yi2"] == pytest.approx(89.87)
         assert cuerpo["plot"]["kind"] == "ajuste"
     clear()
+
+
+def test_datos_enormes_se_explican_en_vez_de_desbordar(metodo):
+    with pytest.raises(MethodError, match="escalarlos"):
+        resolver(metodo, [[1e200, 1e200], [2e200, 3e200], [3e200, 2e200]])
+
+
+def test_r_con_valores_grandes_pero_representables_sigue_acotada(metodo):
+    res = resolver(metodo, [[1e100, 2e100], [2e100, 4e100], [3e100, 6e100]])
+    assert res.result["r"] == pytest.approx(1.0, abs=1e-15)
