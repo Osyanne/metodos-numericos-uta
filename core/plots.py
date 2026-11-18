@@ -61,6 +61,36 @@ def interpolation(
     )
 
 
+def ajuste(
+    points: Sequence[tuple[float, float]],
+    xs: Sequence[float],
+    ys: Sequence[float | None],
+    evaluated: tuple[float, float] | None = None,
+    title: str = "",
+    resample: Resample | None = None,
+) -> PlotSpec:
+    """series = {points: [[x, y]], curve: {x, y}, evaluated: {x, y} | None}
+
+    Los puntos son los datos medidos, que se dibujan sueltos (dispersion), y la
+    curva es el ajuste que el nucleo muestrea. Tiene la misma forma que la
+    interpolacion; se distingue por el tipo para rotular la curva como ajuste y
+    no como polinomio.
+    """
+    return PlotSpec(
+        kind=PlotKind.AJUSTE,
+        series={
+            "points": [[float(x), float(y)] for x, y in points],
+            "curve": {"x": list(xs), "y": list(ys)},
+            "evaluated": (
+                None if evaluated is None
+                else {"x": evaluated[0], "y": evaluated[1]}
+            ),
+        },
+        title=title,
+        resample=resample,
+    )
+
+
 def convergence(
     ns: Sequence[int],
     errors: Sequence[float | None],
@@ -126,8 +156,12 @@ def integration(
     resample: Resample | None = None,
     trapezoids: Sequence[tuple[float, float, float, float]] = (),
     parabolas: Sequence[tuple[float, float, float, float, float, float]] = (),
+    cubicas: Sequence[Sequence[tuple[float, float]]] = (),
+    nodos: Sequence[tuple[str, float, float]] = (),
+    filas_arcos: Sequence[int] = (),
 ) -> PlotSpec:
-    """series = {curve, rectangles, trapezoids, parabolas, interval, integral}.
+    """series = {curve, rectangles, trapezoids, parabolas, cubicas, interval,
+    integral, nodes, arc_rows}.
 
     Cada rectangulo es (x0, x1, y): sus bordes verticales y la altura f(m_i).
     La interfaz los pinta como cajas semitransparentes y superpone la curva de
@@ -142,6 +176,23 @@ def integration(
     Cada parabola es (x0, y0, xm, ym, x1, y1): los extremos del subintervalo y
     su punto medio. Simpson aproxima f por la parabola que pasa por esos tres
     puntos, y la interfaz la reconstruye con ellos.
+
+    Cada cubica son sus cuatro nodos [(x0, y0), ..., (x3, y3)], un tramo de tres
+    subintervalos, y la serie los guarda como x0, y0, ..., x3, y3. Simpson 3/8
+    aproxima f por la cubica que pasa por ellos, y la interfaz la reconstruye
+    con ellos.
+
+    Los metodos de Simpson con nodos consecutivos (1/3 y 3/8) dicen ademas cuales
+    son sus puntos y en que fila de la tabla termina cada arco, porque la tabla
+    puede repetir el nodo donde una regla da paso a la otra:
+
+    ``nodos`` son (rotulo, x, f(x)), uno por fila de la tabla y en su orden. Sin
+    ellos la interfaz rotula los de las parabolas como x0, m1, x1, ... (Simpson
+    con punto medio).
+
+    ``filas_arcos`` es la fila donde termina cada arco: primero las parabolas y
+    despues las cubicas. Sin ella la interfaz supone 2j+2 para la parabola j y
+    3j+3 para la cubica j.
     """
     return PlotSpec(
         kind=PlotKind.INTEGRATION,
@@ -163,8 +214,16 @@ def integration(
                 }
                 for x0, y0, xm, ym, x1, y1 in parabolas
             ],
+            "cubicas": [
+                {k: float(v) for j, (x, y) in enumerate(nodos) for k, v in ((f"x{j}", x), (f"y{j}", y))}
+                for nodos in cubicas
+            ],
             "interval": {"a": float(a), "b": float(b)},
             "integral": float(integral),
+            "nodes": [
+                {"label": str(r), "x": float(x), "y": float(y)} for r, x, y in nodos
+            ],
+            "arc_rows": [int(fila) for fila in filas_arcos],
         },
         x_label="x",
         y_label="f(x)",

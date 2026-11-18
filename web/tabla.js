@@ -66,7 +66,27 @@ export function dibujarTabla(contenedor, resultado, decimales) {
   }
 
   tabla.append(thead, tbody);
+  const totales = resultado.result?.totales;
+  if (totales) tabla.append(pieDeTotales(resultado.columns, totales, decimales));
   contenedor.append(tabla);
+}
+
+// La fila "Total" del pizarron del ajuste: una suma por columna (la de error
+// incluida), que el nucleo entrega aparte porque no es un dato mas.
+function pieDeTotales(columnas, totales, decimales) {
+  const tfoot = document.createElement("tfoot");
+  const tr = document.createElement("tr");
+  tr.className = "fila-total";
+  const celdas = [["Total", "col-n"], ...columnas.map((c) => [formatear(totales[c.key], decimales)]),
+    [formatear(totales.error, decimales), "col-error"]];
+  for (const [texto, clase] of celdas) {
+    const td = document.createElement("td");
+    td.textContent = texto;
+    if (clase) td.className = clase;
+    tr.append(td);
+  }
+  tfoot.append(tr);
+  return tfoot;
 }
 
 // Resalta la fila k del recorrido (null: ninguna). Con `desplazar` la trae a la
@@ -123,6 +143,7 @@ const MOTIVO = {
   // Un metodo de malla fija termina cuando recorre sus n pasos. Eso es el final
   // normal, en verde: no persigue ninguna tolerancia que pudiera no alcanzar.
   integracion_completada: ["ok", "Integración completada"],
+  ajuste_calculado: ["ok", "Ajuste calculado"],
   divergio: ["mal", "El método diverge"],
   fallo: ["mal", "Falló"],
 };
@@ -134,6 +155,7 @@ export const PRINCIPAL = {
   interpolacion: "polinomio",
   integracion: "integral",
   edo: "y",
+  ajuste: "ecuacion",
 };
 
 export function dibujarResumen(contenedor, resultado, decimales, familia) {
@@ -148,7 +170,11 @@ export function dibujarResumen(contenedor, resultado, decimales, familia) {
   contenedor.append(estado);
 
   // Sin clave principal (familia desconocida), manda la primera.
-  const pares = Object.entries(resultado.result ?? {});
+  // Un objeto (los totales del ajuste) tiene su lugar en la tabla, no aca, y
+  // una lista de objetos (los tramos de Simpson 3/8) tampoco: no cabe en una celda.
+  const pares = Object.entries(resultado.result ?? {})
+    .filter(([, valor]) => valor === null || typeof valor !== "object"
+      || (Array.isArray(valor) && valor.every((v) => typeof v !== "object" || v === null)));
   const indice = Math.max(0, pares.findIndex(([clave]) => clave === PRINCIPAL[familia]));
   pares.unshift(...pares.splice(indice, 1));
 

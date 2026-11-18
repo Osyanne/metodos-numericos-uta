@@ -204,7 +204,11 @@ register(
         description=(
             "Aproxima una integral definida sustituyendo la curva por arcos "
             "de parabola que pasan por los extremos y el punto medio de cada "
-            "subintervalo, y sumando el area bajo esos arcos."
+            "subintervalo, y sumando el area bajo esos arcos. Es la misma regla "
+            "que Simpson 1/3, que cuenta n de otra forma (n intervalos y n + 1 "
+            "puntos, sin puntos medios): con n par (n >= 4) este metodo da lo "
+            "mismo que Simpson 1/3 con 2n; con n = 2 es una sola parabola, "
+            "igual a Simpson 1/3 con n = 2."
         ),
         reference=(
             "n = 2: (b - a)/6 * [f(a) + 4 f((a+b)/2) + f(b)]; "

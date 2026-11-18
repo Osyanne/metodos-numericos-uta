@@ -25,6 +25,7 @@
   --interpolacion: #0f6e56; --interpolacion-bg: #e1f5ee;
   --integracion: #854f0b;   --integracion-bg: #faeeda;
   --edo: #993c1d;           --edo-bg: #faece7;
+  --ajuste: #a02d63;        --ajuste-bg: #fbeaf0;
   --otros: #5f5e5a;         --otros-bg: #f1efe8;
 
   /* Plano: la curva tiene color fijo; el resto son capas y series. */
@@ -64,6 +65,7 @@
   --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
   --integracion: #ef9f27;   --integracion-bg: #412402;
   --edo: #f0997b;           --edo-bg: #4a1b0c;
+  --ajuste: #ed93b1;        --ajuste-bg: #4b1528;
   --otros: #b4b2a9;         --otros-bg: #2c2c2a;
   --curva:       #85b7eb;
   --iteraciones: #f0997b;
@@ -100,6 +102,7 @@
     --interpolacion: #5dcaa5; --interpolacion-bg: #04342c;
     --integracion: #ef9f27;   --integracion-bg: #412402;
     --edo: #f0997b;           --edo-bg: #4a1b0c;
+    --ajuste: #ed93b1;        --ajuste-bg: #4b1528;
     --otros: #b4b2a9;         --otros-bg: #2c2c2a;
     --curva:       #85b7eb;
     --iteraciones: #f0997b;
@@ -142,7 +145,17 @@ body {
   padding: 16px 24px 12px;
 }
 
-.marca { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 10px;
+}
+.marca:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.marca-texto { display: flex; flex-direction: column; min-width: 0; }
 
 .logo {
   width: 36px;
@@ -156,9 +169,15 @@ body {
 }
 .logo svg { width: 22px; height: 22px; }
 
-h1 { margin: 0; font-size: 19px; line-height: 1.2; letter-spacing: -0.01em; }
+.titulo { font-size: 19px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
 
-.subtitulo { margin: 0; color: var(--ink-faint); font-size: 12.5px; }
+.subtitulo { color: var(--ink-faint); font-size: 12.5px; }
+
+h1 { margin: 0; line-height: 1.2; letter-spacing: -0.01em; }
+/* Los encabezados de vista reciben el foco al cambiar de vista, pero no son
+   controles: no se marcan con anillo. */
+h1[tabindex="-1"]:focus { outline: none; }
+.metodo-titulo { margin: 0 0 4px; font-size: 17px; }
 
 /* ---------------------------------------------------------- selector */
 
@@ -770,6 +789,14 @@ output { font-family: var(--mono); color: var(--accent); }
 .iteraciones tbody tr.actual td { background: var(--accent-bg); }
 .iteraciones tbody tr.actual td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 
+/* La fila de totales del ajuste: el cierre de la tabla, no un dato mas. */
+.iteraciones tfoot td {
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--surface-2);
+  border-top: 1px solid var(--rule-firm);
+}
+
 .col-n { text-align: left !important; color: var(--ink-faint); }
 .col-error { color: var(--warn); }
 
@@ -804,12 +831,14 @@ body[data-familia="raices"]        { --accent: var(--raices);        --accent-bg
 body[data-familia="interpolacion"] { --accent: var(--interpolacion); --accent-bg: var(--interpolacion-bg); }
 body[data-familia="integracion"]   { --accent: var(--integracion);   --accent-bg: var(--integracion-bg); }
 body[data-familia="edo"]           { --accent: var(--edo);           --accent-bg: var(--edo-bg); }
+body[data-familia="ajuste"]        { --accent: var(--ajuste);        --accent-bg: var(--ajuste-bg); }
 body[data-familia="otros"]         { --accent: var(--otros);         --accent-bg: var(--otros-bg); }
 
 .familia[data-familia="raices"]        { --c: var(--raices);        --c-bg: var(--raices-bg); }
 .familia[data-familia="interpolacion"] { --c: var(--interpolacion); --c-bg: var(--interpolacion-bg); }
 .familia[data-familia="integracion"]   { --c: var(--integracion);   --c-bg: var(--integracion-bg); }
 .familia[data-familia="edo"]           { --c: var(--edo);           --c-bg: var(--edo-bg); }
+.familia[data-familia="ajuste"]        { --c: var(--ajuste);        --c-bg: var(--ajuste-bg); }
 .familia[data-familia="otros"]         { --c: var(--otros);         --c-bg: var(--otros-bg); }
 
 .familias, .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -893,6 +922,187 @@ body { --accent-tinta: #ffffff; }
 #formula mtd, #formula-datos mtd { padding: 3px 0; text-align: left; math-style: normal; }
 /* La sustitucion va debajo de la general, separada por una linea fina. */
 #formula-datos { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); }
+
+/* ---------------------------------------------------------- teoria */
+
+/* El recorrido de filas no tiene nada que mover mientras se lee la teoria. */
+#tarjeta-plano[data-pestana="ver-teoria"] #recorrido { display: none; }
+
+.teoria { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.teoria section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+.teoria section:first-child { padding-top: 0; border-top: none; }
+.teoria h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.teoria h4 { margin: 4px 0 0; font-size: 13px; font-weight: 600; color: var(--accent); }
+.teoria p, .teoria li { font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.teoria p { margin: 0; max-width: 75ch; }
+.teoria strong { color: var(--ink); }
+.teoria ul, .teoria ol { display: flex; flex-direction: column; gap: 5px; margin: 0; padding-left: 20px; max-width: 75ch; }
+.teoria .teo-nota {
+  padding: 8px 12px;
+  font-size: 13px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+}
+
+.teo-formula { overflow-x: auto; }
+.teo-formula math { margin: 0; text-align: left; font-size: 1.1em; color: var(--ink); }
+.teo-formula mtd { padding: 3px 0; text-align: left; math-style: normal; }
+
+.teo-scroll { overflow-x: auto; }
+.teo-tabla {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+}
+.teo-tabla caption { padding: 0 0 6px; text-align: left; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.teo-tabla th, .teo-tabla td {
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--rule);
+}
+.teo-tabla thead th { color: var(--ink); background: var(--surface-2); border-bottom: 1px solid var(--rule-firm); }
+.teo-tabla tbody th, .teo-tabla tfoot th { font-weight: 600; color: var(--ink); }
+.teo-tabla tbody tr:last-child > * { border-bottom: none; }
+.teo-numeros td, .teo-numeros thead th + th { text-align: right; font-variant-numeric: tabular-nums; }
+.teo-numeros tfoot th { text-align: right; }
+.teo-numeros tfoot td { font-weight: 600; color: var(--ink); border-top: 1px solid var(--rule-firm); }
+
+.teo-figura { margin: 0; }
+.teo-figura figcaption { margin-top: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.teo-svg { display: block; width: 100%; max-width: 480px; height: auto; margin: 0 auto; }
+.teo-svg .teo-area-parabola { fill: var(--area); fill-opacity: 0.18; }
+.teo-svg .teo-area-cubica { fill: var(--datos); fill-opacity: 0.18; }
+.teo-svg .teo-eje { stroke: var(--rule-firm); stroke-width: 1; }
+.teo-svg .teo-guia line { stroke: var(--rule-firm); stroke-width: 1; stroke-dasharray: 3 3; }
+.teo-svg .teo-curva { fill: none; stroke: var(--curva); stroke-width: 2.2; stroke-linejoin: round; }
+.teo-svg .teo-parabola { fill: none; stroke: var(--area); stroke-width: 2.2; stroke-dasharray: 7 3; }
+.teo-svg .teo-cubica { fill: none; stroke: var(--datos); stroke-width: 2.2; stroke-dasharray: 7 3; }
+.teo-svg .teo-nodos circle { fill: var(--iteraciones); stroke: var(--surface); stroke-width: 1.5; }
+.teo-svg .teo-cota line { stroke: var(--ink-soft); stroke-width: 1; }
+.teo-svg .teo-rotulo { fill: var(--ink-soft); font: 12px var(--sans); }
+.teo-svg .teo-nota-svg { font-size: 11px; }
+
+/* ---------------------------------------------------------- portada */
+
+.portada {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1120px;
+  padding: 8px 24px 48px;
+}
+.portada h1 { font-size: 26px; max-width: 28ch; }
+.portada h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+.portada-frase { margin: 8px 0 0; max-width: 62ch; font-size: 16px; color: var(--ink-soft); }
+
+.como-pasos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.como-pasos li {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+}
+.como-pasos .paso { flex: none; margin-right: 0; }
+.como-pasos strong { color: var(--ink); }
+
+.rejilla { display: flex; flex-direction: column; gap: 22px; }
+
+.grupo { --c: var(--otros); --c-bg: var(--otros-bg); }
+.grupo[data-familia="raices"]        { --c: var(--raices);        --c-bg: var(--raices-bg); }
+.grupo[data-familia="interpolacion"] { --c: var(--interpolacion); --c-bg: var(--interpolacion-bg); }
+.grupo[data-familia="integracion"]   { --c: var(--integracion);   --c-bg: var(--integracion-bg); }
+.grupo[data-familia="edo"]           { --c: var(--edo);           --c-bg: var(--edo-bg); }
+.grupo[data-familia="ajuste"]        { --c: var(--ajuste);        --c-bg: var(--ajuste-bg); }
+
+.grupo h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c);
+}
+.grupo-icono {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 8px;
+  background: var(--c-bg);
+}
+.grupo-icono svg { width: 18px; height: 18px; }
+
+.grupo-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.grupo-tarjetas li { display: flex; }
+
+.tarjeta-metodo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 16px 14px;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--c);
+  border-radius: 12px;
+}
+.tarjeta-metodo strong { font-size: 15px; }
+.tarjeta-metodo:hover { border-color: var(--c); background: var(--c-bg); }
+.tarjeta-metodo:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.tarjeta-descripcion {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tarjeta-metodo { transition: background-color 0.15s, border-color 0.15s; }
+}
+
+@media (max-width: 600px) {
+  .portada { padding: 4px 16px 36px; }
+  .portada h1 { font-size: 22px; }
+}
+
+@media (forced-colors: active) {
+  .tarjeta-metodo { border-color: ButtonText; }
+  .tarjeta-metodo:hover, .tarjeta-metodo:focus-visible { border-color: Highlight; }
+}
 
 /* ---------------------------------------------------------- senales */
 

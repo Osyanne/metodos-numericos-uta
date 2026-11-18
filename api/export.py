@@ -4,13 +4,16 @@ from __future__ import annotations
 import csv
 import json
 from io import StringIO
-from typing import Any
-
-from fpdf import FPDF
-from fpdf.enums import XPos, YPos
+from typing import TYPE_CHECKING, Any
 
 from core.serialization import finite_or_none
 from core.types import MethodResult, MethodSpec
+
+if TYPE_CHECKING:
+    from fpdf import FPDF
+
+# fpdf2 (y en Pages, pillow y fonttools) solo se importa al armar un PDF: el
+# CSV y el resto de la API no lo necesitan para arrancar.
 
 
 def csv_bytes(result: MethodResult) -> bytes:
@@ -31,6 +34,9 @@ def csv_bytes(result: MethodResult) -> bytes:
             ]
         )
 
+    if (total := _fila_total(result)) is not None:
+        writer.writerow(total)
+
     return output.getvalue().encode("utf-8")
 
 
@@ -40,6 +46,9 @@ def pdf_bytes(
     result: MethodResult,
 ) -> bytes:
     """Genera un informe PDF autocontenido de la corrida."""
+    from fpdf import FPDF
+    from fpdf.enums import XPos, YPos
+
     pdf = FPDF(orientation="L", unit="mm", format="A4")
     pdf.set_compression(False)
     pdf.set_auto_page_break(auto=True, margin=12)
@@ -85,7 +94,8 @@ def pdf_bytes(
     )
     pdf.set_font("Helvetica", size=9)
     for key, value in result.result.items():
-        _multi_line(pdf, f"{key}: {_value_text(value)}")
+        if key != "totales":  # va como la fila Total de la tabla
+            _multi_line(pdf, f"{key}: {_value_text(value)}")
 
     _multi_line(
         pdf,
@@ -96,6 +106,8 @@ def pdf_bytes(
 
 
 def _write_iterations_table(pdf: FPDF, result: MethodResult) -> None:
+    from fpdf.enums import XPos, YPos
+
     headers = ["i", *(column.label for column in result.columns), "error"]
     page_width = pdf.w - pdf.l_margin - pdf.r_margin
     cell_width = page_width / len(headers)
@@ -140,8 +152,38 @@ def _write_iterations_table(pdf: FPDF, result: MethodResult) -> None:
                 new_y=YPos.NEXT if index == len(values) - 1 else YPos.TOP,
             )
 
+    if (total := _fila_total(result)) is not None:
+        pdf.set_font("Helvetica", style="B", size=font_size)
+        for index, value in enumerate(total):
+            pdf.cell(
+                cell_width,
+                row_height,
+                text=_latin1(value),
+                border=1,
+                new_x=XPos.LMARGIN if index == len(total) - 1 else XPos.RIGHT,
+                new_y=YPos.NEXT if index == len(total) - 1 else YPos.TOP,
+            )
+
+
+def _fila_total(result: MethodResult) -> list[str] | None:
+    """La fila Total de la tabla (minimos cuadrados), o None si no hay.
+
+    `result["totales"]` es un objeto con la clave de cada columna y `error`
+    para la ultima.
+    """
+    totales = result.result.get("totales")
+    if not isinstance(totales, dict):
+        return None
+    return [
+        "Total",
+        *(_number_text(totales.get(column.key)) for column in result.columns),
+        _number_text(totales.get("error")),
+    ]
+
 
 def _multi_line(pdf: FPDF, text: str, *, height: float = 5) -> None:
+    from fpdf.enums import XPos, YPos
+
     pdf.multi_cell(
         0,
         height,

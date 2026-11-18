@@ -36,6 +36,7 @@ def method_to_summary(spec: MethodSpec) -> MethodSummary:
                 help=field.help,
                 required=field.required,
                 multiple=field.multiple,
+                choices=list(field.choices),
             )
             for field in spec.inputs
         ],

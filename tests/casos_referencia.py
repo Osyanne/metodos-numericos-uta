@@ -4,6 +4,8 @@ Unica fuente de verdad para validar los metodos. Si el aplicativo no
 reproduce estos numeros, esta mal aunque el algoritmo parezca correcto.
 
 No es un archivo de pruebas: es el dato que las pruebas consumen.
+Los puntos se guardan en el orden en que los escribe el docente: ese orden
+tambien fija las filas de las tablas de interpolacion.
 """
 from __future__ import annotations
 
@@ -70,10 +72,128 @@ NEWTON_DIVIDIDAS_RESUELTO = {
     "forma_de_newton": "2+[(-2)(X-1)]+[(-1)(X-1)(X-0)]",
     "polinomio": "-x^2 - x + 4",
     # Del polinomio expandido, de mayor a menor grado, como en
-    # casos_referencia_lagrange.py. No son los a_i.
+    # los casos de Lagrange de este modulo. No son los a_i.
     "coeficientes": (-1.0, -1.0, 4.0),
     "grado": 2,
     # Diapositiva 8.
     "x": -4.0,
     "valor": -8.0,
+}
+
+# INTERPOLACION DE LAGRANGE.pdf, diapositivas 5 a 7. Ejercicio resuelto en
+# clase, con la comprobacion grafica incluida.
+LAGRANGE_RESUELTO = {
+    "fuente": "INTERPOLACION DE LAGRANGE.pdf, diapositivas 5-7",
+    "puntos": [(0.0, 1.0), (1.0, 3.0), (2.0, 0.0)],
+    # L_i tal como quedan en la diapositiva, ya simplificados.
+    "bases_expandidas": [
+        "x**2/2 - 3*x/2 + 1",
+        "-x**2 + 2*x",
+        "x**2/2 - x/2",
+    ],
+    "polinomio": "-5/2 x^2 + 9/2 x + 1",
+    "coeficientes": (-2.5, 4.5, 1.0),
+    "grado": 2,
+    # Tabla de la diapositiva "GRAFICA".
+    "tabla_grafica": {
+        -2.0: -18.0,
+        -1.0: -6.0,
+        0.0: 1.0,
+        1.0: 3.0,
+        2.0: 0.0,
+        3.0: -8.0,
+    },
+}
+
+# INTERPOLACION DE LAGRANGE.pdf, diapositivas 8 y 9. Segundo ejercicio
+# resuelto, con el procedimiento de cinco pasos escrito completo.
+LAGRANGE_RESUELTO_2 = {
+    "fuente": "INTERPOLACION DE LAGRANGE.pdf, diapositivas 8-9",
+    "puntos": [(1.0, 3.0), (2.0, 5.0), (3.0, 1.0)],
+    "bases_expandidas": [
+        "x**2/2 - 5*x/2 + 3",
+        "-x**2 + 4*x - 3",
+        "x**2/2 - 3*x/2 + 1",
+    ],
+    "polinomio": "-3x^2 + 11x - 5",
+    "coeficientes": (-3.0, 11.0, -5.0),
+    "grado": 2,
+}
+
+# INTERPOLACION DE LAGRANGE.pdf, diapositiva 10. Ejercicio propuesto, sin
+# resolver en clase. El polinomio y el valor se calcularon a mano y se
+# verificaron punto por punto.
+LAGRANGE_EJERCICIO = {
+    "fuente": "INTERPOLACION DE LAGRANGE.pdf, diapositiva 10",
+    "puntos": [(1.0, 10.0), (-4.0, 10.0), (-7.0, 34.0)],
+    "polinomio": "x^2 + 3x + 6",
+    "coeficientes": (1.0, 3.0, 6.0),
+    "grado": 2,
+    "x": -3.0,
+    "valor": 6.0,
+}
+
+# Material del docente, ejemplo del parcial 1 de Punto Medio. El nombre del
+# PDF y el numero de diapositiva no quedaron registrados en la prueba original.
+# La diapositiva tabula f(m_i) con cuatro decimales y termina con I = -0.2051.
+# Se conservan por separado esa precision, la suma sin redondear y la integral
+# analitica, que se usa para comprobar el efecto de refinar la malla.
+PUNTO_MEDIO_RESUELTO = {
+    "fuente": "Material del docente, ejemplo del parcial 1 de Punto Medio",
+    "fx": "0.25*x^3 - x",
+    "a": -1.5,
+    "b": 2,
+    "n": 7,
+    "delta_x": 0.5,
+    "puntos_medios": [-1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75],
+    "valores_tabla": [0.7617, 0.6445, 0.2461, -0.2461, -0.6445, -0.7617, -0.4102],
+    "integral": -0.205078125,
+    "integral_diapositiva": -0.2051,
+    "integral_exacta": -0.19140625,
+}
+
+
+# Ejercicio del docente de ajuste por minimos cuadrados (recta). Los totales y
+# los errores son los del pizarron, a dos decimales (el error, a cuatro).
+MINIMOS_CUADRADOS_DOCENTE = {
+    "fuente": "Material del docente, ajuste por minimos cuadrados",
+    "puntos": [[1.0, 2.0], [1.5, 3.2], [2.0, 4.1], [2.5, 4.9], [3.0, 5.9]],
+    "m": 1.9,
+    "b": 0.22,
+    "r": 0.9976262076984156,
+    "suma_residuos": 0.043,
+    "totales_pizarron": {
+        "xi": 10.0, "yi": 20.1, "xiyi": 44.95, "xi2": 22.5, "yi2": 89.87,
+        "error": 0.0430,
+    },
+    "errores_pizarron": [0.0144, 0.0169, 0.0064, 0.0049, 0.0004],
+}
+
+# Ejemplo 21.6 de Chapra: f(x) = 0.2 + 25x - 200x^2 + 675x^3 - 900x^4 + 400x^5
+# en [0, 0.8], valor exacto 1.640533. Con n = 5 (no multiplo de 3) Simpson 3/8
+# combina la regla 1/3 en los dos primeros subintervalos y la 3/8 en los tres
+# restantes. Chapra imprime 1.264754 para la 3/8 (redondeo de sus pasos).
+SIMPSON_38_CHAPRA = {
+    "fuente": "Chapra, ejemplo 21.6 (aplicacion multiple de Simpson)",
+    "fx": "0.2 + 25*x - 200*x^2 + 675*x^3 - 900*x^4 + 400*x^5",
+    "a": 0,
+    "b": 0.8,
+    "n": 5,
+    "exacto": 1.640533333333333,
+    "tramo_1_3": {"corchete": 7.13106944, "integral": 0.3803237},
+    "tramo_3_8": {"corchete": 21.07922432, "integral": 1.2647535},
+    "integral": 1.645077,
+}
+
+# Simpson1.pdf: integral de e^(x^2) en [0, 1] con n = 10 (dx = 0.1). El
+# pizarron deja el corchete en 43.880442 y la integral en 1.4626 (truncada).
+SIMPSON_13_EXP_X2 = {
+    "fuente": "Simpson1.pdf",
+    "fx": "exp(x^2)",
+    "a": 0,
+    "b": 1,
+    "n": 10,
+    "corchete": 43.880442,
+    "integral": 1.46268140,
+    "integral_pizarron": 1.4626,
 }

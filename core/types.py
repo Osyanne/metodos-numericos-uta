@@ -65,6 +65,9 @@ class InputField:
     help: str = ""
     required: bool = True
     multiple: bool = False
+    # Valores permitidos de un campo de texto. La interfaz lo dibuja como una
+    # lista desplegable en vez de una casilla libre; vacio es texto libre.
+    choices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -90,6 +93,9 @@ class StopReason(str, Enum):
     MAX_ITERATIONS = "n_iteraciones_completadas"
     EXACT = "solucion_exacta"
     COMPLETED = "integracion_completada"
+    # El ajuste por minimos cuadrados se resuelve de una vez, con las sumas de
+    # la tabla: no hay iteraciones que converjan ni una malla que recorrer.
+    FITTED = "ajuste_calculado"
     DIVERGED = "divergio"
     FAILED = "fallo"
 
@@ -112,6 +118,7 @@ class PlotKind(str, Enum):
     CONVERGENCE = "convergencia"
     ODE_SOLUTION = "solucion_edo"
     INTEGRATION = "integracion"
+    AJUSTE = "ajuste"
 
 
 @dataclass(frozen=True)

@@ -75,6 +75,8 @@ async function conMetodoX(page) {
     await route.fulfill({ response: r, json: m });
   });
   await page.goto("/");
+  // La app abre en la portada: se entra al primer metodo, como antes.
+  await page.locator("a.tarjeta-metodo").first().click();
 }
 
 test("familias en el orden de la API, solo sus chips, y recuerda el último", async ({ page }) => {
@@ -146,7 +148,10 @@ for (const [metodo, preset, clave] of [
   ["von-mises", "von-mises-docente", "raiz"],
   ["interpolacion-lagrange", "lagrange-docente", "polinomio"],
   ["simpson", "simpson-docente", "integral"],
+  ["simpson-13", "simpson-13-docente", "integral"],
+  ["simpson-38", "simpson-38-chapra-n5", "integral"],
   ["runge-kutta", "runge-kutta-escalar", "y"],
+  ["minimos-cuadrados", "ajuste-docente", "ecuacion"],
 ]) {
   test(`${metodo}: el valor principal es ${clave}`, async ({ page }) => {
     await elegirMetodo(page, metodo);

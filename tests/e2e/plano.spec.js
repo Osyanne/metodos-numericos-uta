@@ -173,7 +173,7 @@ for (const ancho of [320, 360]) {
   test(`todos los formularios y el canvas caben a ${ancho}px`, async ({ page }) => {
     await page.setViewportSize({ width: ancho, height: 740 });
     await page.goto("/");
-    for (const metodo of ["newton-raphson", "von-mises", "interpolacion-newton", "interpolacion-lagrange", "punto-medio", "trapecio", "simpson", "runge-kutta"]) {
+    for (const metodo of ["newton-raphson", "von-mises", "interpolacion-newton", "interpolacion-lagrange", "punto-medio", "trapecio", "simpson", "simpson-13", "simpson-38", "runge-kutta", "minimos-cuadrados"]) {
       await elegirMetodo(page, metodo);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(ancho);
       const medida = await page.locator("#plano").evaluate((canvas) => ({
@@ -256,7 +256,9 @@ test("marcarPaso dibuja sin errores cada familia de gráfica", async ({ page }) 
       [{ kind: "integracion", series: { curve, rectangles: [{ x0: 0, x1: 1, y: 1 }, { x0: 1, x1: 2, y: 4 }] } }, 2],
       [{ kind: "integracion", series: { curve, trapezoids: [{ x0: 0, y0: -1, x1: 1, y1: 1 }, { x0: 1, y0: 1, x1: 2, y1: 4 }] } }, 3],
       [{ kind: "integracion", series: { curve, parabolas: [{ x0: 0, y0: 0, xm: 1, ym: 1, x1: 2, y1: 4 }] } }, 3],
+      [{ kind: "integracion", series: { curve, cubicas: [{ x0: 0, y0: 0, x1: 1, y1: 1, x2: 2, y2: 4, x3: 3, y3: 9 }] } }, 4],
       [{ kind: "interpolacion", series: { curve, points: [[0, 0], [1, 1]], evaluated: { x: 1, y: 1 } } }, 2],
+      [{ kind: "ajuste", series: { curve, points: [[0, 0], [1, 1], [2, 5]], evaluated: { x: 1, y: 1 } } }, 3],
       [{ kind: "solucion_edo", series: { solution: { x: [0, 1, 2], components: [{ name: "y", y: [1, 2, 3] }] } } }, 3],
       [{ kind: "funcion_raiz", series: { curve, iterates: [{ n: 0, x: 2, y: 3 }, { n: 1, x: NaN, y: NaN }], root: { x: 1, y: 0 } } }, 2],
     ];
@@ -268,7 +270,7 @@ test("marcarPaso dibuja sin errores cada familia de gráfica", async ({ page }) 
     }
     return n;
   });
-  expect(r).toBe(24);
+  expect(r).toBe(32);
   expect(errores).toEqual([]);
 });
 

@@ -10,6 +10,12 @@ import sympy
 from core import plots
 from core.config import SolveConfig
 from core.expression import parse
+from core.methods._interpolacion import (
+    _binomio,
+    _numero,
+    _numero_finito,
+    _validar_puntos,
+)
 from core.registry import register
 from core.sampling import sample
 from core.types import (
@@ -100,48 +106,6 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
     )
 
 
-def _validar_puntos(raw: Any) -> list[tuple[float, float]]:
-    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
-        raise MethodError("Se necesita una tabla con al menos dos puntos [x, y].")
-    if len(raw) < 2:
-        raise MethodError("Se necesitan al menos dos puntos para interpolar.")
-
-    puntos: list[tuple[float, float]] = []
-    for indice, punto in enumerate(raw, start=1):
-        if (
-            not isinstance(punto, Sequence)
-            or isinstance(punto, (str, bytes))
-            or len(punto) != 2
-        ):
-            raise MethodError(
-                f"El punto {indice} debe tener exactamente dos valores [x, y]."
-            )
-        xi = _numero_finito(punto[0], f"La x del punto {indice}")
-        yi = _numero_finito(punto[1], f"La y del punto {indice}")
-        puntos.append((xi, yi))
-
-    vistos: set[float] = set()
-    for xi, _ in puntos:
-        if xi in vistos:
-            raise MethodError(
-                f"La abscisa x = {xi:g} esta repetida; todas las x deben ser distintas."
-            )
-        vistos.add(xi)
-    return puntos
-
-
-def _numero_finito(raw: Any, nombre: str) -> float:
-    if isinstance(raw, bool):
-        raise MethodError(f"{nombre} debe ser un numero finito.")
-    try:
-        numero = float(raw)
-    except (TypeError, ValueError, OverflowError) as exc:
-        raise MethodError(f"{nombre} debe ser un numero.") from exc
-    if not math.isfinite(numero):
-        raise MethodError(f"{nombre} debe ser un numero finito.")
-    return numero
-
-
 def _validar_variante(raw: Any) -> str:
     if not isinstance(raw, str) or raw.strip().lower() not in VARIANTES:
         permitidas = ", ".join(sorted(VARIANTES))
@@ -202,7 +166,7 @@ def _forma_de_newton(
     terminos = []
     for orden, coeficiente in enumerate(diagonal):
         factores = [_coeficiente_de_newton(coeficiente)]
-        factores.extend(_binomio(xs[j]) for j in range(orden))
+        factores.extend(_binomio("x", xs[j]) for j in range(orden))
         terminos.append("*".join(factores))
     return " + ".join(terminos)
 
@@ -211,16 +175,6 @@ def _coeficiente_de_newton(valor: sympy.Rational) -> str:
     """Un a_i negativo va entre parentesis, como lo escribe el docente."""
     texto = _numero(valor)
     return f"({texto})" if valor < 0 else texto
-
-
-def _binomio(valor: sympy.Rational) -> str:
-    """(x - X_j) con el signo ya resuelto; (x - 0) no se reduce a x."""
-    signo = "-" if valor >= 0 else "+"
-    return f"(x {signo} {_numero(abs(valor))})"
-
-
-def _numero(valor: sympy.Rational) -> str:
-    return str(int(valor)) if valor.is_Integer else str(float(valor))
 
 
 def _polinomio_expandido(

@@ -18,6 +18,8 @@ const POR_FAMILIA = {
   raices: (metodo, p) =>
     (tiene(metodo, "x0") && finito(p.x0) ? [sobreEje("x0", p.x0, "x₀")] : []),
 
+  // Los datos del ajuste y su x opcional se arrastran igual que los de la
+  // interpolacion (mismos nombres de campo); mas abajo se le asigna la misma.
   interpolacion: (metodo, p) => [
     ...(tiene(metodo, "points") && Array.isArray(p.points) ? p.points : [])
       .flatMap(([x, y], i) => (finito(x) && finito(y)
@@ -42,6 +44,8 @@ const POR_FAMILIA = {
       : []));
   },
 };
+
+POR_FAMILIA.ajuste = POR_FAMILIA.interpolacion;
 
 export function asasDe(metodo, params, resultado = null) {
   const asas = POR_FAMILIA[metodo.family]?.(metodo, params, resultado) ?? [];

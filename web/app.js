@@ -10,7 +10,9 @@ import { presetsPara } from "./presets.js";
 import { montarVistaIntegral } from "./vista-integral.js";
 import { ICONOS } from "./iconos.js";
 import { formulaPara, sustitucionPara } from "./formulas.js";
+import { teoriaPara } from "./teoria.js";
 import { asasDe, mover, campoDe, describir } from "./asas.js";
+import { dibujarRejilla } from "./portada.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -31,6 +33,9 @@ const estado = {
   siguienteArrastre: null,
   // Ultimo metodo marcado en cada familia, para volver a el al regresar.
   ultimoPorFamilia: {},
+  // Lo que se ve: null (portada) o el slug del metodo abierto. Todavia no se
+  // eligio vista mientras carga la lista (undefined).
+  vista: undefined,
 };
 
 // Nombre e icono de cada familia. `otros` recoge una familia que esta tabla
@@ -40,10 +45,14 @@ const FAMILIAS = {
   interpolacion: { nombre: "Interpolación", icono: "chart-dots" },
   integracion: { nombre: "Integración", icono: "chart-area-line" },
   edo: { nombre: "EDO", icono: "wave-sine" },
+  ajuste: { nombre: "Ajuste", icono: "trending-up" },
   otros: { nombre: "Otros", icono: "funcion" },
 };
 
-const familiaDe = (metodo) => (metodo.family in FAMILIAS ? metodo.family : "otros");
+// Propiedad propia, no heredada: una familia "constructor" no es una familia.
+// hasOwnProperty y no Object.hasOwn, que Safari anterior a 15.4 no tiene.
+const familiaDe = (metodo) =>
+  (Object.prototype.hasOwnProperty.call(FAMILIAS, metodo.family) ? metodo.family : "otros");
 
 // ------------------------------------------------------------ API
 
@@ -208,6 +217,7 @@ function seleccionarMetodo(slug) {
   // numeros correctos atribuidos al metodo equivocado, que es peor que no
   // mostrar nada.
   estado.resultado = null;
+  estado.params = null;
   estado.corrida += 1;
 
   $("#descripcion").textContent = estado.metodo.description ?? "";
@@ -215,6 +225,7 @@ function seleccionarMetodo(slug) {
   formulario.dibujar(estado.metodo);
   mostrarVistaIntegral();
   mostrarFormula();
+  mostrarTeoria();
   limpiarPantalla();
   avisar("");
 }
@@ -246,6 +257,16 @@ function mostrarFormula() {
 }
 
 $("#formulario").addEventListener("input", mostrarFormula);
+
+// La pestana Teoria aparece solo si el metodo tiene explicacion, y desde que se
+// elige, antes de resolver. Un metodo sin ella devuelve a Plano si se estaba
+// leyendo la teoria del anterior.
+function mostrarTeoria() {
+  const teoria = estado.metodo ? teoriaPara(estado.metodo.slug) : null;
+  $("#panel-teoria").innerHTML = teoria ? `<div class="teoria">${teoria}</div>` : "";
+  $("#ver-teoria").hidden = !teoria;
+  if (!teoria && $("#ver-teoria").classList.contains("activa")) elegirPestana("ver-plano");
+}
 
 // ------------------------------------------------------------ presets
 
@@ -298,6 +319,7 @@ function aplicarPreset(id) {
   actualizarResumenAjustes();
 
   estado.resultado = null;
+  estado.params = null;
   estado.corrida += 1;
   limpiarPantalla();
   avisar("");
@@ -513,7 +535,7 @@ async function enviarArrastre(arrastre, params, final) {
 
 function pintarEnVivo() {
   const { capas, resample } = capasDesdePlot(estado.resultado.plot, estado.resultado.iterations);
-  plano.mostrar(capas, resample, {}, { conservarVista: true });
+  plano.mostrar(capas, resample, {}, { conservarVista: true, remuestrear: false });
   dibujarResumen($("#resumen"), estado.resultado, Number($("#decimales").value), estado.metodo.family);
 }
 
@@ -613,16 +635,18 @@ function armarSelector(metodos) {
   }
   pintarIconos(familias);
   familias.addEventListener("change", (e) => elegirFamilia(e.target.value));
-  chips.addEventListener("change", (e) => marcarMetodo(e.target.value));
+  chips.addEventListener("change", (e) => cambiarMetodo(e.target.value));
 }
 
 function elegirFamilia(familia) {
-  marcarMetodo(
+  cambiarMetodo(
     estado.ultimoPorFamilia[familia]
       ?? $(`#metodo input[data-familia="${familia}"]`).value,
   );
 }
 
+// Marca la familia y el chip de `slug`, muestra los chips de su familia y
+// carga el metodo. No toca la ruta ni la vista.
 function marcarMetodo(slug) {
   const chip = [...document.querySelectorAll("#metodo input")].find((i) => i.value === slug);
   if (!chip) return;
@@ -637,18 +661,81 @@ function marcarMetodo(slug) {
   seleccionarMetodo(slug);
 }
 
+// ------------------------------------------------------------ vistas y ruta
+
+// La ruta vive en el hash: "#/" es la portada y "#/metodo/<slug>" un metodo.
+// Atras y adelante del navegador y un enlace directo funcionan sin servidor.
+const hashDe = (slug) => (slug === null ? "#/" : `#/metodo/${encodeURIComponent(slug)}`);
+const TITULO_BASE = "Métodos Numéricos — UTA FISEI";
+
+// El slug de la ruta, o null si es la portada o un metodo que no existe.
+function slugDeHash(hash) {
+  const m = /^#\/metodo\/([^/?#]+)\/?$/.exec(hash);
+  if (!m) return null;
+  let slug;
+  try {
+    slug = decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
+  return estado.metodos.some((x) => x.slug === slug) ? slug : null;
+}
+
+// Cambiar de vista lleva el foco al encabezado de la vista que se abre, para
+// que el teclado y el lector de pantalla sepan donde estan.
+function mostrarVista(slug) {
+  estado.vista = slug;
+  const portada = slug === null;
+  if (portada) {
+    cancelarArrastre();
+    recorrido.pausar();
+    delete document.body.dataset.familia;
+  }
+  $("#portada").hidden = !portada;
+  $("#vista-metodo").hidden = portada;
+  if (!portada) {
+    // Volver al mismo metodo conserva su resultado; uno distinto se carga.
+    if (estado.metodo?.slug !== slug) marcarMetodo(slug);
+    else document.body.dataset.familia = familiaDe(estado.metodo);
+    $("#metodo-titulo").textContent = estado.metodo.name;
+  }
+  document.title = portada ? TITULO_BASE : `${estado.metodo.name} — ${TITULO_BASE}`;
+  window.scrollTo(0, 0);
+  $(portada ? "#portada-titulo" : "#metodo-titulo").focus({ preventScroll: true });
+}
+
+function alCambiarRuta() {
+  const slug = slugDeHash(location.hash);
+  // Un metodo que no existe cae en la portada, y la barra lo dice.
+  if (slug === null && /^#\/metodo\//.test(location.hash)) history.replaceState(null, "", "#/");
+  if (slug !== estado.vista) mostrarVista(slug);
+}
+
+// Elegir otro metodo con las familias o los chips: se ve de inmediato y la
+// ruta lo sigue (una entrada nueva en el historial).
+function cambiarMetodo(slug) {
+  marcarMetodo(slug);
+  estado.vista = slug;
+  $("#metodo-titulo").textContent = estado.metodo.name;
+  document.title = `${estado.metodo.name} — ${TITULO_BASE}`;
+  if (location.hash !== hashDe(slug)) location.hash = hashDe(slug);
+}
+
 async function iniciar() {
   try {
     estado.metodos = await api.metodos();
   } catch (e) {
-    avisar(`No se pudo cargar la lista de metodos: ${e.message}`);
+    $("#rejilla").innerHTML = '<p class="aviso" role="alert"></p>';
+    $("#rejilla .aviso").textContent = `No se pudo cargar la lista de metodos: ${e.message}`;
+    mostrarVista(null);
     return;
   }
 
   armarSelector(estado.metodos);
-  if (estado.metodos.length) marcarMetodo(estado.metodos[0].slug);
-
+  dibujarRejilla($("#rejilla"), estado.metodos, FAMILIAS, familiaDe);
   montarComparador({ api, estado, plano, configuracion, formulario, recorrido, cancelarArrastre });
+  window.addEventListener("hashchange", alCambiarRuta);
+  alCambiarRuta();
 }
 
 // ------------------------------------------------------------ ajustes
@@ -712,10 +799,13 @@ function alternarTema() {
 }
 
 $("#tema").addEventListener("click", alternarTema);
-sistemaOscuro.addEventListener("change", () => {
+// Safari 13 no conoce MediaQueryList.addEventListener, solo addListener.
+const alCambiarTema = () => {
   rotularTema();
   plano.repintar();
-});
+};
+if (sistemaOscuro.addEventListener) sistemaOscuro.addEventListener("change", alCambiarTema);
+else sistemaOscuro.addListener(alCambiarTema);
 pintarIconos();
 rotularTema();
 
@@ -723,6 +813,12 @@ rotularTema();
 $("#decimales").addEventListener("input", () => {
   $("#decimales-valor").textContent = $("#decimales").value;
   if (!estado.resultado) return;
+  // Con un arrastre en curso la tabla y el recorrido esperan a soltar: el
+  // resultado en vivo solo toca el resumen, y la tabla nueva llega con la final.
+  if (estado.arrastre) {
+    dibujarResumen($("#resumen"), estado.resultado, Number($("#decimales").value), estado.metodo.family);
+    return;
+  }
   formatearResultado();
   // El recorrido sigue donde estaba: se reescriben la tabla, la franja y la sustitucion.
   if (recorrido.activo) mostrarFila(recorrido.k);
@@ -739,13 +835,22 @@ $("#resolver").addEventListener("click", resolver);
 $("#encuadrar").addEventListener("click", () => plano.encuadrar());
 $("#reiniciar-vista").addEventListener("click", () => plano.reiniciarVista());
 
-for (const [id, panel] of [["ver-plano", "panel-plano"], ["ver-tabla", "panel-tabla"]]) {
-  $(`#${id}`).addEventListener("click", () => {
-    for (const b of document.querySelectorAll(".pestana")) b.classList.remove("activa");
-    for (const p of document.querySelectorAll(".panel")) p.hidden = true;
-    $(`#${id}`).classList.add("activa");
-    $(`#${panel}`).hidden = false;
-  });
+const PANELES = { "ver-plano": "panel-plano", "ver-tabla": "panel-tabla", "ver-teoria": "panel-teoria" };
+
+function elegirPestana(id) {
+  for (const b of document.querySelectorAll(".pestana")) {
+    b.classList.toggle("activa", b.id === id);
+    // La clase sola no le dice a un lector de pantalla cual esta elegida.
+    b.setAttribute("aria-pressed", b.id === id);
+  }
+  for (const p of document.querySelectorAll(".panel")) p.hidden = true;
+  $(`#${PANELES[id]}`).hidden = false;
+  // El recorrido de filas no tiene nada que mover en la teoria.
+  $("#tarjeta-plano").dataset.pestana = id;
+}
+
+for (const id of Object.keys(PANELES)) {
+  $(`#${id}`).addEventListener("click", () => elegirPestana(id));
 }
 
 for (const formato of ["csv", "pdf"]) {

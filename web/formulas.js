@@ -12,6 +12,7 @@ const sub = (base, indice) => `<msub>${base}${indice}</msub>`;
 const frac = (arriba, abajo) => `<mfrac>${arriba}${abajo}</mfrac>`;
 const paren = (...partes) => fila(mo("("), ...partes, mo(")"));
 const f = (...args) => fila(mi("f"), paren(...args.flatMap((a, i) => (i ? [mo(","), a] : [a]))));
+const mtext = (t) => `<mtext>${t}</mtext>`;
 const separa = '<mspace width="1em"></mspace>';
 const suma = (desde, hasta) =>
   `<munderover>${mo("∑")}${desde}${hasta}</munderover>`;
@@ -51,6 +52,31 @@ const resta = (a, b) => fila(a, mo("−"), b);
 const ancho = frac(resta(mi("b"), mi("a")), n);
 const medio = (m) => fila(sub(mi("m"), i), mo("="), frac(fila(xAnt, mo("+"), xi), dos), m ?? "");
 const iDesde1 = fila(i, mo("="), uno);
+
+// Las piezas de MathML, para quien arme una formula suelta (web/teoria.js).
+export const mml = { mi, mn, mo, fila, sub, frac, paren, f, suma, resta, tabla, separa };
+
+const sigma = mo("∑");
+const cuadrado = (base) => `<msup>${base}${mn("2")}</msup>`;
+const logaritmo = (t) => fila(mi("log"), t);
+const sumaDe = (...partes) => fila(sigma, ...partes);
+
+// Las formulas del ajuste, con la ecuacion del modelo arriba y, si hay
+// transformacion, una linea que dice que son x_i e y_i en la tabla.
+function ajuste(id, modelo, transformados) {
+  const xy = sumaDe(xi, yi);
+  return math(
+    id,
+    ...modelo,
+    ...(transformados ? [transformados] : []),
+    fila(mi("N"), mo("="), n, xy, mo("−"), sumaDe(xi), sumaDe(yi)),
+    fila(sub(mi("D"), x), mo("="), n, sumaDe(cuadrado(xi)), mo("−"), cuadrado(paren(sumaDe(xi)))),
+    fila(sub(mi("D"), mi("y")), mo("="), n, sumaDe(cuadrado(yi)), mo("−"), cuadrado(paren(sumaDe(yi)))),
+    fila(mi("m"), mo("="), frac(mi("N"), sub(mi("D"), x)), mo(","), separa,
+      mi("b"), mo("="), frac(fila(sumaDe(yi), mo("−"), mi("m"), sumaDe(xi)), n)),
+    fila(mi("r"), mo("="), frac(mi("N"), `<msqrt>${fila(sub(mi("D"), x), sub(mi("D"), mi("y")))}</msqrt>`)),
+  );
+}
 
 export const FORMULAS = {
   "newton-raphson": math(
@@ -108,6 +134,69 @@ export const FORMULAS = {
     medio(),
   ),
 
+  // Simpson1.pdf: (dx/3)[f(x0) + 4 sum_{i impar} f(xi) + 2 sum_{i par} f(xi) + f(xn)].
+  "simpson-13": math(
+    "simpson-13",
+    fila(
+      mi("I"), mo("≈"), frac(mi("Δx"), mn("3")),
+      mo("["), f(x0), mo("+"), mn("4"),
+      `<munder>${mo("∑")}${fila(i, mtext("impar"))}</munder>`, f(xi),
+    ),
+    fila(
+      mo("+"), dos,
+      `<munder>${mo("∑")}${fila(i, mtext("par"))}</munder>`, f(xi),
+      mo("+"), f(xn), mo("]"),
+    ),
+    fila(mi("Δx"), mo("="), ancho, mo(","), separa, mtext("n par")),
+    fila(i, mo("="), uno, mo(","), mo("…"), mo(","), n, mo("−"), uno),
+  ),
+
+  // (3h/8)[f(x0) + 3 sum_{i != 3k} f(xi) + 2 sum_{i = 3k} f(xi) + f(xn)], con
+  // h = (b - a)/n y n multiplo de 3.
+  "simpson-38": math(
+    "simpson-38",
+    fila(
+      mi("I"), mo("≈"), frac(resta(mi("b"), mi("a")), mn("8")), mo("["), f(x0), mo("+"), mn("3"), f(x1),
+      mo("+"), mn("3"), f(sub(x, dos)), mo("+"), f(sub(x, mn("3"))), mo("]"),
+    ),
+    fila(
+      mi("I"), mo("≈"), frac(fila(mn("3"), h), mn("8")),
+      mo("["), f(x0), mo("+"), mn("3"),
+      `<munder>${mo("∑")}${fila(i, mo("≠"), mn("3"), mi("k"))}</munder>`, f(xi),
+    ),
+    fila(
+      mo("+"), dos,
+      `<munder>${mo("∑")}${fila(i, mo("="), mn("3"), mi("k"))}</munder>`, f(xi),
+      mo("+"), f(xn), mo("]"),
+    ),
+    fila(h, mo("="), ancho, mo(","), separa, `<mtext>n múltiplo de 3</mtext>`),
+    fila(i, mo("="), uno, mo(","), mo("…"), mo(","), n, mo("−"), uno, mo(","), separa, `<mtext>k entero</mtext>`),
+    mtext("otro n: regla 1/3 al inicio y 3/8"),
+  ),
+
+  // Ajuste por minimos cuadrados: N, Dx y Dy son las tres piezas que el
+  // pizarron repite en m, b y r. Con un modelo linealizado, x_i e y_i son los
+  // datos ya transformados con log (base 10).
+  "minimos-cuadrados": {
+    campo: "modelo",
+    defecto: "lineal",
+    texto: true,
+    variantes: {
+      lineal: ajuste("minimos-cuadrados", [fila(mi("y"), mo("="), mi("m"), x, mo("+"), mi("b"))]),
+      potencial: ajuste("minimos-cuadrados-potencial", [
+        fila(mi("y"), mo("="), mi("b"), `<msup>${x}${mi("m")}</msup>`),
+        fila(logaritmo(mi("y")), mo("="), mi("m"), logaritmo(x), mo("+"), logaritmo(mi("b"))),
+      ], fila(xi, mo("="), logaritmo(xi), mo(","), separa, yi, mo("="), logaritmo(yi))),
+      exponencial: ajuste("minimos-cuadrados-exponencial", [
+        fila(mi("y"), mo("="), mi("b"), `<msup>${mi("e")}${fila(mi("m"), x)}</msup>`),
+        fila(logaritmo(mi("y")), mo("="), paren(mi("m"), logaritmo(mi("e"))), x, mo("+"), logaritmo(mi("b"))),
+      ], fila(yi, mo("="), logaritmo(yi))),
+      logaritmica: ajuste("minimos-cuadrados-logaritmica", [
+        fila(mi("y"), mo("="), mi("m"), logaritmo(x), mo("+"), mi("b")),
+      ], fila(xi, mo("="), logaritmo(xi))),
+    },
+  },
+
   "runge-kutta": {
     campo: "orden",
     defecto: "4",
@@ -140,7 +229,9 @@ export function formulaPara(slug, valorDe) {
   if (entrada === undefined) return null;
   if (typeof entrada === "string") return entrada;
   // Se compara el numero, no el texto: "2.0" es el orden 2 que el nucleo calcula.
-  return entrada.variantes[String(Number(valorDe(entrada.campo)))]
+  // Con `texto` la variante es la palabra misma (el modelo del ajuste).
+  const valor = valorDe(entrada.campo);
+  return entrada.variantes[entrada.texto ? valor : String(Number(valor))]
     ?? entrada.variantes[entrada.defecto];
 }
 
@@ -232,6 +323,43 @@ function interpolacionNewton({ filas, it, k, res, num }) {
   ];
 }
 
+// Una fila del ajuste y las sumas que arman m, b y r: el nucleo da cada numero
+// (la fila, los totales, el resultado) y aca solo se acomodan en la formula.
+// Con un modelo linealizado la recta ajustada es la de los datos transformados.
+// Los renglones son cortos a proposito: tienen que caber en una tarjeta de 375 px.
+function ajusteMinimosCuadrados({ it, res, num }) {
+  const r = res.result ?? {};
+  const t = r.totales ?? {};
+  const modelo = r.modelo;
+  const m = modelo === "exponencial" ? fila(mi("m"), por, logaritmo(mi("e"))) : mi("m");
+  const b = modelo === "potencial" || modelo === "exponencial" ? logaritmo(mi("b")) : mi("b");
+  const pendiente = r.pendiente_lineal ?? r.m;
+  const ordenada = r.ordenada_lineal ?? r.b;
+  const cuenta = mn(String(r.n));
+  const di = sub(mi("d"), i);
+  const dx = sub(mi("D"), x);
+  const dy = sub(mi("D"), mi("y"));
+  const entre = (a, c) => fila(a, por, c);
+  const alCuadrado = (t2) => cuadrado(paren(t2));
+  return [
+    igual(fila(xi, por, yi), entre(num(it.values.xi), num(it.values.yi))),
+    igual(fila(), num(it.values.xiyi)),
+    igual(di, entre(num(pendiente), num(it.values.xi))),
+    fila(mo("+"), num(ordenada), mo("−"), num(it.values.yi)),
+    igual(cuadrado(di), num(it.error)),
+    igual(mi("N"), entre(cuenta, num(t.xiyi))),
+    fila(mo("−"), entre(num(t.xi), num(t.yi))),
+    igual(dx, entre(cuenta, num(t.xi2))),
+    fila(mo("−"), alCuadrado(num(t.xi))),
+    igual(dy, entre(cuenta, num(t.yi2))),
+    fila(mo("−"), alCuadrado(num(t.yi))),
+    igual(m, frac(mi("N"), dx), mo("="), num(pendiente)),
+    igual(b, frac(fila(num(t.yi), mo("−"), num(pendiente), por, num(t.xi)), cuenta)),
+    igual(fila(), num(ordenada)),
+    igual(mi("r"), frac(mi("N"), `<msqrt>${fila(dx, por, dy)}</msqrt>`), mo("="), num(r.r)),
+  ];
+}
+
 const SUSTITUCIONES = {
   "newton-raphson": raiz("dfxi"),
 
@@ -270,6 +398,20 @@ const SUSTITUCIONES = {
     igual(fila(rotulo("peso"), por, f(x)), num(it.values.peso), por, num(it.values.fxi)),
     igual(rotulo("suma del corchete"), num(it.values.suma)),
   ],
+
+  "simpson-13": ({ it, num }) => [
+    igual(fila(rotulo("peso"), por, f(sub(x, mn(it.n)))), num(it.values.peso), por, num(it.values.fxi)),
+    igual(rotulo("suma del corchete"), num(it.values.suma)),
+  ],
+
+  // El nodo de union sale en dos filas: el subindice es el del nodo, no el de la fila.
+  "simpson-38": ({ it, num }) => [
+    igual(fila(rotulo("peso"), por, f(sub(x, mn(String(it.values.nodo ?? it.n).replace(/^x/, ""))))),
+      num(it.values.peso), por, num(it.values.fxi)),
+    igual(rotulo("suma del corchete"), num(it.values.suma)),
+  ],
+
+  "minimos-cuadrados": ajusteMinimosCuadrados,
 };
 
 // La variante de Runge-Kutta sale del orden que uso el nucleo, no del formulario.

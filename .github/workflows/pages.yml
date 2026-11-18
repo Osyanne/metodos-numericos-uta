@@ -22,12 +22,19 @@ concurrency:
 jobs:
   construir:
     name: Armar y probar el sitio
-    runs-on: ubuntu-latest
+    # Playwright 1.58 no instala Chromium en Ubuntu 26.04, que ya es ubuntu-latest.
+    # Volver a ubuntu-latest al subir Playwright a una version que lo soporte.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # construir.py le pide la lista de metodos a la aplicacion FastAPI.
+      - name: Instalar las dependencias de Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"

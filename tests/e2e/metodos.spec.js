@@ -8,7 +8,10 @@ const casos = [
   ["interpolacion-lagrange", "lagrange-docente", ["i", "x_i", "f(x_i)", "Numerador", "Denominador", "L_i(x)", "f(x_i) L_i(x)", "L_i evaluado", "error"]],
   ["trapecio", "trapecio-docente", ["i", "xi", "f(xi)", "peso", "peso * f(xi) * dx / 2", "suma acumulada", "error"]],
   ["simpson", "simpson-docente", ["i", "punto", "x", "f(x)", "peso", "peso * f(x)", "suma del corchete", "error"]],
+  ["simpson-13", "simpson-13-docente", ["i", "x", "f(x)", "peso", "peso * f(x)", "suma del corchete", "error"]],
+  ["simpson-38", "simpson-38-chapra-n5", ["i", "nodo", "x", "f(x)", "regla", "peso", "peso * f(x)", "suma del corchete", "error"]],
   ["runge-kutta", "runge-kutta-escalar", ["i", "x", "y", "error"]],
+  ["minimos-cuadrados", "ajuste-docente", ["i", "x_i", "y_i", "x_i*y_i", "x_i^2", "y_i^2", "error"]],
 ];
 
 async function cargar(page, metodo, preset) {
@@ -41,10 +44,10 @@ for (const [metodo, preset, columnas] of casos) {
     });
     await page.locator("#decimales").fill("3");
     // La primera columna numerica: en Simpson la primera es el nombre del punto.
-    const valores = Object.values(resultado.iterations[0].values);
-    const columna = valores.findIndex(v => typeof v === "number");
+    const valores = resultado.iterations[0].values;
+    const columna = resultado.columns.findIndex(c => typeof valores[c.key] === "number");
     await expect(page.locator("#tabla tbody tr").first().locator("td").nth(columna + 1))
-      .toHaveText(valores[columna].toFixed(3));
+      .toHaveText(valores[resultado.columns[columna].key].toFixed(3));
     expect(peticiones).toHaveLength(0);
   });
 }
@@ -135,4 +138,13 @@ test("cargar otro preset reemplaza todos los datos y limpia el resultado", async
   const recibido = await resolver(page, "runge-kutta");
   expect(recibido.columns.map(c => c.key)).toEqual(["x", "y"]);
   expect(recibido.iterations).toHaveLength(6);
+});
+
+test("el resumen de Simpson 3/8 no lista los tramos: son una lista de objetos", async ({ page }) => {
+  await cargar(page, "simpson-38", "simpson-38-chapra-n5");
+  await resolver(page, "simpson-38");
+  const claves = await page.locator("#resumen dl.resultado dt").allTextContents();
+  expect(claves).toContain("integral");
+  expect(claves).not.toContain("tramos");
+  await expect(page.locator("#resumen dl.resultado")).not.toContainText("-, —");
 });

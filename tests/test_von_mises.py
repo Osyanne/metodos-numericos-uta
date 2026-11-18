@@ -103,7 +103,7 @@ def test_el_ejercicio_de_la_diapositiva_10_diverge():
     """4x^3 - 18x^2 + 12x - 6 = 0 con x0 = 1.165.
 
     La unica raiz real esta cerca de 3.82. La derivada congelada vale
-    f'(1.165) = -13.65, mientras que en la raiz vale +49.6: el factor de
+    f'(1.165) = -13.65, mientras que en la raiz vale +49.42: el factor de
     amplificacion por iteracion queda en torno a 4.6, muy por encima de 1, asi
     que la sucesion se aleja en vez de acercarse.
 

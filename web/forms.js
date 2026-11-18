@@ -126,6 +126,7 @@ function crearControl(campo) {
 // ------------------------------------------------------------ simples
 
 function controlSimple(campo) {
+  if (campo.choices?.length) return controlOpciones(campo);
   const input = document.createElement("input");
   input.className = "control";
   input.type = campo.kind === "expression" ? "text" : "number";
@@ -147,6 +148,29 @@ function controlSimple(campo) {
     },
     escribir(valor) {
       input.value = valor ?? "";
+    },
+  };
+}
+
+// Un campo de texto con `choices` solo admite esos valores: una lista
+// desplegable, no una casilla libre donde equivocarse de palabra.
+function controlOpciones(campo) {
+  const select = document.createElement("select");
+  select.className = "control";
+  for (const opcion of campo.choices) {
+    const op = document.createElement("option");
+    op.value = opcion;
+    op.textContent = opcion;
+    select.append(op);
+  }
+  select.value = campo.choices.includes(campo.default) ? campo.default : campo.choices[0];
+
+  return {
+    definicion: campo,
+    elemento: envoltorio(campo, select),
+    leer: () => select.value,
+    escribir(valor) {
+      if (campo.choices.includes(valor)) select.value = valor;
     },
   };
 }

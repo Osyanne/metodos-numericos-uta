@@ -31,9 +31,12 @@ const EJERCICIOS = [
   ["punto-medio", "punto-medio-docente", 0],
   ["trapecio", "trapecio-docente", 1],
   ["simpson", "simpson-docente", 1],
+  ["simpson-13", "simpson-13-docente", 1],
+  ["simpson-38", "simpson-38-chapra-n5", 3],
   ["runge-kutta", "runge-kutta-escalar", 1],
   ["runge-kutta", "runge-kutta-heun", 1],
   ["runge-kutta", "runge-kutta-sistema", 1],
+  ["minimos-cuadrados", "ajuste-docente", 1],
 ];
 
 async function irAlPaso(page, k) {
@@ -623,5 +626,25 @@ test.describe("recorrido", () => {
       return faltan;
     });
     expect(sinDivision).toEqual([]);
+  });
+
+  test("en Simpson 3/8 combinada la sustitución rotula cada nodo como la tabla", async ({ page }) => {
+    await page.goto("/");
+    const mal = await page.evaluate(async () => {
+      const { sustitucionPara } = await import("/formulas.js");
+      const { presetsPara } = await import("/presets.js");
+      const preset = presetsPara("simpson-38").find((p) => p.id === "simpson-38-chapra-n5");
+      const respuesta = await fetch("/api/methods/simpson-38/solve", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ params: preset.params, ...preset.config }),
+      });
+      const res = await respuesta.json();
+      // El nodo de unión x2 sale dos veces: el número de fila deja de ser el del nodo.
+      return res.iterations
+        .map((fila, k) => [fila.values.nodo, sustitucionPara("simpson-38", res.iterations, k, res, String)])
+        .filter(([nodo, html]) => !html.includes(`<msub><mi>x</mi><mn>${nodo.slice(1)}</mn></msub>`))
+        .map(([nodo]) => nodo);
+    });
+    expect(mal).toEqual([]);
   });
 });

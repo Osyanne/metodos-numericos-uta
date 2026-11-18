@@ -134,6 +134,7 @@ def test_lista_metodos_con_inputs_sin_conocer_el_metodo(client: TestClient):
                     "help": "Punto de partida.",
                     "required": True,
                     "multiple": False,
+                    "choices": [],
                 },
                 {
                     "name": "opcional",
@@ -143,6 +144,7 @@ def test_lista_metodos_con_inputs_sin_conocer_el_metodo(client: TestClient):
                     "help": "",
                     "required": False,
                     "multiple": True,
+                    "choices": [],
                 },
             ],
         }
