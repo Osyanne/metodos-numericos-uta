@@ -83,11 +83,15 @@ def adelantos(modulos: list[str]) -> str:
 
 
 def archivos_del_sitio(destino: Path) -> list[str]:
-    """Todo lo armado salvo el propio sw.js, con rutas relativas y ordenadas."""
+    """Todo lo armado salvo el propio sw.js, con rutas relativas y ordenadas.
+
+    Sin los archivos que empiezan por punto: GitHub Pages no sirve .nojekyll,
+    y un 404 en la lista hace fallar toda la instalacion del service worker.
+    """
     return sorted(
         a.relative_to(destino).as_posix()
         for a in destino.rglob("*")
-        if a.is_file() and a.name != "sw.js"
+        if a.is_file() and a.name != "sw.js" and not a.name.startswith(".")
     )
 
 
