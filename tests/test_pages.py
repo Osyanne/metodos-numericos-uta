@@ -111,10 +111,14 @@ def test_el_service_worker_guarda_todo_el_sitio_con_la_version_del_armado(tmp_pa
     presentes = {
         archivo.relative_to(sitio).as_posix()
         for archivo in sitio.rglob("*")
-        if archivo.is_file() and archivo.name != "sw.js"
+        if archivo.is_file() and archivo.name != "sw.js" and not archivo.name.startswith(".")
     }
     assert set(archivos) - {"./"} == presentes
     assert "./" in archivos
+    # GitHub Pages no sirve .nojekyll (404), y un solo archivo que falte hace
+    # fallar toda la instalacion del service worker.
+    assert (sitio / ".nojekyll").is_file()
+    assert not [a for a in archivos if a != "./" and a.rsplit("/", 1)[-1].startswith(".")]
 
     # Mismo contenido, misma version; otro contenido, otra version.
     version = re.search(r'var VERSION = "([0-9a-f]+)"', sw).group(1)
