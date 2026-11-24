@@ -78,6 +78,7 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
             "valor": valor,
             "grado": grado,
         },
+        display={"polinomio": parse(polinomio).legible},
         converged=True,
         stop_reason=StopReason.EXACT,
         decimals=config.decimals,

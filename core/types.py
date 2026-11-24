@@ -166,6 +166,10 @@ class MethodResult:
     decimals: int
     plot: PlotSpec | None = None
     notes: list[str] = field(default_factory=list)
+    # Como se lee cada clave de `result` que es una expresion: `x² + x + 1`
+    # para el `x**2 + x + 1` que se guarda (ese si se vuelve a parsear). La
+    # interfaz muestra esto cuando existe; las claves sin entrada salen tal cual.
+    display: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

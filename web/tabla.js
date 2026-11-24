@@ -189,7 +189,7 @@ export function dibujarResumen(contenedor, resultado, decimales, familia) {
       ? (CONTEOS.has(clave) ? String(valor) : formatear(valor, decimales))
       : Array.isArray(valor)
         ? valor.map((v) => formatear(v, decimales)).join(", ")
-        : String(valor ?? "—");
+        : resultado.display?.[clave] ?? String(valor ?? "—");
     lista.append(dt, dd);
   }
   contenedor.append(lista);

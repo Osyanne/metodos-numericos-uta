@@ -162,6 +162,28 @@ for (const [metodo, preset, clave] of [
   });
 }
 
+// El resumen se lee como en el pizarron: √(x³ + 5) y 25x, no sqrt(x**3 + 5) ni 25*x.
+for (const [metodo, preset] of [
+  ["newton-raphson", "newton-clasico"],
+  ["von-mises", "von-mises-docente"],
+  ["interpolacion-newton", "interpolacion-logaritmo"],
+  ["interpolacion-lagrange", "lagrange-docente"],
+  ["punto-medio", "punto-medio-docente"],
+  ["trapecio", "trapecio-docente"],
+  ["simpson", "simpson-docente"],
+  ["simpson-13", "simpson-13-docente"],
+  ["simpson-38", "simpson-38-chapra-n5"],
+  ["minimos-cuadrados", "ajuste-docente"],
+]) {
+  test(`${metodo}: el resumen no muestra sintaxis de Python`, async ({ page }) => {
+    await elegirMetodo(page, metodo);
+    await page.locator("#preset").selectOption(preset);
+    await page.locator("#resolver").click();
+    await expect(page.locator("#resumen dd.principal")).toBeVisible();
+    expect(await page.locator("#resumen").textContent()).not.toMatch(/\*|sqrt\(|exp\(|\blog\(|log10\(/);
+  });
+}
+
 test("un polinomio largo no desborda a 375 px", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");

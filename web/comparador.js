@@ -95,9 +95,10 @@ function dibujarComparacion(caja, corridas, decimales) {
       tr.append(td);
     } else {
       const ultima = resultado.iterations.at(-1);
-      const principal = Object.values(resultado.result ?? {})[0];
+      const [clave, principal] = Object.entries(resultado.result ?? {})[0] ?? [];
       celda(resultado.iterations.length, "col-n");
-      celda(typeof principal === "number" ? formatear(principal, decimales) : String(principal ?? "—"));
+      celda(typeof principal === "number" ? formatear(principal, decimales)
+        : resultado.display?.[clave] ?? String(principal ?? "—"));
       celda(formatear(ultima?.error, decimales), "col-error");
       celda(resultado.converged ? "convergio" : resultado.stop_reason);
     }

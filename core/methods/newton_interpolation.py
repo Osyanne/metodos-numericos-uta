@@ -88,6 +88,11 @@ def solve(params: dict[str, Any], config: SolveConfig) -> MethodResult:
             "grado": grado,
             "variante_usada": variante_usada,
         },
+        display={
+            "polinomio": parse(polinomio).legible,
+            # A mano y no con el formateador: SymPy reordenaria la forma del pizarron.
+            "polinomio_newton": _forma_de_newton(diagonal, xs_exactos, por="").replace("-", "−"),
+        },
         converged=True,
         stop_reason=StopReason.EXACT,
         decimals=config.decimals,
@@ -155,6 +160,7 @@ def _divididas_exactas(
 def _forma_de_newton(
     diagonal: Sequence[sympy.Rational],
     xs: Sequence[sympy.Rational],
+    por: str = "*",
 ) -> str:
     """a0 + a1*(x - X0) + a2*(x - X0)*(x - X1) + ..., sin expandir.
 
@@ -167,7 +173,7 @@ def _forma_de_newton(
     for orden, coeficiente in enumerate(diagonal):
         factores = [_coeficiente_de_newton(coeficiente)]
         factores.extend(_binomio("x", xs[j]) for j in range(orden))
-        terminos.append("*".join(factores))
+        terminos.append(por.join(factores))
     return " + ".join(terminos)
 
 
@@ -271,7 +277,7 @@ def _notas_de_la_tabla(variante_usada: str) -> list[str]:
     if variante_usada == "adelante":
         notas.append(
             "Con paso h, cada a_k es la diferencia adelante k de la fila 0 "
-            "dividida por k! * h^k."
+            "dividida por k!·hᵏ."
         )
     return notas
 
