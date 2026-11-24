@@ -65,9 +65,9 @@ def derivada_de(f: Expression, params: dict[str, Any]) -> tuple[Expression, str]
     texto = params.get("dfx")
     if texto is not None and str(texto).strip():
         derivada = parse(str(texto))
-        return derivada, f"Derivada ingresada por el usuario: f'(x) = {derivada}"
+        return derivada, f"Derivada ingresada por el usuario: f'(x) = {derivada.legible}"
     derivada = f.derivada()
-    return derivada, f"Derivada calculada por el aplicativo: f'(x) = {derivada}"
+    return derivada, f"Derivada calculada por el aplicativo: f'(x) = {derivada.legible}"
 
 
 # ---------------------------------------------------------------- bucle

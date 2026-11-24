@@ -73,7 +73,7 @@ COLUMNAS = [
 
 
 def _notas(f, a, b, n, h, integral, tramos, cortes):
-    notas = [f"∫[{a:g}, {b:g}] ({f}) dx ≈ {integral:.6f}"]
+    notas = [f"∫[{a:g}, {b:g}] ({f.legible}) dx ≈ {integral:.6f}"]
     if len(tramos) == 1:
         t = tramos[0]
         notas += [

@@ -19,6 +19,7 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
 )
 
+from core.legible import legible
 from core.types import MethodError
 
 # Funciones que el usuario puede escribir. Cualquier otra se rechaza.
@@ -65,6 +66,11 @@ class Expression:
 
     def __str__(self) -> str:
         return self.texto
+
+    @property
+    def legible(self) -> str:
+        """Como en el pizarron (`√(x³ + 5)`), solo para mostrar: no se reparsea."""
+        return legible(self._expr)
 
     def evaluar(self, **valores: float) -> float:
         """Evalua en un punto. Un resultado no finito es un fallo del metodo,

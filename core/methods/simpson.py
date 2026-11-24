@@ -154,7 +154,7 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
             "Los extremos pesan 1, los puntos medios 4 y los puntos interiores 2."
         )
     notas = [
-        f"∫[{a:g}, {b:g}] ({f}) dx ≈ {integral:.6f}",
+        f"∫[{a:g}, {b:g}] ({f.legible}) dx ≈ {integral:.6f}",
         caso,
         f"La suma del corchete es {corchete:.8f}; multiplicada por "
         f"(b − a)/{6 * subintervalos} = {factor:g} da la integral.",

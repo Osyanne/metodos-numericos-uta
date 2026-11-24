@@ -150,6 +150,7 @@ def _ajustar(params: dict[str, Any], config: SolveConfig) -> MethodResult:
             resample=Resample(expression=expresion, domain=(desde, hasta)),
         ),
         notes=_notas(modelo, r),
+        display={"ecuacion": _ecuacion_legible(modelo, m, b)},
     )
 
 
@@ -194,6 +195,34 @@ def _ecuacion(modelo: str, m: float, b: float) -> str:
     termino = f"{mm}*log10(x)" if modelo == "logaritmica" else f"{mm}*x"
     signo = "-" if b < 0 else "+"
     return f"y = {termino} {signo} {_g(abs(b))}"
+
+
+def _ecuacion_legible(modelo: str, m: float, b: float) -> str:
+    """La misma ecuacion como se escribe a mano: y = 1.9x + 0.22, y = 3x²."""
+    if modelo == "potencial":
+        return f"y = {_coeficiente(b)}x{_exponente(m)}"
+    if modelo == "exponencial":
+        return f"y = {_coeficiente(b)}e^({_coeficiente(m)}x)"
+    coeficiente = _coeficiente(m)
+    if modelo == "logaritmica":
+        variable = f"{' ' if coeficiente not in ('', '−') else ''}log(x)"
+    else:
+        variable = "x"
+    signo = "−" if b < 0 else "+"
+    return f"y = {coeficiente}{variable} {signo} {_g(abs(b))}"
+
+
+def _coeficiente(valor: float) -> str:
+    """El numero que multiplica: 1 no se escribe y −1 queda solo el signo."""
+    texto = _g(valor).replace("-", "−")
+    return {"1": "", "−1": "−"}.get(texto, texto)
+
+
+def _exponente(valor: float) -> str:
+    texto = _g(valor)
+    if texto.lstrip("-").isdigit():
+        return texto.translate(str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻"))
+    return "^" + (f"(−{texto[1:]})" if texto.startswith("-") else texto)
 
 
 def _expresion(modelo: str, m: float, b: float) -> str:

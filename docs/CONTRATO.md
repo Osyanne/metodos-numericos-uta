@@ -515,11 +515,21 @@ no confirmo cual quiere, asi que estan los dos. **Abierto.**
   "stop_reason": "tolerancia_alcanzada",
   "decimals": 6,
   "plot": { },
-  "notes": []
+  "notes": [],
+  "display": {}
 }
 ```
 
 Reglas duras:
+
+- **`result` guarda las expresiones en la sintaxis del parser** (`x**2 + x + 1`),
+  porque se vuelven a leer: el remuestreo del plano y las pruebas las parsean.
+  **`display` dice como se leen**: para cada clave de `result` que es una
+  expresion, el mismo texto escrito como en el pizarron (`x² + x + 1`,
+  `√(x³ + 5)`, `25x`). La interfaz muestra `display[clave]` cuando existe y el
+  valor tal cual cuando no. Las `notes` ya vienen escritas asi. Ese texto es
+  solo para mostrar y nunca se vuelve a parsear; lo arma `core/legible.py`
+  (Interpolacion de Lagrange y de Newton, y la ecuacion del ajuste, lo usan).
 
 - `columns` manda sobre `iterations`: la tabla se dibuja recorriendo `columns`
   y buscando esa `key` en `values`. Una key que no este en `columns` no se muestra.

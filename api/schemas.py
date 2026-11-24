@@ -110,3 +110,4 @@ class SolveResponse(BaseModel):
     decimals: int
     plot: PlotSchema | None = None
     notes: list[str] = []
+    display: dict[str, str] = {}

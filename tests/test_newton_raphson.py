@@ -84,7 +84,7 @@ def test_deriva_sola_y_lo_dice():
     notas = resolver(CLASICO, max_iterations=3).notes
 
     assert any("calculada por el aplicativo" in n for n in notas)
-    assert any("3*x**2 - 2" in n for n in notas), notas
+    assert any("3x² − 2" in n for n in notas), notas
 
 
 def test_la_derivada_a_mano_da_el_mismo_resultado():

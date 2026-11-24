@@ -61,6 +61,7 @@ def result_to_response(result: MethodResult) -> SolveResponse:
         decimals=result.decimals,
         plot=_plot_to_schema(result.plot),
         notes=result.notes,
+        display=result.display,
     )
 
 

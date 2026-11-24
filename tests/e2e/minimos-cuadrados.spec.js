@@ -33,7 +33,7 @@ test("el ejercicio del docente: m, b, r, la tabla y su fila Total", async ({ pag
   // La ecuacion va primero y en grande; m, b y r con los decimales del ejercicio.
   await expect(page.locator("#resumen .estado-ok")).toHaveText("Ajuste calculado");
   await expect(page.locator("#resumen dt.principal")).toHaveText("ecuacion");
-  await expect(page.locator("#resumen dd.principal")).toHaveText("y = 1.9*x + 0.22");
+  await expect(page.locator("#resumen dd.principal")).toHaveText("y = 1.9x + 0.22");
   await expect(resultadoDe(page, "m")).toHaveText("1.9000");
   await expect(resultadoDe(page, "b")).toHaveText("0.2200");
   await expect(resultadoDe(page, "r")).toHaveText("0.9976");

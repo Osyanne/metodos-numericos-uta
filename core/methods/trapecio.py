@@ -124,7 +124,7 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
     ]
 
     notas = [
-        f"∫[{a:g}, {b:g}] ({f}) dx ≈ {integral:.6f}",
+        f"∫[{a:g}, {b:g}] ({f.legible}) dx ≈ {integral:.6f}",
         f"Regla compuesta del Trapecio con {n} subintervalos de ancho "
         f"Δx = {delta_x:g}. Los extremos pesan 1 y los puntos interiores "
         "pesan 2.",

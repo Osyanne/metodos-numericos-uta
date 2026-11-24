@@ -135,8 +135,8 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
         # El signo ∫ es dificil de tipear en un teclado normal, asi que el
         # aplicativo lo pone solo tanto en la vista previa como en esta nota,
         # armando la notacion completa a partir de a, b, f y los limites.
-        f"∫[{a:g}, {b:g}] ({f}) dx ≈ {integral:.6f}",
-        f"Aproximacion de la integral definida de f(x) = {f} en [{a:g}, {b:g}] "
+        f"∫[{a:g}, {b:g}] ({f.legible}) dx ≈ {integral:.6f}",
+        f"Aproximacion de la integral definida de f(x) = {f.legible} en [{a:g}, {b:g}] "
         f"con {n} subintervalos de ancho Δx = {delta_x:g}.",
         "El punto medio no produce una estimacion de error por iteracion: la "
         "columna va vacia. Para estimar la exactitud hay que resolver otra vez "
