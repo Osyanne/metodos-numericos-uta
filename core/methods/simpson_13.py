@@ -84,7 +84,7 @@ def solve(params: dict[str, Any], cfg: SolveConfig) -> MethodResult:
     parabolas, _, filas = arcos(tramos, xs, fs)
 
     notas = [
-        f"∫[{a:g}, {b:g}] ({f}) dx ≈ {integral:.6f}",
+        f"∫[{a:g}, {b:g}] ({f.legible}) dx ≈ {integral:.6f}",
         f"{n} intervalos de ancho Δx = {dx:g}, {n + 1} puntos: {n // 2} "
         f"parábola{'s' if n > 2 else ''}, una por cada dos intervalos. Los "
         "extremos pesan 1, los puntos de índice impar 4 y los de índice par "
