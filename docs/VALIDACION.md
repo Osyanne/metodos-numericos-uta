@@ -7,16 +7,16 @@ deja por escrito que se acordo, como se verifica cada cosa y de donde sale cada
 numero. Se versiona junto al codigo, asi que una afirmacion de aca siempre
 corresponde a la version del aplicativo que la acompana.
 
-Verificacion local actual, con los once metodos: **503 pruebas de Python**,
-**325 de navegador** y **10 del sitio de GitHub Pages**, todas en verde. La
+Verificacion local actual, con los once metodos: **533 pruebas de Python**,
+**335 de navegador** y **10 del sitio de GitHub Pages**, todas en verde. La
 referencia historica de 2026-09-18, previa a Trapecio, tenia 275 y 39
 respectivamente. En el total de navegador no entran las dos pruebas que
 regeneran las capturas del manual, que solo corren a pedido (`CAPTURAS=1`): la
-suite lista 327 y dice «325 passed, 2 skipped».
+suite lista 337 y dice «335 passed, 2 skipped».
 
 ```bash
-python -m pytest tests/ --ignore=tests/e2e                # 503 passed
-npx playwright test --workers=1 --timeout=120000          # 325 passed, 2 skipped
+python -m pytest tests/ --ignore=tests/e2e                # 533 passed
+npx playwright test --workers=1 --timeout=120000          # 335 passed, 2 skipped
 npx playwright test --config playwright.pages.config.js   # 10 passed, necesita internet
 ```
 
@@ -167,7 +167,7 @@ entrega. La columna va vacia y una nota lo explica en pantalla.
 
 ## Comprobado desde el navegador
 
-Las 325 pruebas de Playwright manejan la interfaz de verdad contra el servidor
+Las 335 pruebas de Playwright manejan la interfaz de verdad contra el servidor
 real (mas dos que solo regeneran las capturas del manual, a pedido). Cubren lo que romperia la demostracion:
 
 - Resolver los once metodos y ver la tabla con sus columnas.

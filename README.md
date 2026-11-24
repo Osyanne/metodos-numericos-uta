@@ -95,7 +95,7 @@ Y abrir <http://127.0.0.1:8000>.
 python -m pytest tests/ --ignore=tests/e2e
 ```
 
-Tienen que dar **503 pruebas en verde**. Entre ellas hay cuatro que verifican
+Tienen que dar **533 pruebas en verde**. Entre ellas hay cuatro que verifican
 justamente la instalacion: que todo lo que el codigo importa este declarado en
 `pyproject.toml`, y que ningun archivo referenciado desde la interfaz falte en
 el repositorio. Las dos cosas pasan desapercibidas en la maquina donde se
@@ -103,7 +103,7 @@ escribio el codigo y aparecen en la del que clona.
 
 ### Pruebas de navegador
 
-Aparte de las de Python hay **325 pruebas de interfaz** con Playwright (mas dos
+Aparte de las de Python hay **335 pruebas de interfaz** con Playwright (mas dos
 que solo regeneran las capturas del manual, a pedido), que levantan el servidor
 de verdad y manejan la pantalla. Entre ellas, `tests/e2e/portada.spec.js` cubre
 la portada y la ruta por hash:
